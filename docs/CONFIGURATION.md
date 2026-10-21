@@ -57,13 +57,22 @@ docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.c
 
 Import `vme-insight-root.crt` as a trusted root CA on each machine whose browser opens Grafana:
 
-* **Windows** (Edge, Chrome), in PowerShell as Administrator:
+* **Windows** (Edge, Chrome): use PowerShell **as Administrator**, in the folder holding the file. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
   ```powershell
+  # Trust the vme-insight root for every user on this machine
   Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\LocalMachine\Root
+
+  # Check: should list "Caddy Local Authority - <year> ECC Root"
+  Get-ChildItem Cert:\LocalMachine\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List Subject, Thumbprint, NotAfter
+
+  # If it was imported before by double-clicking the file, remove the copy Windows filed as an intermediate
+  Get-ChildItem Cert:\LocalMachine\CA, Cert:\CurrentUser\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
   ```
-  Or double-click the file → **Install Certificate** → **Local Machine** → **Place all certificates in the following store** → **Trusted Root Certification Authorities**. Don't leave it on *Automatically select the certificate store*: Windows then files it under *Intermediate Certification Authorities*, and browsers still reject it. Restart the browser afterwards.
+  Then close every browser window and reopen it.
 * **macOS**: Keychain Access → System, import, then set it to **Always Trust**.
-* **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import. A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+* **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import.
+
+A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
 
 To see why a browser can't connect, start the front end with `HTTPS_LOG_LEVEL=DEBUG docker compose --profile https up -d https` and read `docker compose --profile https logs https`. `tls: unknown certificate` means that browser doesn't trust the certificate yet. Restart it without the variable afterwards.
 
