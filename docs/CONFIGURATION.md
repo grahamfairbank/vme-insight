@@ -25,6 +25,7 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 | `HTTPS_PORT` | `3443` | Host port of the https front end |
 | `HTTPS_HOSTNAME` | `localhost` | Name(s) users type for Grafana, space-separated; the certificate is issued for these |
 | `HTTPS_ALLOW` | `127.0.0.1/32` | Networks allowed through the https front end, space-separated CIDRs (quote the value). Everyone else gets 403. |
+| `HTTPS_LOG_LEVEL` | `INFO` | `DEBUG` logs every request and failed TLS handshakes, for troubleshooting |
 | `HTTPS_TLS` | `internal` | `internal` issues certificates from the front end's own CA. Or `/certs/<cert>.pem /certs/<key>.pem` for your own certificate in `https/certs/`. |
 | `DB_MEMORY` | `1GB` | Memory TimescaleDB tunes itself for on first start |
 | `PROM_RETENTION` | `90d` | How long Prometheus keeps exporter data |
@@ -54,7 +55,17 @@ Grafana is then at `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>`. With `HTTPS_TLS=inte
 docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.crt vme-insight-root.crt
 ```
 
-Import `vme-insight-root.crt` as a trusted root CA (Windows: *certlm.msc → Trusted Root Certification Authorities*; macOS: Keychain Access → System, set to Always Trust). A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+Import `vme-insight-root.crt` as a trusted root CA on each machine whose browser opens Grafana:
+
+* **Windows** (Edge, Chrome), in PowerShell as Administrator:
+  ```powershell
+  Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\LocalMachine\Root
+  ```
+  Or double-click the file → **Install Certificate** → **Local Machine** → **Place all certificates in the following store** → **Trusted Root Certification Authorities**. Don't leave it on *Automatically select the certificate store*: Windows then files it under *Intermediate Certification Authorities*, and browsers still reject it. Restart the browser afterwards.
+* **macOS**: Keychain Access → System, import, then set it to **Always Trust**.
+* **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import. A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+
+To see why a browser can't connect, start the front end with `HTTPS_LOG_LEVEL=DEBUG docker compose --profile https up -d https` and read `docker compose --profile https logs https`. `tls: unknown certificate` means that browser doesn't trust the certificate yet. Restart it without the variable afterwards.
 
 The allowlist uses the client's real address, which Docker keeps for published ports. Check from an allowed and a non-allowed machine: `curl -sk -o /dev/null -w '%{http_code}' https://<host>:3443/api/health` should give `200` and `403`.
 

@@ -5,6 +5,11 @@
 #                   "/certs/<cert>.pem /certs/<key>.pem" for your own certificate in https/certs/
 {
 	admin off
+	# HTTPS_LOG_LEVEL=DEBUG logs every request and failed TLS handshakes ("unknown certificate" =
+	# the browser doesn't trust the certificate). Leave it at INFO normally.
+	log {
+		level {$HTTPS_LOG_LEVEL:INFO}
+	}
 }
 
 {$HTTPS_HOSTNAME} {
