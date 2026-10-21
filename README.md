@@ -171,7 +171,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | vme-insight | VME | vme-insight-plugin (optional) |
 |---|---|---|
-| 0.2.0 (unreleased) | 9.1 or later | 0.1.0 or later |
+| 0.2.0 | 9.1 or later | 0.1.0 or later |
 | 0.1.0 | 9.1 or later | Not supported (no https front end or anonymous viewing) |
 
 ## VME reference documentation
