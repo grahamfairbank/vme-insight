@@ -50,8 +50,10 @@ GRAFANA_ROOT_URL=https://vme-insight.example.com:3443/
 GRAFANA_COOKIE_SECURE=true
 HTTPS_HOSTNAME=vme-insight.example.com       # the name users type
 HTTPS_ALLOW="10.20.0.0/16 192.168.13.0/24"   # networks allowed in; everyone else gets 403
-HTTPS_TLS=internal                           # or "/certs/<cert>.pem /certs/<key>.pem", files in https/certs/
+HTTPS_TLS="/certs/vme-insight.crt /certs/vme-insight.key"   # see step 3 to choose and create it
 ```
+
+Decide on the certificate first ([step 3](#3-make-browsers-trust-the-certificate)). If you have no certificate yet, `tools/make-cert.sh host <name> [<ip>]` makes one for this host only in a few seconds. `HTTPS_TLS=internal` also works without any files, but it's a lab shortcut with real risks, explained in step 3.
 
 Then:
 
@@ -64,43 +66,125 @@ vme-insight is now at `https://vme-insight.example.com:3443` for the allowed net
 
 ## 3. Make browsers trust the certificate
 
-Skip this if `HTTPS_TLS` points at a certificate your users' machines already trust.
+A frame can't show a certificate warning, so the browser on every machine that shows the vme-insight tabs must trust the front end's certificate. Otherwise the tabs stay blank.
 
-With `HTTPS_TLS=internal`, the front end issues its own certificate from a private root. Export the root once:
+Adding trust to a browser is a security decision: whatever you trust can vouch for sites. Pick the first option that works for you; they're ordered from least to most new trust.
+
+| Option | What browsers must trust | If its key leaks |
+|---|---|---|
+| **A. Your organisation's CA** issues the certificate | Nothing new | Normal certificate risk |
+| **B. A public certificate** (e.g. Let's Encrypt via DNS) for a real DNS name | Nothing new | Normal certificate risk |
+| **C. `tools/make-cert.sh host`**: a self-signed certificate for this host only | That one certificate | Only this host's names can be impersonated |
+| **D. `tools/make-cert.sh ca`**: your own CA, limited to your domain and network | A CA restricted by name constraints | Only names inside the permitted domain and network |
+| **E. Built-in CA** (`HTTPS_TLS=internal`): lab shortcut | An unrestricted CA whose key sits in a Docker volume | **Any website**, for every machine that trusts it |
+
+### A or B: a certificate from a CA you already trust
+
+Request a server certificate whose Subject Alternative Names include every name in `HTTPS_HOSTNAME` (and any IP users type). Save the certificate (with its intermediate chain, leaf first) and its key in `https/certs/`, which is git-ignored, then:
+
+```bash
+# .env
+HTTPS_TLS="/certs/vme-insight.crt /certs/vme-insight.key"
+```
+
+```bash
+docker compose --profile https up -d https
+```
+
+Nothing needs importing on the browser machines. Renew before it expires, the same way.
+
+### C. A self-signed certificate for this host (recommended without an organisation CA)
+
+```bash
+tools/make-cert.sh host vme-insight.example.com 192.0.2.10
+```
+
+Give it every name and IP your users type. The script prints each `openssl` command before running it (add `--dry-run` to see them without running anything), and writes `https/certs/vme-insight.crt` and `https/certs/vme-insight.key`. The certificate is marked `CA:FALSE`, so trusting it trusts exactly this certificate: it can't be used to sign one for any other site. It's valid for 397 days. Run the script again before then and re-import the new certificate.
+
+Set `HTTPS_TLS` as above, restart the front end, then [verify and import](#verify-then-import) `vme-insight.crt` on each browser machine.
+
+### D. Your own CA, limited to your domain
+
+```bash
+tools/make-cert.sh ca --permit example.com --permit 192.0.2.0/24 vme-insight.example.com 192.0.2.10
+```
+
+This creates a private CA whose **name constraints** only allow certificates for the permitted domains (and their subdomains) and networks, and uses it to sign the server certificate. Browsers import the CA once (`~/vme-insight-ca/vme-insight-ca.crt`). When the server certificate is due for renewal, run the script again and it reuses the CA, so nothing changes on the browser machines.
+
+* **Move the CA key off the vme-insight host** (`~/vme-insight-ca/vme-insight-ca.key`) once you've issued the certificate, and bring it back only to renew. Anyone holding it can issue certificates for the permitted names.
+* The constraint is enforced by the client. We've confirmed with OpenSSL that a certificate this CA signs for another domain or network is rejected (*permitted subtree violation*). Current Chrome, Edge, Firefox and Safari document the same behaviour for locally trusted roots; test it in your environment if you rely on it.
+
+Set `HTTPS_TLS` as above, restart the front end, then [verify and import](#verify-then-import) the CA certificate on each browser machine.
+
+### E. The built-in CA (lab shortcut)
+
+With `HTTPS_TLS=internal` (the default), the front end creates its own root CA on first start. It's convenient for a quick trial, but understand the trade-off before trusting it:
+
+* It's an **unrestricted** CA: it can sign a certificate for any website, and every machine that trusts it would accept those.
+* Its private key is stored unencrypted in the `https-data` Docker volume, readable by anyone with Docker access on the host and by anything that backs up the volume. It's valid for 10 years.
+* The root is unique to your install (nothing is shipped with vme-insight), but that doesn't limit what it can sign.
+
+Use it on a lab network, trust it for your own account only, and [remove it](#removing-trust) when you're done. For anything else use A to D. To export it:
 
 ```bash
 docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.crt vme-insight-root.crt
 ```
 
-Then, on **each machine whose browser will show the vme-insight tabs**, import `vme-insight-root.crt` as a trusted root:
+### Verify, then import
 
-* **Windows** (Edge, Chrome): use PowerShell, in the folder holding `vme-insight-root.crt`. Pick one option. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
+Don't import a certificate because a file arrived; check it's the one the server uses. On the vme-insight host, print its fingerprint (`make-cert.sh` prints it too):
 
-  **Option 1: every user on the machine (needs administrator rights).** Writing to the machine-wide store needs an elevated PowerShell; in a normal window, `Import-Certificate` fails with *Access is denied*. This command opens an elevated window and runs the import there. Approve the **UAC** prompt (*Do you want to allow this app to make changes to your device?* → **Yes**):
+```bash
+openssl x509 -in https/certs/vme-insight.crt -noout -fingerprint -sha256   # option C
+openssl x509 -in ~/vme-insight-ca/vme-insight-ca.crt -noout -fingerprint -sha256   # option D
+openssl x509 -in vme-insight-root.crt -noout -fingerprint -sha256   # option E
+```
+
+Copy the file to the browser machine and check its fingerprint there before importing. It must match.
+
+* **Windows** (PowerShell, in the folder holding the file; change the file name to match):
   ```powershell
-  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command',"Import-Certificate -FilePath '$PWD\vme-insight-root.crt' -CertStoreLocation Cert:\LocalMachine\Root"
+  $f = "$PWD\vme-insight.crt"
+  $c = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $f
+  ([Security.Cryptography.SHA256]::Create().ComputeHash($c.RawData) | ForEach-Object { $_.ToString('X2') }) -join ':'
+  ```
+* **macOS / Linux**: `openssl x509 -in vme-insight.crt -noout -fingerprint -sha256`
+
+After importing, you can also open `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>` directly and view the certificate from the padlock. For option C the SHA-256 fingerprint shown is the same; for D and E, the issuer is the CA you imported.
+
+Then import it, **for your own account** unless the machine is shared:
+
+* **Windows** (Edge, Chrome). Don't double-click the file: the wizard files it under *Intermediate Certification Authorities*, where browsers ignore it.
+
+  **Your account only (recommended, no administrator rights).** Windows asks you to confirm installing a certificate; check the thumbprint it shows matches `$c.Thumbprint`, then click **Yes**:
+  ```powershell
+  Import-Certificate -FilePath $f -CertStoreLocation Cert:\CurrentUser\Root
   ```
 
-  **Option 2: just your Windows account (no administrator rights needed).** Edge and Chrome trust this store too. Windows shows a security warning asking you to confirm installing a root certificate; click **Yes**:
+  **Every user on a shared machine (administrator).** Approve the UAC prompt:
   ```powershell
-  Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\CurrentUser\Root
+  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command',"Import-Certificate -FilePath '$f' -CertStoreLocation Cert:\LocalMachine\Root"
   ```
 
-  **Check** that it landed in a Root store. It should list *Caddy Local Authority - &lt;year&gt; ECC Root*, under `LocalMachine\Root` (option 1) or `CurrentUser\Root` (option 2):
+  Check it landed in a Root store, then close and reopen every browser window:
   ```powershell
-  Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List PSParentPath, Subject, Thumbprint, NotAfter
+  Get-ChildItem Cert:\CurrentUser\Root, Cert:\LocalMachine\Root | Where-Object Thumbprint -eq $c.Thumbprint | Format-List PSParentPath, Subject, NotAfter
   ```
+* **macOS**: Keychain Access → **login** keychain (your account) → File → Import Items, then open the certificate → Trust → **Always Trust**. Use the System keychain only for shared Macs.
+* **Firefox** keeps its own list. For options D and E: Settings → Privacy & Security → Certificates → View Certificates → **Authorities** → Import, tick *Trust this CA to identify websites*. For option C (not a CA): open `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>` directly once, check the fingerprint under *Advanced → View Certificate*, then *Accept the Risk and Continue*. That trusts this one certificate for this site only.
 
-  **Clean up** a copy left by an earlier double-click install, which Windows filed as an intermediate. Removing it from `LocalMachine\CA` needs the elevated window from option 1; `CurrentUser\CA` works in any window:
+### Removing trust
+
+When you replace the certificate or stop using vme-insight, remove what you imported.
+
+* **Windows**: in the folder holding the certificate file, run:
   ```powershell
-  Get-ChildItem Cert:\LocalMachine\CA, Cert:\CurrentUser\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
+  $c = New-Object Security.Cryptography.X509Certificates.X509Certificate2 "$PWD\vme-insight.crt"
+  Get-ChildItem Cert:\CurrentUser\Root, Cert:\CurrentUser\CA | Where-Object Thumbprint -eq $c.Thumbprint | Remove-Item
   ```
-
-  Then close every browser window and reopen it.
-* **macOS**: Keychain Access → System, import, then set it to **Always Trust**.
-* **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import.
-
-A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+  For `LocalMachine\Root` and `LocalMachine\CA`, run the same command in an elevated window. The `CA` stores catch copies filed there by a double-click install.
+* **macOS**: Keychain Access → find the certificate → Delete.
+* **Firefox**: View Certificates → Authorities (or Servers, for option C) → select it → Delete.
 
 ## 4. Check from your workstation
 

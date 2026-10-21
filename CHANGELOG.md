@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+
+* **Safer certificates for the https front end.** New `tools/make-cert.sh`: a self-signed certificate for this host only (`CA:FALSE`), or a private CA limited by name constraints to your domain and network, with every `openssl` command printed (`--dry-run` to only print). The certificate docs now rank the options from least to most new trust (your organisation's CA, a public certificate, `make-cert.sh host`, `make-cert.sh ca`, the built-in CA as a lab shortcut), explain the built-in CA's risks, and add a fingerprint check before importing, per-account import as the default, and how to remove trust.
+
 ## 0.3.0 (2026-10-21)
 
 * New Overview tiles: **VM disk size** (median and average provisioned disk per VM) and **Idle VMs** (running VMs whose CPU never went above 5% in 24 hours; VME reports about 2% even for an idle VM, so the threshold sits above that), with an idle-candidates list on the VMs dashboard.

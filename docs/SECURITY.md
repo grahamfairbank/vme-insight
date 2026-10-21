@@ -24,6 +24,17 @@ vme-insight only reads from VME. It holds a credential for your virtualization m
 | 9090 | Prometheus | No | Internal. A commented `127.0.0.1` mapping is available. |
 | 9100, 9177 on HVM hosts | Exporters | Only if you install them | No authentication. Bind to the management IP and firewall to the vme-insight host. |
 
+## Certificates for the https front end
+
+Browsers that show the plugin tabs must trust the front end's certificate. Adding trust is the riskiest step in the whole setup, so the options are ordered from least to most new trust in [VME-PLUGIN](VME-PLUGIN.md#3-make-browsers-trust-the-certificate):
+
+1. A certificate from your organisation's CA, or a public one: nothing new to trust.
+2. `tools/make-cert.sh host`: a self-signed certificate for this host only (`CA:FALSE`), so it can't vouch for any other site.
+3. `tools/make-cert.sh ca`: your own CA, restricted by name constraints to your domain and network, with its key kept off the host.
+4. The built-in CA (`HTTPS_TLS=internal`): it can sign for **any** site and its key lives in a Docker volume. Lab use only.
+
+Whichever you use, check the SHA-256 fingerprint before importing, import for your own account rather than machine-wide where you can, and remove the trust when it's no longer needed. vme-insight never ships a certificate or key.
+
 ## Grafana users
 
 Anyone with Grafana **Editor** or **Admin** rights can run arbitrary read queries against the database through Explore. The database contains the full API objects (`raw` columns), including host names, IPs and user names, but **no VME credentials**. Give Editor rights only to people who could already see this in VME.

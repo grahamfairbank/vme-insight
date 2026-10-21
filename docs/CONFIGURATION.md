@@ -26,7 +26,7 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 | `HTTPS_HOSTNAME` | `localhost` | Name(s) users type for Grafana, space-separated; the certificate is issued for these |
 | `HTTPS_ALLOW` | `127.0.0.1/32` | Networks allowed through the https front end, space-separated CIDRs (quote the value). Everyone else gets 403. |
 | `HTTPS_LOG_LEVEL` | `INFO` | `DEBUG` logs every request and failed TLS handshakes, for troubleshooting |
-| `HTTPS_TLS` | `internal` | `internal` issues certificates from the front end's own CA. Or `/certs/<cert>.pem /certs/<key>.pem` for your own certificate in `https/certs/`. |
+| `HTTPS_TLS` | `internal` | `/certs/<cert> /certs/<key>` for a certificate in `https/certs/`: one from your organisation's CA, a public one, or one made with `tools/make-cert.sh`. `internal` (the default) makes the front end issue certificates from its own unrestricted CA: a lab shortcut only. See [Make browsers trust the certificate](VME-PLUGIN.md#3-make-browsers-trust-the-certificate) for the trade-offs. |
 | `DB_MEMORY` | `1GB` | Memory TimescaleDB tunes itself for on first start |
 | `PROM_RETENTION` | `90d` | How long Prometheus keeps exporter data |
 | `TZ` | `UTC` | Time zone for collector logs. Dashboards use the browser's time zone. |
