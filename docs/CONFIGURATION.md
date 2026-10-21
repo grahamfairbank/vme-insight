@@ -57,15 +57,21 @@ docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.c
 
 Import `vme-insight-root.crt` as a trusted root CA on each machine whose browser opens Grafana:
 
-* **Windows** (Edge, Chrome): use PowerShell **as Administrator**, in the folder holding the file. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
+* **Windows** (Edge, Chrome): use PowerShell, in the folder holding the file. Writing to the machine-wide store needs administrator rights, so the first command asks Windows to elevate: approve the **UAC** prompt (*Do you want to allow this app to make changes to your device?* → **Yes**). Without elevation, `Import-Certificate` fails with *Access is denied*. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
   ```powershell
-  # Trust the vme-insight root for every user on this machine
-  Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\LocalMachine\Root
+  # Trust the vme-insight root for every user on this machine.
+  # Opens an elevated PowerShell (approve the UAC prompt) and imports the file from the current folder.
+  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command',"Import-Certificate -FilePath '$PWD\vme-insight-root.crt' -CertStoreLocation Cert:\LocalMachine\Root"
+
+  # No administrator rights? Trust it for your account only. Edge and Chrome use this store too;
+  # Windows asks you to confirm installing a root certificate: click Yes.
+  Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\CurrentUser\Root
 
   # Check: should list "Caddy Local Authority - <year> ECC Root"
-  Get-ChildItem Cert:\LocalMachine\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List Subject, Thumbprint, NotAfter
+  Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List PSParentPath, Subject, Thumbprint, NotAfter
 
   # If it was imported before by double-clicking the file, remove the copy Windows filed as an intermediate
+  # (the LocalMachine part needs the elevated window; CurrentUser works in any window)
   Get-ChildItem Cert:\LocalMachine\CA, Cert:\CurrentUser\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
   ```
   Then close every browser window and reopen it.
