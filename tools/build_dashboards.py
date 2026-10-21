@@ -55,9 +55,13 @@ class Board:
         self.nid += 1
         self.y += 1
 
-    def add(self, p, w, h):
-        p["id"] = self.nid
-        self.nid += 1
+    def add(self, p, w, h, pid=None):
+        """Add a panel. pid fixes its id (for panels other tools link to); otherwise ids count up."""
+        if pid is None:
+            p["id"] = self.nid
+            self.nid += 1
+        else:
+            p["id"] = pid
         p["gridPos"] = self._place(w, h)
         p.setdefault("datasource", DS)
         self.panels.append(p)
@@ -341,20 +345,72 @@ VM_F = f"AND {f('cluster', 's.cluster_id')} AND {f('host', 's.host_id')}"
 VM_ONLY_F = VM_F + f" AND {f('vm', 's.id')}"
 
 
+# ------------------------------------------------------------------ tiles shared with the widget board
+def estate_tiles():
+    """Estate count tiles (VME Overview, Estate row). Fresh dicts on every call."""
+    cnt = "SELECT count(*) FROM servers s WHERE present AND kind = '{k}' {extra} " + f"AND {f('cluster', 's.cluster_id')}"
+    return {
+        "clusters": stat("Clusters", f"SELECT count(*) FROM clusters c WHERE present AND {f('cluster', 'c.id')}"),
+        "hosts": stat("Hosts", cnt.format(k="host", extra="")),
+        "vms": stat("VMs", cnt.format(k="vm", extra="")),
+        "vms_running": stat("VMs running", cnt.format(k="vm", extra="AND power_state = 'on'"), color="green"),
+        "vms_stopped": stat("VMs stopped", cnt.format(k="vm", extra="AND power_state <> 'on'"), color="text"),
+        "datastores": stat("Datastores", "SELECT count(*) FROM datastores WHERE present"),
+        "alarms": stat("Active alarms", "SELECT count(*) FROM alarms WHERE active AND present",
+                       thresholds=[{"color": "green", "value": None}, {"color": "red", "value": 1}]),
+        "manager": stat("VME manager", "SELECT build_version AS version FROM appliance", text=True, color="text"),
+    }
+
+
+def contention_tiles():
+    """CPU ready tiles (VME Overview, CPU contention row). Fresh dicts on every call."""
+    vmw = VM_F
+    ready_now = lambda metric, agg: f"""
+        SELECT {agg} FROM (SELECT last(m.value, m.time) AS v FROM metrics m JOIN servers s ON s.id = m.entity_id
+          WHERE m.time > now() - INTERVAL '15 minutes' AND m.entity_type = 'vm' AND m.metric = '{metric}' {vmw}
+          GROUP BY m.entity_id) x"""
+    return {
+        "worst_vm_ready": stat("Worst VM CPU ready", ready_now("cpu_ready_pct", "max(v)"), "percent", thresholds=READY_TILE_STEPS,
+                               desc=READY_GUIDE + "\n\nThis tile: the highest per-VM average right now."),
+        "worst_vcpu_ready": stat("Worst single vCPU ready", ready_now("cpu_ready_max_vcpu_pct", "max(v)"), "percent", thresholds=READY_TILE_STEPS,
+                                 desc=READY_GUIDE + "\n\nThis tile: the most-starved individual vCPU of any VM. One busy vCPU can hide inside a VM's average."),
+        "vms_ready_5_10": stat("VMs at 5 to 10% ready", ready_now("cpu_ready_pct", "count(*) FILTER (WHERE v >= 5 AND v < 10)"),
+                               thresholds=[{"color": "green", "value": None}, {"color": "#EAB839", "value": 1}],
+                               desc=READY_GUIDE + "\n\nThis tile: running VMs in the contention band."),
+        "vms_ready_over_10": stat("VMs over 10% ready", ready_now("cpu_ready_pct", "count(*) FILTER (WHERE v >= 10)"),
+                                  thresholds=[{"color": "green", "value": None}, {"color": "red", "value": 1}],
+                                  desc=READY_GUIDE + "\n\nThis tile: running VMs that are noticeably slowed."),
+    }
+
+
+# Panel ids of the widget board are a contract with embedders such as the vme-insight VME plugin:
+# never renumber or reuse them. Add new tiles with new ids.
+WIDGET_TILES = [  # (panel id, tile key, width)
+    (1, "clusters", 3), (2, "hosts", 3), (3, "vms", 3), (4, "vms_running", 3),
+    (5, "vms_stopped", 3), (6, "datastores", 3), (7, "alarms", 3), (8, "manager", 3),
+    (9, "worst_vm_ready", 6), (10, "worst_vcpu_ready", 6), (11, "vms_ready_5_10", 6), (12, "vms_ready_over_10", 6),
+]
+
+
+def widget_board():
+    """Single tiles for embedding (Grafana /d-solo/vme-widget?panelId=N), with ids that never change."""
+    hidden = lambda v: {**v, "hide": 2}
+    b = Board("vme-widget", "VME Summary tiles (for embedding)", ["embed"],
+              variables=[hidden(CLUSTER_VAR), hidden(HOST_VAR)])
+    tiles = {**estate_tiles(), **contention_tiles()}
+    for pid, key, w in WIDGET_TILES:
+        b.add(tiles[key], w, 4, pid=pid)
+    b.nid = max(pid for pid, _, _ in WIDGET_TILES) + 1
+    return b
+
+
 # ------------------------------------------------------------------ overview
 def overview():
     b = Board("vme-overview", "VME Overview", ["overview"], variables=[CLUSTER_VAR, HOST_VAR, TOPN_VAR])
     b.row("Estate")
-    cnt = "SELECT count(*) FROM servers s WHERE present AND kind = '{k}' {extra} " + f"AND {f('cluster', 's.cluster_id')}"
-    b.add(stat("Clusters", f"SELECT count(*) FROM clusters c WHERE present AND {f('cluster', 'c.id')}"), 3, 4)
-    b.add(stat("Hosts", cnt.format(k="host", extra="")), 3, 4)
-    b.add(stat("VMs", cnt.format(k="vm", extra="")), 3, 4)
-    b.add(stat("VMs running", cnt.format(k="vm", extra="AND power_state = 'on'"), color="green"), 3, 4)
-    b.add(stat("VMs stopped", cnt.format(k="vm", extra="AND power_state <> 'on'"), color="text"), 3, 4)
-    b.add(stat("Datastores", "SELECT count(*) FROM datastores WHERE present"), 3, 4)
-    b.add(stat("Active alarms", "SELECT count(*) FROM alarms WHERE active AND present",
-               thresholds=[{"color": "green", "value": None}, {"color": "red", "value": 1}]), 3, 4)
-    b.add(stat("VME manager", "SELECT build_version AS version FROM appliance", text=True, color="text"), 3, 4)
+    t = estate_tiles()
+    for name in ("clusters", "hosts", "vms", "vms_running", "vms_stopped", "datastores", "alarms", "manager"):
+        b.add(t[name], 3, 4)
 
     b.row("Cluster capacity")
     cl = "clusters c ON c.id = m.entity_id"
@@ -419,20 +475,9 @@ def overview():
 
     b.row("CPU contention")
     vmw = VM_F
-    ready_now = lambda metric, agg: f"""
-        SELECT {agg} FROM (SELECT last(m.value, m.time) AS v FROM metrics m JOIN servers s ON s.id = m.entity_id
-          WHERE m.time > now() - INTERVAL '15 minutes' AND m.entity_type = 'vm' AND m.metric = '{metric}' {vmw}
-          GROUP BY m.entity_id) x"""
-    b.add(stat("Worst VM CPU ready", ready_now("cpu_ready_pct", "max(v)"), "percent", thresholds=READY_TILE_STEPS,
-               desc=READY_GUIDE + "\n\nThis tile: the highest per-VM average right now."), 6, 4)
-    b.add(stat("Worst single vCPU ready", ready_now("cpu_ready_max_vcpu_pct", "max(v)"), "percent", thresholds=READY_TILE_STEPS,
-               desc=READY_GUIDE + "\n\nThis tile: the most-starved individual vCPU of any VM. One busy vCPU can hide inside a VM's average."), 6, 4)
-    b.add(stat("VMs at 5 to 10% ready", ready_now("cpu_ready_pct", "count(*) FILTER (WHERE v >= 5 AND v < 10)"),
-               thresholds=[{"color": "green", "value": None}, {"color": "#EAB839", "value": 1}],
-               desc=READY_GUIDE + "\n\nThis tile: running VMs in the contention band."), 6, 4)
-    b.add(stat("VMs over 10% ready", ready_now("cpu_ready_pct", "count(*) FILTER (WHERE v >= 10)"),
-               thresholds=[{"color": "green", "value": None}, {"color": "red", "value": 1}],
-               desc=READY_GUIDE + "\n\nThis tile: running VMs that are noticeably slowed."), 6, 4)
+    t = contention_tiles()
+    for name in ("worst_vm_ready", "worst_vcpu_ready", "vms_ready_5_10", "vms_ready_over_10"):
+        b.add(t[name], 6, 4)
 
     b.row("Top VMs")
     b.add(bargauge("Top VMs by CPU", latest_metric("vm", "cpu_pct", where=vmw, limit="$topn"), steps=CPU_STEPS, desc=CPU_DESC), 8, 10)
@@ -1138,7 +1183,8 @@ def main():
     for fn, name in ((overview, "vme-overview"), (hosts, "vme-hosts"), (vms, "vme-vms"),
                      (lifecycle_board, "vme-lifecycle"), (health, "vme-health"),
                      (hvm_hosts, "vme-hvm-hosts"), (hvm_bottlenecks, "vme-hvm-bottlenecks"),
-                     (hvm_capacity, "vme-hvm-capacity"), (export_board, "vme-export")):
+                     (hvm_capacity, "vme-hvm-capacity"), (export_board, "vme-export"),
+                     (widget_board, "vme-widget")):
         (OUT / f"{name}.json").write_text(json.dumps(fn().json(), indent=2) + "\n")
         print(f"wrote {name}.json")
 

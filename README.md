@@ -23,8 +23,11 @@ VME's own UI shows current values but little history, and nothing about whether 
 | **VME HVM Bottlenecks** *(exporters)* | Prometheus | CPU/memory/I/O pressure (PSI), load per core, vCPU wait, swap and page faults, disk busy and latency, noisy neighbours, interface drops and errors |
 | **VME Data Export** | API → TimescaleDB | Pick kind, entities, metrics, time range and resolution, then download CSV: metric samples, hourly rollups, full inventory with lifecycle status, changes, alarms, activity, and any object's raw API record |
 | **VME HVM Capacity** *(exporters)* | Prometheus | vCPU:core ratio, memory allocated vs installed, idle cores, 30-day trends |
+| **VME Summary tiles** | API → TimescaleDB | Estate and CPU contention tiles with fixed ids, for embedding in other pages (used by the VME plugin) |
 
 Every dashboard works without the exporters except the three marked *(exporters)*. For big exports there's also a command-line tool; see [EXPORTS](docs/EXPORTS.md).
+
+**Inside VME too (optional).** The companion [vme-insight-plugin](https://github.com/grahamfairbank/vme-insight-plugin) adds a **vme-insight** tab to VME's host, VM, instance and cluster pages, showing these dashboards in place. vme-insight doesn't need it. Setup: [VME-PLUGIN](docs/VME-PLUGIN.md).
 
 ## A tour
 
@@ -155,6 +158,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 | [DATA-MODEL](docs/DATA-MODEL.md) | Tables, metric catalogue, example SQL, building your own panels |
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | Symptoms and fixes |
 | [SECURITY](docs/SECURITY.md) | Credentials, TLS, network exposure |
+| [VME-PLUGIN](docs/VME-PLUGIN.md) | *Optional:* show the dashboards inside the VME UI with vme-insight-plugin: https front end, anonymous viewing, certificates, plugin install |
 
 ## Requirements
 
@@ -162,6 +166,13 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 * About 250 MB of RAM. Disk: roughly 6 GB per 100 hosts + VMs at the default 90-day retention; see [DATA-MODEL](docs/DATA-MODEL.md#sizing).
 * A VME account with read access (see INSTALL).
 * Outbound HTTPS to `endoflife.date` for lifecycle data (optional).
+
+## Compatibility
+
+| vme-insight | VME | vme-insight-plugin (optional) |
+|---|---|---|
+| 0.2.0 (unreleased) | 9.1 or later | 0.1.0 or later |
+| 0.1.0 | 9.1 or later | Not supported (no https front end or anonymous viewing) |
 
 ## VME reference documentation
 

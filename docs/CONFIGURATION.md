@@ -33,61 +33,11 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 
 ### https front end
 
-An optional Caddy service (`https/Caddyfile`) that serves Grafana over https and only to the `HTTPS_ALLOW` networks. You need it to embed Grafana in https pages, for example with the [vme-insight VME plugin](https://github.com/grahamfairbank/vme-insight-plugin), because browsers block http frames inside https pages.
+An optional Caddy service (`--profile https`, configured by `https/Caddyfile`) that serves Grafana over https, and only to the `HTTPS_ALLOW` networks. It's needed to show Grafana inside https pages, such as VME's with the vme-insight VME plugin; browsers block http frames inside https pages. The `HTTPS_*` and `GRAFANA_*` settings above control it.
 
-```bash
-# in .env
-GRAFANA_BIND=127.0.0.1
-GRAFANA_ALLOW_EMBEDDING=true
-GRAFANA_ANONYMOUS=true
-GRAFANA_ROOT_URL=https://vme-insight.example.com:3443/
-GRAFANA_COOKIE_SECURE=true
-HTTPS_HOSTNAME=vme-insight.example.com
-HTTPS_ALLOW="10.20.0.0/16 192.168.13.0/24"
-
-docker compose up -d grafana
-docker compose --profile https up -d https
-```
-
-Grafana is then at `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>`. With `HTTPS_TLS=internal`, browsers trust it only after you install the front end's root certificate on the client machines:
-
-```bash
-docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.crt vme-insight-root.crt
-```
-
-Import `vme-insight-root.crt` as a trusted root CA on each machine whose browser opens Grafana:
-
-* **Windows** (Edge, Chrome): use PowerShell, in the folder holding `vme-insight-root.crt`. Pick one option. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
-
-  **Option 1: every user on the machine (needs administrator rights).** Writing to the machine-wide store needs an elevated PowerShell; in a normal window, `Import-Certificate` fails with *Access is denied*. This command opens an elevated window and runs the import there. Approve the **UAC** prompt (*Do you want to allow this app to make changes to your device?* → **Yes**):
-  ```powershell
-  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command',"Import-Certificate -FilePath '$PWD\vme-insight-root.crt' -CertStoreLocation Cert:\LocalMachine\Root"
-  ```
-
-  **Option 2: just your Windows account (no administrator rights needed).** Edge and Chrome trust this store too. Windows shows a security warning asking you to confirm installing a root certificate; click **Yes**:
-  ```powershell
-  Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\CurrentUser\Root
-  ```
-
-  **Check** that it landed in a Root store. It should list *Caddy Local Authority - &lt;year&gt; ECC Root*, under `LocalMachine\Root` (option 1) or `CurrentUser\Root` (option 2):
-  ```powershell
-  Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List PSParentPath, Subject, Thumbprint, NotAfter
-  ```
-
-  **Clean up** a copy left by an earlier double-click install, which Windows filed as an intermediate. Removing it from `LocalMachine\CA` needs the elevated window from option 1; `CurrentUser\CA` works in any window:
-  ```powershell
-  Get-ChildItem Cert:\LocalMachine\CA, Cert:\CurrentUser\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
-  ```
-
-  Then close every browser window and reopen it.
-* **macOS**: Keychain Access → System, import, then set it to **Always Trust**.
-* **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import.
-
-A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+The step-by-step setup, including how to make browsers trust the certificate, is in **[VME-PLUGIN](VME-PLUGIN.md)**.
 
 To see why a browser can't connect, start the front end with `HTTPS_LOG_LEVEL=DEBUG docker compose --profile https up -d https` and read `docker compose --profile https logs https`. `tls: unknown certificate` means that browser doesn't trust the certificate yet. Restart it without the variable afterwards.
-
-The allowlist uses the client's real address, which Docker keeps for published ports. Check from an allowed and a non-allowed machine: `curl -sk -o /dev/null -w '%{http_code}' https://<host>:3443/api/health` should give `200` and `403`.
 
 ## config.yaml
 

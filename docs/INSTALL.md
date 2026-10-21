@@ -164,6 +164,10 @@ docker compose exec -T timescaledb pg_restore -U vme -d vme --clean --if-exists 
 docker compose up -d
 ```
 
+## Optional: dashboards inside VME
+
+To show these dashboards on VME's own host, VM, instance and cluster pages, continue with **[VME-PLUGIN](VME-PLUGIN.md)**.
+
 ## Removing
 
 ```bash

@@ -154,6 +154,21 @@ The **Manager size vs HPE recommendation** table compares the manager's CPU core
 
 A dashboard laid out for CSV export: choose kind, entities, metrics, time range and resolution, then use **Inspect → Data → Download CSV** on any panel. It covers metric samples (long and wide format), hourly rollups, full inventory with lifecycle status, inventory changes, alarms, activity, and one object's raw API record. See [EXPORTS](EXPORTS.md), which also covers `tools/export_csv.py` for exports too big for a browser.
 
+## VME Summary tiles (for embedding)
+
+`vme-widget`: the estate and CPU contention tiles from VME Overview, one per panel, for showing single tiles in other pages (Grafana's `/d-solo/vme-widget?panelId=<id>`). The [VME plugin](VME-PLUGIN.md) uses it for its home dashboard. Cluster and host filters are hidden and default to All.
+
+Its panel ids are fixed, unlike other dashboards' ids, which follow build order. Pages that embed a tile can rely on them across vme-insight releases; new tiles get new ids.
+
+| ID | Tile | ID | Tile |
+|---|---|---|---|
+| 1 | Clusters | 7 | Active alarms |
+| 2 | Hosts | 8 | VME manager (version) |
+| 3 | VMs | 9 | Worst VM CPU ready |
+| 4 | VMs running | 10 | Worst single vCPU ready |
+| 5 | VMs stopped | 11 | VMs at 5 to 10% ready |
+| 6 | Datastores | 12 | VMs over 10% ready |
+
 ## Exporter dashboards
 
 These need the optional exporters ([EXPORTERS](EXPORTERS.md)). Their variables are **Estate** (the `source` label), **Cluster**, **Host** and **VM**.

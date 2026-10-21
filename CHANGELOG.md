@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.2.0 (unreleased)
+
+Support for showing the dashboards inside VME with the companion [vme-insight-plugin](https://github.com/grahamfairbank/vme-insight-plugin). Everything is optional; defaults are unchanged.
+
+* Optional https front end (`--profile https`, Caddy) with a network allowlist (`HTTPS_ALLOW`), its own certificate authority or your certificate (`HTTPS_TLS`), and `HTTPS_LOG_LEVEL` for troubleshooting.
+* Optional anonymous read-only viewing (`GRAFANA_ANONYMOUS`), `GRAFANA_BIND` to keep Grafana's own port on the Docker host, `GRAFANA_ROOT_URL`, `GRAFANA_COOKIE_SECURE`.
+* New **VME Summary tiles** dashboard (`vme-widget`) with fixed panel ids for embedding single tiles.
+* New guide [VME-PLUGIN](docs/VME-PLUGIN.md): end-to-end setup for the plugin, including trusting the certificate on Windows with PowerShell.
+
+## 0.1.0
 
 First version.
 
@@ -17,7 +26,6 @@ First version.
 * Fixed: manager memory percentages were shown as fractions.
 * README tour with screenshots (server names and IPs blurred in the browser before capture, data unedited) and `tools/screenshots.py` to regenerate them; community-project disclaimer.
 * Fixed: the VME manager's node_exporter was counted as an HVM host on the exporter dashboards.
-* Optional https front end (`--profile https`, Caddy) with a network allowlist, optional anonymous Viewer access and `GRAFANA_BIND`, for embedding Grafana in VME through the vme-insight VME plugin.
 * Manager "days until disk full" waits for a day of history instead of extrapolating from a few hours.
 * CSV exports: a **VME Data Export** dashboard (metric samples, hourly rollups, inventory, changes, alarms, activity, raw API records) and `tools/export_csv.py` for unlimited command-line exports.
 * Hourly rollups use real-time aggregation, so they include the current hour.
