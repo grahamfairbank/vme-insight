@@ -270,7 +270,9 @@ least 200 GB for the manager ([requirements]({HPE_REQUIREMENTS}))."""
 
 # days until a manager filesystem is full, from the last 7 days of free-space samples
 def mgr_days_to_full(path_sql):
+    # needs a day of samples: a trend from a few hours is noise, not a forecast
     return f"""(SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0
+                  AND max(m.time) - min(m.time) >= INTERVAL '1 day'
                   THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END
                 FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || {path_sql} || '.available'
                   AND m.time > now() - INTERVAL '7 days')"""
@@ -652,7 +654,7 @@ def health():
     b.add(stat("Days until disk full", f"""SELECT min({mgr_days_to_full("(f->>'path')")}) FROM appliance a,
         jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1""", "d",
                thresholds=[{"color": "red", "value": None}, {"color": "#EAB839", "value": 30}, {"color": "green", "value": 90}],
-               desc="At the growth rate of the last 7 days. Blank while usage isn't growing."), 4, 4)
+               desc="At the growth rate of the last 7 days. Blank until there's a day of history, or while usage isn't growing."), 4, 4)
     b.add(stat("System memory", am("memory.systemMemoryPercent"), "percent", thresholds=MEM_STEPS,
                desc="Memory used in the manager VM, including the database and OpenSearch/Elasticsearch. Some cache is normal."), 4, 4)
     b.add(stat("JVM memory", am("memory.memoryPercent"), "percent", thresholds=MEM_STEPS,
@@ -662,9 +664,9 @@ def health():
                desc="Steady or growing swap use on the manager means it needs more memory."), 4, 4)
     b.add(table("Manager filesystems (reported by VME)", MGR_FS_SQL,
         [unit_override("Size", "bytes"), unit_override("Used", "bytes"), unit_override("Free", "bytes"),
-         unit_override("Days to full", "d"), gauge_cell("Used %", MGR_DISK_STEPS)], desc=MGR_DISK_GUIDE), 12, 5)
+         unit_override("Days to full", "d"), gauge_cell("Used %", MGR_DISK_STEPS)], desc=MGR_DISK_GUIDE), 12, 6)
     b.add(table("Manager size vs HPE recommendation", MGR_SIZING_SQL,
-        [colored("Status", {"meets": "green", "below": "orange"})], desc=MGR_SIZING_DESC), 12, 5)
+        [colored("Status", {"meets": "green", "below": "orange"})], desc=MGR_SIZING_DESC), 12, 6)
     b.add(timeseries("Manager disk used % (amber 75, red 85)", f"""
         SELECT $__timeGroupAlias(time, $__interval), substr(metric, 12, length(metric) - 19) AS metric, avg(value) AS value
         FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric LIKE 'storage.fs.%.percent'
@@ -731,7 +733,8 @@ def health():
 
 # ================================================================== exporter (Prometheus) dashboards
 PROM = {"type": "prometheus", "uid": "vme-prom"}
-HOSTSEL = 'source=~"$source", cluster=~"$cluster", nodename=~"$host"'
+# job=~"hvm-.*": HVM hosts only (the VME manager has its own job, vme-manager)
+HOSTSEL = 'job=~"hvm-.*", source=~"$source", cluster=~"$cluster", nodename=~"$host"'
 VMSEL = HOSTSEL + ', domain=~"$domain"'
 DISK = 'device!~"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*"'
 NIC = 'device!~"lo|vnet.*|veth.*|tap.*|virbr.*|docker.*|br-.*|ovs.*|genev_sys.*|vxlan.*|vme.*"'
@@ -750,9 +753,9 @@ def pvar(name, label, query, include_all=True, multi=True):
 
 
 PROM_VARS = [
-    pvar("source", "Estate", "label_values(node_uname_info, source)"),
-    pvar("cluster", "Cluster", 'label_values(node_uname_info{source=~"$source"}, cluster)'),
-    pvar("host", "Host", 'label_values(node_uname_info{source=~"$source", cluster=~"$cluster"}, nodename)'),
+    pvar("source", "Estate", 'label_values(node_uname_info{job="hvm-node"}, source)'),
+    pvar("cluster", "Cluster", 'label_values(node_uname_info{job="hvm-node", source=~"$source"}, cluster)'),
+    pvar("host", "Host", 'label_values(node_uname_info{job="hvm-node", source=~"$source", cluster=~"$cluster"}, nodename)'),
     pvar("domain", "VM", 'label_values(libvirt_domain_info_state{source=~"$source", cluster=~"$cluster", nodename=~"$host"}, domain)'),
 ]
 

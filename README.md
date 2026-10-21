@@ -5,7 +5,10 @@ Performance history, capacity, inventory and lifecycle dashboards for **HPE Morp
 VME's own UI shows current values but little history, and nothing about whether guest operating systems are near end of life. vme-insight polls the VME API every minute and keeps the data in TimescaleDB. Grafana shows it in dashboards modelled on the popular [VMware vSphere Overview](https://grafana.com/grafana/dashboards/8159-vmware-vsphere-overview/) dashboard. An optional exporter layer adds kernel-level host and per-VM metrics (CPU ready/vCPU wait, pressure stall, disk latency, NIC drops) that the API does not expose.
 
 **Supported:** VME 9.1 and later (tested on 9.1.0.1 with HVM 2.0 clusters on Ubuntu 26.04 hosts).
-Not affiliated with or endorsed by HPE.
+
+> **Community project.** vme-insight is independent and community maintained. It is not affiliated with, endorsed, sponsored or supported by Hewlett Packard Enterprise, Morpheus Data, or any related organisation. See the [disclaimer](#disclaimer).
+
+![VME Overview: estate counts, cluster CPU, memory and storage, and their history](docs/images/hero.png)
 
 ## What you get
 
@@ -22,6 +25,88 @@ Not affiliated with or endorsed by HPE.
 | **VME HVM Capacity** *(exporters)* | Prometheus | vCPU:core ratio, memory allocated vs installed, idle cores, 30-day trends |
 
 Every dashboard works without the exporters except the three marked *(exporters)*. For big exports there's also a command-line tool; see [EXPORTS](docs/EXPORTS.md).
+
+## A tour
+
+Screenshots are from a three-host VME 9.1 lab running real workloads. Server names and IP addresses are blurred; nothing else is edited. The same tool that took them is in the repo ([`tools/screenshots.py`](tools/screenshots.py)), so you can capture your own.
+
+### Guidance where you need it
+
+The dashboards don't just show numbers; they say what's normal and what to do. Thresholds follow VME's own alarm defaults and HPE's documentation, and every panel with a judgement call has an ⓘ tooltip explaining it.
+
+| CPU ready: what it means and what to do | Manager disk: why 85% matters, and how to free space |
+|---|---|
+| ![CPU ready panel with its guidance tooltip open](docs/images/tip-cpu-ready.png) | ![Manager disk tile with its guidance tooltip open](docs/images/tip-manager-disk.png) |
+
+| Is the manager sized as HPE recommends? | Can the cluster survive losing a host? |
+|---|---|
+| ![Manager size compared with HPE's recommendation](docs/images/manager-resources.png) | ![N+1 failover capacity with its tooltip open](docs/images/tip-n-plus-1.png) |
+
+The vCPU-wait view on the bottleneck dashboard measures the same contention as CPU ready, from the kernel. Its tooltip explains when to trust which:
+
+![Top VMs by vCPU wait with its guidance tooltip open](docs/images/tip-vcpu-wait.png)
+
+### Contention at a glance
+
+The Overview turns CPU ready into four tiles: worst VM, worst single vCPU (which a VM's average can hide), and how many VMs are in the contention or slowdown bands.
+
+![CPU contention tiles](docs/images/cpu-contention.png)
+
+### Inventory and lifecycle
+
+Every host and VM, with its OS release, end-of-life date, latest point release, Morpheus agent version and QEMU guest agent status, worst first. Lifecycle data comes from endoflife.date and refreshes daily.
+
+![OS and agent currency](docs/images/lifecycle-table.png)
+
+### Storage
+
+Datastores from VME, and, with the optional exporters, every filesystem on every host. Shared datastores show their VME names instead of `/mnt/<uuid>` paths, with days-to-full and read-only detection.
+
+![Datastore usage and details](docs/images/datastores.png)
+
+![Host filesystems from node_exporter](docs/images/host-filesystems.png)
+
+### Bottlenecks and capacity (optional exporters)
+
+Kernel-level pressure stall information (PSI), load per core and vCPU wait show contention before users notice. Capacity shows vCPU-to-core and memory-allocated ratios per host.
+
+![CPU pressure, load per core, host CPU and vCPU wait](docs/images/bottlenecks-cpu.png)
+
+![Capacity per host](docs/images/capacity-table.png)
+
+### Every dashboard
+
+<details>
+<summary>Full-page screenshots of all nine dashboards</summary>
+
+**VME Overview**: estate, cluster capacity, N+1 headroom, hosts, datastores, manager, CPU contention, top VMs, fleet
+![VME Overview](docs/images/overview.png)
+
+**VME Hosts**: inventory, CPU, CPU ready, memory, swap, network, local storage, filesystems, N+1, vCPU:core
+![VME Hosts](docs/images/hosts.png)
+
+**VME Virtual Machines**: CPU, memory, disk, network, IOPS, CPU ready (average and worst vCPU), power, inventory
+![VME Virtual Machines](docs/images/vms.png)
+
+**VME Inventory & Lifecycle**: OS and agent currency, releases in use, unrecognised OS strings, change log
+![VME Inventory & Lifecycle](docs/images/lifecycle.png)
+
+**VME Manager & Collector**: alarms, manager resources and size, services, database, RabbitMQ, Elasticsearch, manager VM detail, collector health
+![VME Manager & Collector](docs/images/manager.png)
+
+**VME HVM Hosts & VMs** *(exporters)*: host table, disk IOPS and latency, NICs, filesystems, per-VM table, top VMs
+![VME HVM Hosts & VMs](docs/images/hvm-hosts.png)
+
+**VME HVM Bottlenecks** *(exporters)*: CPU, memory and I/O pressure, vCPU wait, swap, page faults, disk latency, noisy neighbours, drops
+![VME HVM Bottlenecks](docs/images/hvm-bottlenecks.png)
+
+**VME HVM Capacity** *(exporters)*: allocation per host, vCPU:core, memory allocated, filesystems near full, trends
+![VME HVM Capacity](docs/images/hvm-capacity.png)
+
+**VME Data Export**: pick kind, entities, metrics, range and resolution; download CSV from any panel
+![VME Data Export](docs/images/export.png)
+
+</details>
 
 ## How it works
 
@@ -96,6 +181,16 @@ HPE's documentation for Morpheus and VM Essentials is published at [HewlettPacka
 | QEMU guest agent, CPU ready metric (9.1.0) | [Guest OS notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/guest_os_notes.rst), [9.1.0 release notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/release_notes/9_1_0.rst) |
 
 Links point at the `dev-9.1` branch, matching the supported release. Where these pages and vme-insight disagree, HPE's documentation describes VME's behaviour.
+
+## Disclaimer
+
+vme-insight is an independent, community-maintained open-source project.
+
+* It is **not affiliated with, endorsed, sponsored or supported by** Hewlett Packard Enterprise (HPE), Morpheus Data, or any of their subsidiaries or affiliates, nor by Grafana Labs, Timescale, the Prometheus or endoflife.date projects, or any other organisation whose products it works with.
+* HPE, Morpheus, VM Essentials, HVM and other product names are trademarks of their respective owners. They are used here only to describe what the software works with.
+* It is **not an HPE product and not covered by HPE support**. Please don't raise HPE support cases about vme-insight; use this repository's issues instead.
+* It reads from VME and, if you install the optional exporters, adds two small read-only services to your hosts. Check your HPE support terms before installing anything on hypervisors or the VME manager.
+* It is provided "as is", without warranty of any kind. See [LICENSE](LICENSE).
 
 ## Credits
 

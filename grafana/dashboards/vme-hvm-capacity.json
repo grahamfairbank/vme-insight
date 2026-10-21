@@ -27,11 +27,11 @@
           "uid": "vme-prom"
         },
         "query": {
-          "query": "label_values(node_uname_info, source)",
+          "query": "label_values(node_uname_info{job=\"hvm-node\"}, source)",
           "refId": "source",
           "qryType": 1
         },
-        "definition": "label_values(node_uname_info, source)",
+        "definition": "label_values(node_uname_info{job=\"hvm-node\"}, source)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
@@ -56,11 +56,11 @@
           "uid": "vme-prom"
         },
         "query": {
-          "query": "label_values(node_uname_info{source=~\"$source\"}, cluster)",
+          "query": "label_values(node_uname_info{job=\"hvm-node\", source=~\"$source\"}, cluster)",
           "refId": "cluster",
           "qryType": 1
         },
-        "definition": "label_values(node_uname_info{source=~\"$source\"}, cluster)",
+        "definition": "label_values(node_uname_info{job=\"hvm-node\", source=~\"$source\"}, cluster)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
@@ -85,11 +85,11 @@
           "uid": "vme-prom"
         },
         "query": {
-          "query": "label_values(node_uname_info{source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
+          "query": "label_values(node_uname_info{job=\"hvm-node\", source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
           "refId": "host",
           "qryType": 1
         },
-        "definition": "label_values(node_uname_info{source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
+        "definition": "label_values(node_uname_info{job=\"hvm-node\", source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
@@ -144,7 +144,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "max by (nodename) (count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "expr": "max by (nodename) (count by (nodename) (node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -157,7 +157,7 @@
             "uid": "vme-prom"
           },
           "refId": "B",
-          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)))",
+          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_virtual_cpus{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -170,7 +170,7 @@
             "uid": "vme-prom"
           },
           "refId": "C",
-          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_virtual_cpus{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / count by (nodename) (node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -183,7 +183,7 @@
             "uid": "vme-prom"
           },
           "refId": "D",
-          "expr": "max by (nodename) (count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}) * avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval])))",
+          "expr": "max by (nodename) (count by (nodename) (node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}) * avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval])))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -196,7 +196,7 @@
             "uid": "vme-prom"
           },
           "refId": "E",
-          "expr": "max by (nodename) (node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "expr": "max by (nodename) (node_memory_MemTotal_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -209,7 +209,7 @@
             "uid": "vme-prom"
           },
           "refId": "F",
-          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)))",
+          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -222,7 +222,7 @@
             "uid": "vme-prom"
           },
           "refId": "G",
-          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / on (nodename) node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "expr": "max by (nodename) (sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / on (nodename) node_memory_MemTotal_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -235,7 +235,7 @@
             "uid": "vme-prom"
           },
           "refId": "H",
-          "expr": "max by (nodename) (node_memory_MemAvailable_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "expr": "max by (nodename) (node_memory_MemAvailable_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -403,7 +403,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "topk(15, sum by (nodename) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "expr": "topk(15, sum by (nodename) (libvirt_domain_info_virtual_cpus{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / count by (nodename) (node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
           "legendFormat": "{{nodename}}",
           "instant": true,
           "range": false,
@@ -476,7 +476,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "topk(15, 100 * sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / on (nodename) node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "expr": "topk(15, 100 * sum by (nodename) (libvirt_domain_info_maximum_memory_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} and on (nodename, domain) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)) / on (nodename) node_memory_MemTotal_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
           "legendFormat": "{{nodename}}",
           "instant": true,
           "range": false,
@@ -550,7 +550,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "bottomk(15, node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400)",
+          "expr": "bottomk(15, node_filesystem_avail_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400)",
           "legendFormat": "{{nodename}} {{mountpoint}}",
           "instant": true,
           "range": false,
@@ -637,7 +637,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "100 * (1 - avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval])))",
+          "expr": "100 * (1 - avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval])))",
           "legendFormat": "{{nodename}}",
           "instant": false,
           "range": true,
@@ -706,7 +706,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "100 * (1 - node_memory_MemAvailable_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} / node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} / node_memory_MemTotal_bytes{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
           "legendFormat": "{{nodename}}",
           "instant": false,
           "range": true,
@@ -775,7 +775,7 @@
             "uid": "vme-prom"
           },
           "refId": "A",
-          "expr": "count by (nodename) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)",
+          "expr": "count by (nodename) (libvirt_domain_info_state{job=~\"hvm-.*\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1)",
           "legendFormat": "{{nodename}}",
           "instant": false,
           "range": true,

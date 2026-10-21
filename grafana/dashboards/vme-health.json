@@ -358,7 +358,7 @@
     {
       "type": "stat",
       "title": "Days until disk full",
-      "description": "At the growth rate of the last 7 days. Blank while usage isn't growing.",
+      "description": "At the growth rate of the last 7 days. Blank until there's a day of history, or while usage isn't growing.",
       "targets": [
         {
           "datasource": {
@@ -369,7 +369,7 @@
           "rawQuery": true,
           "editorMode": "code",
           "format": "table",
-          "rawSql": "SELECT min((SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days')) FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1"
+          "rawSql": "SELECT min((SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 AND max(m.time) - min(m.time) >= INTERVAL '1 day' THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days')) FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1"
         }
       ],
       "fieldConfig": {
@@ -641,7 +641,7 @@
           "rawQuery": true,
           "editorMode": "code",
           "format": "table",
-          "rawSql": "SELECT f->>'path' AS \"Mount\", f->>'name' AS \"Device\", (f->>'total')::bigint AS \"Size\", (f->>'used')::bigint AS \"Used\", (f->>'available')::bigint AS \"Free\", (f->>'percent')::numeric AS \"Used %\", (SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days') AS \"Days to full\" FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1 ORDER BY 6 DESC"
+          "rawSql": "SELECT f->>'path' AS \"Mount\", f->>'name' AS \"Device\", (f->>'total')::bigint AS \"Size\", (f->>'used')::bigint AS \"Used\", (f->>'available')::bigint AS \"Free\", (f->>'percent')::numeric AS \"Used %\", (SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 AND max(m.time) - min(m.time) >= INTERVAL '1 day' THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days') AS \"Days to full\" FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1 ORDER BY 6 DESC"
         }
       ],
       "fieldConfig": {
@@ -761,7 +761,7 @@
         "x": 0,
         "y": 21,
         "w": 12,
-        "h": 5
+        "h": 6
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -840,7 +840,7 @@
         "x": 12,
         "y": 21,
         "w": 12,
-        "h": 5
+        "h": 6
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -925,7 +925,7 @@
       "id": 13,
       "gridPos": {
         "x": 0,
-        "y": 26,
+        "y": 27,
         "w": 24,
         "h": 6
       },
@@ -941,7 +941,7 @@
       "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 33,
         "w": 24,
         "h": 1
       },
@@ -1021,7 +1021,7 @@
       "id": 15,
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 34,
         "w": 6,
         "h": 7
       },
@@ -1088,7 +1088,7 @@
       "id": 16,
       "gridPos": {
         "x": 6,
-        "y": 33,
+        "y": 34,
         "w": 18,
         "h": 7
       },
@@ -1154,7 +1154,7 @@
       "id": 17,
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 41,
         "w": 8,
         "h": 7
       },
@@ -1220,7 +1220,7 @@
       "id": 18,
       "gridPos": {
         "x": 8,
-        "y": 40,
+        "y": 41,
         "w": 8,
         "h": 7
       },
@@ -1287,7 +1287,7 @@
       "id": 19,
       "gridPos": {
         "x": 16,
-        "y": 40,
+        "y": 41,
         "w": 8,
         "h": 7
       },
@@ -1352,7 +1352,7 @@
       "id": 20,
       "gridPos": {
         "x": 0,
-        "y": 47,
+        "y": 48,
         "w": 24,
         "h": 8
       },
@@ -1368,7 +1368,7 @@
       "id": 21,
       "gridPos": {
         "x": 0,
-        "y": 55,
+        "y": 56,
         "w": 24,
         "h": 1
       },
@@ -1438,7 +1438,7 @@
       "id": 22,
       "gridPos": {
         "x": 0,
-        "y": 56,
+        "y": 57,
         "w": 8,
         "h": 7
       }
@@ -1507,7 +1507,7 @@
       "id": 23,
       "gridPos": {
         "x": 8,
-        "y": 56,
+        "y": 57,
         "w": 8,
         "h": 7
       }
@@ -1601,7 +1601,7 @@
       "id": 24,
       "gridPos": {
         "x": 16,
-        "y": 56,
+        "y": 57,
         "w": 8,
         "h": 7
       }
@@ -1952,7 +1952,7 @@
       "id": 25,
       "gridPos": {
         "x": 0,
-        "y": 63,
+        "y": 64,
         "w": 24,
         "h": 9
       }
@@ -2041,7 +2041,7 @@
       "id": 26,
       "gridPos": {
         "x": 0,
-        "y": 72,
+        "y": 73,
         "w": 12,
         "h": 8
       }
@@ -2109,7 +2109,7 @@
       "id": 27,
       "gridPos": {
         "x": 12,
-        "y": 72,
+        "y": 73,
         "w": 12,
         "h": 8
       }
@@ -2190,7 +2190,7 @@
       "id": 28,
       "gridPos": {
         "x": 0,
-        "y": 80,
+        "y": 81,
         "w": 24,
         "h": 7
       }
@@ -2202,7 +2202,7 @@
       "id": 29,
       "gridPos": {
         "x": 0,
-        "y": 87,
+        "y": 88,
         "w": 24,
         "h": 1
       },
@@ -2278,7 +2278,7 @@
       "id": 30,
       "gridPos": {
         "x": 0,
-        "y": 88,
+        "y": 89,
         "w": 12,
         "h": 7
       },
@@ -2344,7 +2344,7 @@
       "id": 31,
       "gridPos": {
         "x": 12,
-        "y": 88,
+        "y": 89,
         "w": 12,
         "h": 7
       },
@@ -2389,7 +2389,7 @@
       "id": 32,
       "gridPos": {
         "x": 0,
-        "y": 95,
+        "y": 96,
         "w": 24,
         "h": 6
       },
@@ -2434,7 +2434,7 @@
       "id": 33,
       "gridPos": {
         "x": 0,
-        "y": 101,
+        "y": 102,
         "w": 12,
         "h": 5
       },
