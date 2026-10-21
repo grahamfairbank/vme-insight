@@ -1,0 +1,715 @@
+{
+  "uid": "vme-export",
+  "title": "VME Data Export",
+  "tags": [
+    "vme-insight",
+    "export",
+    "csv"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "kind",
+        "label": "Kind",
+        "query": "host,vm,cluster,datastore,appliance,summary",
+        "current": {
+          "text": "host",
+          "value": "host"
+        },
+        "multi": false,
+        "includeAll": false,
+        "options": [
+          {
+            "text": "host",
+            "value": "host",
+            "selected": true
+          },
+          {
+            "text": "vm",
+            "value": "vm",
+            "selected": false
+          },
+          {
+            "text": "cluster",
+            "value": "cluster",
+            "selected": false
+          },
+          {
+            "text": "datastore",
+            "value": "datastore",
+            "selected": false
+          },
+          {
+            "text": "appliance",
+            "value": "appliance",
+            "selected": false
+          },
+          {
+            "text": "summary",
+            "value": "summary",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "query",
+        "name": "entity",
+        "label": "Entity",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, entity_id AS __value FROM entity_names WHERE entity_type = '$kind' ORDER BY present DESC, name",
+        "definition": "SELECT name AS __text, entity_id AS __value FROM entity_names WHERE entity_type = '$kind' ORDER BY present DESC, name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "metric",
+        "label": "Metric",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT DISTINCT metric FROM metrics WHERE entity_type = '$kind' AND time > now() - INTERVAL '2 days' ORDER BY 1",
+        "definition": "metrics seen for this kind in the last 2 days",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "'__all__'",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "cpu_pct"
+          ],
+          "value": [
+            "cpu_pct"
+          ]
+        }
+      },
+      {
+        "type": "custom",
+        "name": "res",
+        "label": "Resolution",
+        "query": "1 minute,5 minutes,15 minutes,1 hour,1 day",
+        "current": {
+          "text": "5 minutes",
+          "value": "5 minutes"
+        },
+        "multi": false,
+        "includeAll": false,
+        "options": [
+          {
+            "text": "1 minute",
+            "value": "1 minute",
+            "selected": false
+          },
+          {
+            "text": "5 minutes",
+            "value": "5 minutes",
+            "selected": true
+          },
+          {
+            "text": "15 minutes",
+            "value": "15 minutes",
+            "selected": false
+          },
+          {
+            "text": "1 hour",
+            "value": "1 hour",
+            "selected": false
+          },
+          {
+            "text": "1 day",
+            "value": "1 day",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "vme-insight"
+      ],
+      "asDropdown": true,
+      "title": "VME dashboards",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "How to export",
+      "options": {
+        "mode": "markdown",
+        "content": "**Exporting a panel as CSV:** hover the panel, open its menu (\u22ee) and choose **Inspect \u2192 Data**, then **Download CSV**.\n\n* Pick what to export with the variables above and the **time range** at the top right. Every panel follows them.\n* **Formatted data** on: values with units (e.g. `12.3 GiB`). Off: raw numbers, best for spreadsheets and scripts.\n* **Download for Excel**: adds the byte-order mark Excel needs for non-ASCII names.\n* For the *one column per entity* panel, choose **Series joined by time** in Inspect \u2192 Data options.\n* Tables are capped at 200,000 rows. For bigger pulls use `tools/export_csv.py` on the vme-insight host (see docs/EXPORTS.md)."
+      },
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Time series",
+      "collapsed": false,
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Metric samples (long format: one row per time, entity, metric)",
+      "description": "Raw samples averaged into the chosen resolution, with min, max and sample count per bucket. Raw data is kept for retention.raw days (default 90); use the hourly rollup panel for older data.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT time_bucket(INTERVAL '$res', m.time) AS \"time\", m.entity_type AS \"kind\", e.name AS \"entity\", m.entity_id AS \"entity_id\", m.metric AS \"metric\", avg(m.value) AS \"avg\", min(m.value) AS \"min\", max(m.value) AS \"max\", count(*) AS \"samples\" FROM metrics m LEFT JOIN entity_names e ON e.entity_type = m.entity_type AND e.entity_id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = '$kind' AND (-1 IN ($entity) OR m.entity_id IN ($entity)) AND ('__all__' IN ($metric) OR m.metric IN ($metric)) GROUP BY 1, 2, 3, 4, 5 ORDER BY 1, 3, 5 LIMIT 200000"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "One column per entity (first selected metric)",
+      "description": "Wide layout for spreadsheets: in Inspect \u2192 Data options choose **Series joined by time** to get one column per entity and metric.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT time_bucket(INTERVAL '$res', m.time) AS \"time\", e.name || ' ' || m.metric AS metric, avg(m.value) AS value FROM metrics m LEFT JOIN entity_names e ON e.entity_type = m.entity_type AND e.entity_id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = '$kind' AND (-1 IN ($entity) OR m.entity_id IN ($entity)) AND ('__all__' IN ($metric) OR m.metric IN ($metric)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Hourly rollups (long-term: avg, min, max per hour)",
+      "description": "From the hourly continuous aggregate, kept for retention.hourly days (default 730). Use it for trends longer than the raw retention. The newest hour or two appear once the rollup refreshes.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT h.bucket AS \"hour\", h.entity_type AS \"kind\", e.name AS \"entity\", h.entity_id AS \"entity_id\", h.metric AS \"metric\", h.avg AS \"avg\", h.min AS \"min\", h.max AS \"max\", h.samples AS \"samples\" FROM metrics_hourly h LEFT JOIN entity_names e ON e.entity_type = h.entity_type AND e.entity_id = h.entity_id WHERE $__timeFilter(h.bucket) AND h.entity_type = '$kind' AND (-1 IN ($entity) OR h.entity_id IN ($entity)) AND ('__all__' IN ($metric) OR h.metric IN ($metric)) ORDER BY 1, 3, 5 LIMIT 200000"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Inventory (current)",
+      "collapsed": false,
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Hosts and VMs (full inventory with lifecycle status)",
+      "description": "Every current host and VM with its OS, agent and lifecycle status.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT s.id, s.kind, s.name, s.hostname, sc.cloud, sc.cluster, sc.host, s.power_state, s.status, s.ip_internal, s.ip_external, s.max_cores AS vcpu_or_cores, s.max_memory AS memory_bytes, s.max_storage AS storage_bytes, s.os_name, s.platform, s.platform_version, s.os_product, s.os_cycle, sc.os_status, sc.eol_date, sc.days_to_eol, sc.os_latest, s.agent_installed, s.agent_version, sc.agent_status, s.agent_last_update, s.guest_agent_status, s.maintenance, s.member_status, s.cpu_model, s.hw_vendor, s.hw_model, s.plan, s.source_image, s.type_code, s.date_created, s.first_seen, s.last_seen FROM servers s LEFT JOIN server_currency sc ON sc.id = s.id WHERE s.present ORDER BY s.kind, s.name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Datastores",
+      "description": "Current datastores.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT d.id, d.name, d.type, d.status, cl.name AS cluster, cd.name AS cloud, d.capacity_bytes, d.free_bytes, d.capacity_bytes - d.free_bytes AS used_bytes, round(100.0 * (d.capacity_bytes - d.free_bytes) / NULLIF(d.capacity_bytes, 0), 2) AS used_pct, d.raw->>'externalPath' AS host_mount_path, d.first_seen, d.last_seen FROM datastores d LEFT JOIN clusters cl ON cl.id = d.cluster_id LEFT JOIN clouds cd ON cd.id = d.cloud_id WHERE d.present ORDER BY d.name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Clusters, instances and networks",
+      "description": "Other current inventory objects.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT 'cluster' AS object, id, name, type_name AS type, status, layout AS detail, NULL::text AS owner FROM clusters WHERE present UNION ALL SELECT 'instance', id, name, instance_type, status, plan, owner FROM instances WHERE present UNION ALL SELECT 'network', id, name, type, status, cidr, NULL FROM networks WHERE present ORDER BY 1, 3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 42,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Events in the time range",
+      "collapsed": false,
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Inventory changes",
+      "description": "Every change to hosts and VMs: discovery, removal, power, OS, agent, size, host (migration) and more.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT time, entity_type AS kind, entity_id, name, field, old_value, new_value FROM inventory_changes WHERE $__timeFilter(time) ORDER BY time LIMIT 200000"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Alarms",
+      "description": "Alarms that were open at any point in the time range.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT start_date, last_seen, severity, name, resource_name, ref_type, ref_id, message, acknowledged, active FROM alarms WHERE start_date <= $__timeTo() AND last_seen >= $__timeFrom() ORDER BY start_date"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Activity",
+      "description": "VME's activity feed (provisioning, alerts, backups) as collected.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT ts, activity_type, object_type, name, message, user_name, success FROM activity WHERE $__timeFilter(ts) ORDER BY ts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 12,
+        "y": 57,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "One object, everything VME returns",
+      "collapsed": false,
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 64,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Raw API record of one object (secrets redacted)",
+      "description": "Every field VME's API returned for the object, as stored by the collector. With several entities (or All) selected, the first by name is shown. For the manager this is the /api/health document. Useful when a value on a dashboard looks wrong or to find fields that have no column yet.\n\nExport: panel menu \u2192 Inspect \u2192 Data \u2192 Download CSV.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH r AS (SELECT raw FROM ( SELECT name, raw FROM servers WHERE kind = '$kind' AND (-1 IN ($entity) OR id IN ($entity)) UNION ALL SELECT name, raw FROM clusters WHERE '$kind' = 'cluster' AND (-1 IN ($entity) OR id IN ($entity)) UNION ALL SELECT name, raw FROM datastores WHERE '$kind' = 'datastore' AND (-1 IN ($entity) OR id IN ($entity)) UNION ALL SELECT 'VME manager', health FROM appliance WHERE '$kind' = 'appliance') x ORDER BY name LIMIT 1) SELECT f.key AS field, f.value AS value FROM r, jsonb_each_text(r.raw) f ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 65,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

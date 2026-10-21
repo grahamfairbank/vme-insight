@@ -76,7 +76,7 @@ Each table has `present` (still returned by VME), `first_seen`, `last_seen` and 
 | `os_lifecycle` | OS release cycle | `product`, `cycle`, `release_date`, `support_date`, `eol_date`, `latest`, `lts` |
 | `collector_runs` | Collector task run | `time`, `task`, `ok`, `duration_ms`, `items`, `error` (30 days) |
 
-Views: `server_currency` (one row per present server with OS and agent status, see [LIFECYCLE](LIFECYCLE.md)) and `agent_target`. The function `version_key(text)` turns a version string into a comparable number array.
+Views: `entity_names` (a name for every `entity_type`/`entity_id` in `metrics`), `server_currency` (one row per present server with OS and agent status, see [LIFECYCLE](LIFECYCLE.md)) and `agent_target`. The function `version_key(text)` turns a version string into a comparable number array.
 
 ## Example queries
 

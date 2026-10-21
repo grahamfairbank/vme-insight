@@ -40,6 +40,9 @@ SELECT add_continuous_aggregate_policy('metrics_hourly',
   start_offset => INTERVAL '3 days', end_offset => INTERVAL '1 hour',
   schedule_interval => INTERVAL '30 minutes', if_not_exists => TRUE);
 -- @@
+-- real-time aggregation: queries also cover the newest hours not yet materialized
+ALTER MATERIALIZED VIEW metrics_hourly SET (timescaledb.materialized_only = false);
+-- @@
 
 -- ---------------------------------------------------------------- inventory
 CREATE TABLE IF NOT EXISTS appliance (
@@ -240,3 +243,11 @@ LEFT JOIN servers  h  ON h.id  = s.host_id
 LEFT JOIN clouds   cd ON cd.id = s.cloud_id
 LEFT JOIN os_lifecycle l ON l.product = s.os_product AND lower(l.cycle) = lower(s.os_cycle)
 WHERE s.present;
+-- @@
+-- One name per (entity_type, entity_id), so any metric row can be labelled without knowing its table.
+CREATE OR REPLACE VIEW entity_names AS
+SELECT kind AS entity_type, id AS entity_id, name, present FROM servers
+UNION ALL SELECT 'cluster', id, name, present FROM clusters
+UNION ALL SELECT 'datastore', id, name, present FROM datastores
+UNION ALL SELECT 'appliance', 0, 'VME manager', true
+UNION ALL SELECT 'summary', 0, 'estate totals', true;

@@ -18,9 +18,10 @@ Not affiliated with or endorsed by HPE.
 | **VME Manager & Collector** | API → TimescaleDB | Alarms, manager CPU/JVM/system memory, filesystems, database connections, RabbitMQ backlog, Elasticsearch, collector run history and errors, database size |
 | **VME HVM Hosts & VMs** *(exporters)* | Prometheus | Host table, disk IOPS and latency, physical NIC traffic, per-VM table with vCPU wait, RSS, IOPS and traffic, top-10 charts |
 | **VME HVM Bottlenecks** *(exporters)* | Prometheus | CPU/memory/I/O pressure (PSI), load per core, vCPU wait, swap and page faults, disk busy and latency, noisy neighbours, interface drops and errors |
+| **VME Data Export** | API → TimescaleDB | Pick kind, entities, metrics, time range and resolution, then download CSV: metric samples, hourly rollups, full inventory with lifecycle status, changes, alarms, activity, and any object's raw API record |
 | **VME HVM Capacity** *(exporters)* | Prometheus | vCPU:core ratio, memory allocated vs installed, idle cores, 30-day trends |
 
-Every dashboard works without the exporters except the three marked *(exporters)*.
+Every dashboard works without the exporters except the three marked *(exporters)*. For big exports there's also a command-line tool; see [EXPORTS](docs/EXPORTS.md).
 
 ## How it works
 
@@ -65,6 +66,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 | [DASHBOARDS](docs/DASHBOARDS.md) | Every panel, what it means, and how it maps to the vSphere dashboard |
 | [EXPORTERS](docs/EXPORTERS.md) | Optional node and libvirt exporters on HVM hosts |
 | [LIFECYCLE](docs/LIFECYCLE.md) | How OS end of life, update and agent status are worked out |
+| [EXPORTS](docs/EXPORTS.md) | CSV exports from Grafana and from the command line |
 | [DATA-MODEL](docs/DATA-MODEL.md) | Tables, metric catalogue, example SQL, building your own panels |
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | Symptoms and fixes |
 | [SECURITY](docs/SECURITY.md) | Credentials, TLS, network exposure |

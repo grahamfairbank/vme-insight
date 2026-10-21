@@ -136,6 +136,10 @@ The **Manager size vs HPE recommendation** table compares the manager's CPU core
 | Last run per task, Task duration, Recent errors | Collector health |
 | Database size | Size of the metrics hypertable and the whole database |
 
+## VME Data Export
+
+A dashboard laid out for CSV export: choose kind, entities, metrics, time range and resolution, then use **Inspect → Data → Download CSV** on any panel. It covers metric samples (long and wide format), hourly rollups, full inventory with lifecycle status, inventory changes, alarms, activity, and one object's raw API record. See [EXPORTS](EXPORTS.md), which also covers `tools/export_csv.py` for exports too big for a browser.
+
 ## Exporter dashboards
 
 These need the optional exporters ([EXPORTERS](EXPORTERS.md)). Their variables are **Estate** (the `source` label), **Cluster**, **Host** and **VM**.

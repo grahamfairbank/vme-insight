@@ -1014,12 +1014,128 @@ def hvm_capacity():
     return b
 
 
+# ------------------------------------------------------------------ data export
+EXPORT_HOWTO = """**Exporting a panel as CSV:** hover the panel, open its menu (⋮) and choose **Inspect → Data**, then **Download CSV**.
+
+* Pick what to export with the variables above and the **time range** at the top right. Every panel follows them.
+* **Formatted data** on: values with units (e.g. `12.3 GiB`). Off: raw numbers, best for spreadsheets and scripts.
+* **Download for Excel**: adds the byte-order mark Excel needs for non-ASCII names.
+* For the *one column per entity* panel, choose **Series joined by time** in Inspect → Data options.
+* Tables are capped at 200,000 rows. For bigger pulls use `tools/export_csv.py` on the vme-insight host (see docs/EXPORTS.md)."""
+
+KIND_VAR = {"type": "custom", "name": "kind", "label": "Kind", "query": "host,vm,cluster,datastore,appliance,summary",
+            "current": {"text": "host", "value": "host"}, "multi": False, "includeAll": False,
+            "options": [{"text": k, "value": k, "selected": k == "host"}
+                        for k in ("host", "vm", "cluster", "datastore", "appliance", "summary")]}
+ENTITY_VAR = qvar("entity", "Entity", """SELECT name AS __text, entity_id AS __value FROM entity_names
+    WHERE entity_type = '$kind' ORDER BY present DESC, name""")
+METRIC_VAR = {"type": "query", "name": "metric", "label": "Metric", "datasource": DS,
+              "query": "SELECT DISTINCT metric FROM metrics WHERE entity_type = '$kind' AND time > now() - INTERVAL '2 days' ORDER BY 1",
+              "definition": "metrics seen for this kind in the last 2 days", "refresh": 2, "multi": True,
+              "includeAll": True, "allValue": "'__all__'", "sort": 1,
+              "current": {"selected": True, "text": ["cpu_pct"], "value": ["cpu_pct"]}}
+RES_VAR = {"type": "custom", "name": "res", "label": "Resolution",
+           "query": "1 minute,5 minutes,15 minutes,1 hour,1 day",
+           "current": {"text": "5 minutes", "value": "5 minutes"}, "multi": False, "includeAll": False,
+           "options": [{"text": v, "value": v, "selected": v == "5 minutes"}
+                       for v in ("1 minute", "5 minutes", "15 minutes", "1 hour", "1 day")]}
+
+EF = "(-1 IN ($entity) OR m.entity_id IN ($entity))"
+MF = "('__all__' IN ($metric) OR m.metric IN ($metric))"
+CSV_NOTE = "\n\nExport: panel menu → Inspect → Data → Download CSV."
+
+
+def export_board():
+    b = Board("vme-export", "VME Data Export", ["export", "csv"], refresh="", time_from="now-24h",
+              variables=[KIND_VAR, ENTITY_VAR, METRIC_VAR, RES_VAR])
+    b.add({"type": "text", "title": "How to export", "options": {"mode": "markdown", "content": EXPORT_HOWTO}}, 24, 6)
+
+    b.row("Time series")
+    b.add(table("Metric samples (long format: one row per time, entity, metric)", f"""
+        SELECT time_bucket(INTERVAL '$res', m.time) AS "time", m.entity_type AS "kind", e.name AS "entity",
+               m.entity_id AS "entity_id", m.metric AS "metric",
+               avg(m.value) AS "avg", min(m.value) AS "min", max(m.value) AS "max", count(*) AS "samples"
+        FROM metrics m LEFT JOIN entity_names e ON e.entity_type = m.entity_type AND e.entity_id = m.entity_id
+        WHERE $__timeFilter(m.time) AND m.entity_type = '$kind' AND {EF} AND {MF}
+        GROUP BY 1, 2, 3, 4, 5 ORDER BY 1, 3, 5 LIMIT 200000""",
+        desc="Raw samples averaged into the chosen resolution, with min, max and sample count per bucket. "
+             "Raw data is kept for retention.raw days (default 90); use the hourly rollup panel for older data." + CSV_NOTE), 24, 10)
+    b.add(timeseries("One column per entity (first selected metric)", f"""
+        SELECT time_bucket(INTERVAL '$res', m.time) AS "time", e.name || ' ' || m.metric AS metric, avg(m.value) AS value
+        FROM metrics m LEFT JOIN entity_names e ON e.entity_type = m.entity_type AND e.entity_id = m.entity_id
+        WHERE $__timeFilter(m.time) AND m.entity_type = '$kind' AND {EF} AND {MF}
+        GROUP BY 1, 2 ORDER BY 1""", "none", legend="table",
+        desc="Wide layout for spreadsheets: in Inspect → Data options choose **Series joined by time** to get one "
+             "column per entity and metric." + CSV_NOTE), 24, 8)
+    b.add(table("Hourly rollups (long-term: avg, min, max per hour)", f"""
+        SELECT h.bucket AS "hour", h.entity_type AS "kind", e.name AS "entity", h.entity_id AS "entity_id",
+               h.metric AS "metric", h.avg AS "avg", h.min AS "min", h.max AS "max", h.samples AS "samples"
+        FROM metrics_hourly h LEFT JOIN entity_names e ON e.entity_type = h.entity_type AND e.entity_id = h.entity_id
+        WHERE $__timeFilter(h.bucket) AND h.entity_type = '$kind'
+          AND (-1 IN ($entity) OR h.entity_id IN ($entity)) AND ('__all__' IN ($metric) OR h.metric IN ($metric))
+        ORDER BY 1, 3, 5 LIMIT 200000""",
+        desc="From the hourly continuous aggregate, kept for retention.hourly days (default 730). Use it for "
+             "trends longer than the raw retention. The newest hour or two appear once the rollup refreshes." + CSV_NOTE), 24, 8)
+
+    b.row("Inventory (current)")
+    b.add(table("Hosts and VMs (full inventory with lifecycle status)", """
+        SELECT s.id, s.kind, s.name, s.hostname, sc.cloud, sc.cluster, sc.host, s.power_state, s.status,
+               s.ip_internal, s.ip_external, s.max_cores AS vcpu_or_cores, s.max_memory AS memory_bytes,
+               s.max_storage AS storage_bytes, s.os_name, s.platform, s.platform_version, s.os_product, s.os_cycle,
+               sc.os_status, sc.eol_date, sc.days_to_eol, sc.os_latest, s.agent_installed, s.agent_version,
+               sc.agent_status, s.agent_last_update, s.guest_agent_status, s.maintenance, s.member_status,
+               s.cpu_model, s.hw_vendor, s.hw_model, s.plan, s.source_image, s.type_code, s.date_created,
+               s.first_seen, s.last_seen
+        FROM servers s LEFT JOIN server_currency sc ON sc.id = s.id WHERE s.present ORDER BY s.kind, s.name""",
+        desc="Every current host and VM with its OS, agent and lifecycle status." + CSV_NOTE), 24, 8)
+    b.add(table("Datastores", """
+        SELECT d.id, d.name, d.type, d.status, cl.name AS cluster, cd.name AS cloud, d.capacity_bytes, d.free_bytes,
+               d.capacity_bytes - d.free_bytes AS used_bytes,
+               round(100.0 * (d.capacity_bytes - d.free_bytes) / NULLIF(d.capacity_bytes, 0), 2) AS used_pct,
+               d.raw->>'externalPath' AS host_mount_path, d.first_seen, d.last_seen
+        FROM datastores d LEFT JOIN clusters cl ON cl.id = d.cluster_id LEFT JOIN clouds cd ON cd.id = d.cloud_id
+        WHERE d.present ORDER BY d.name""", desc="Current datastores." + CSV_NOTE), 12, 7)
+    b.add(table("Clusters, instances and networks", """
+        SELECT 'cluster' AS object, id, name, type_name AS type, status, layout AS detail, NULL::text AS owner FROM clusters WHERE present
+        UNION ALL SELECT 'instance', id, name, instance_type, status, plan, owner FROM instances WHERE present
+        UNION ALL SELECT 'network', id, name, type, status, cidr, NULL FROM networks WHERE present
+        ORDER BY 1, 3""", desc="Other current inventory objects." + CSV_NOTE), 12, 7)
+
+    b.row("Events in the time range")
+    b.add(table("Inventory changes", """
+        SELECT time, entity_type AS kind, entity_id, name, field, old_value, new_value
+        FROM inventory_changes WHERE $__timeFilter(time) ORDER BY time LIMIT 200000""",
+        desc="Every change to hosts and VMs: discovery, removal, power, OS, agent, size, host (migration) and more." + CSV_NOTE), 24, 7)
+    b.add(table("Alarms", """
+        SELECT start_date, last_seen, severity, name, resource_name, ref_type, ref_id, message, acknowledged, active
+        FROM alarms WHERE start_date <= $__timeTo() AND last_seen >= $__timeFrom() ORDER BY start_date""",
+        desc="Alarms that were open at any point in the time range." + CSV_NOTE), 12, 7)
+    b.add(table("Activity", """
+        SELECT ts, activity_type, object_type, name, message, user_name, success
+        FROM activity WHERE $__timeFilter(ts) ORDER BY ts""",
+        desc="VME's activity feed (provisioning, alerts, backups) as collected." + CSV_NOTE), 12, 7)
+
+    b.row("One object, everything VME returns")
+    b.add(table("Raw API record of one object (secrets redacted)", """
+        WITH r AS (SELECT raw FROM (
+          SELECT name, raw FROM servers WHERE kind = '$kind' AND (-1 IN ($entity) OR id IN ($entity))
+          UNION ALL SELECT name, raw FROM clusters WHERE '$kind' = 'cluster' AND (-1 IN ($entity) OR id IN ($entity))
+          UNION ALL SELECT name, raw FROM datastores WHERE '$kind' = 'datastore' AND (-1 IN ($entity) OR id IN ($entity))
+          UNION ALL SELECT 'VME manager', health FROM appliance WHERE '$kind' = 'appliance') x ORDER BY name LIMIT 1)
+        SELECT f.key AS field, f.value AS value
+        FROM r, jsonb_each_text(r.raw) f ORDER BY 1""",
+        desc="Every field VME's API returned for the object, as stored by the collector. With several entities "
+             "(or All) selected, the first by name is shown. For the manager this is the /api/health document. Useful when a value on a dashboard "
+             "looks wrong or to find fields that have no column yet." + CSV_NOTE), 24, 10)
+    return b
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for fn, name in ((overview, "vme-overview"), (hosts, "vme-hosts"), (vms, "vme-vms"),
                      (lifecycle_board, "vme-lifecycle"), (health, "vme-health"),
                      (hvm_hosts, "vme-hvm-hosts"), (hvm_bottlenecks, "vme-hvm-bottlenecks"),
-                     (hvm_capacity, "vme-hvm-capacity")):
+                     (hvm_capacity, "vme-hvm-capacity"), (export_board, "vme-export")):
         (OUT / f"{name}.json").write_text(json.dumps(fn().json(), indent=2) + "\n")
         print(f"wrote {name}.json")
 
