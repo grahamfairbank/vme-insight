@@ -40,8 +40,11 @@ The home page. It plays the same role as the vSphere Overview dashboard.
 | CPU contention | Worst VM CPU ready, worst single vCPU ready, VMs at 5 to 10% ready, VMs over 10% ready. Tiles turn amber and red at the thresholds below. |
 | Datastores | Used % per datastore, free space over time, and a table with type, status, size and used % |
 | VME manager | Manager CPU, JVM memory, system memory, storage, service status (database, Elasticsearch, RabbitMQ), clouds with last sync time, recent activity |
+| VM resource weight | Three treemaps: each VM is a rectangle sized and coloured by its share of the cluster's **CPU** (usage × vCPUs over all host cores), **allocated memory** (VME reserves a VM's whole allocation, so that's what it takes from the cluster) and **storage** (disk in use over the capacity of the datastores the VM's disks are on; includes stopped VMs). Labels show the share. Very small VMs can be too thin to see; hover for values. Needs the Treemap panel plugin, which Grafana installs on first start. |
 | Top VMs | Top N (picker) by CPU, memory and CPU ready. CPU and network of the busiest VMs over time. |
 | Fleet | **VM disk size**: median and average provisioned disk per VM (a median well below the average means a few very large VMs). **Idle VMs**: running VMs whose CPU never went above 5% in 24 hours, out of the running VMs assessed. Running vs stopped VMs over time, power state, OS families. |
+
+![VM resource weight treemaps](images/resource-weight.png)
 
 ### CPU ready guidance
 

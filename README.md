@@ -31,7 +31,7 @@ Every dashboard works without the exporters except the three marked *(exporters)
 
 ## A tour
 
-Screenshots are from a three-host VME 9.1 lab running real workloads. Server names and IP addresses are blurred; nothing else is edited. The same tool that took them is in the repo ([`tools/screenshots.py`](tools/screenshots.py)), so you can capture your own.
+Screenshots are from a three-host VME 9.1 lab running real workloads. Server names and IP addresses are blurred (in the treemaps, hidden); nothing else is edited. The same tool that took them is in the repo ([`tools/screenshots.py`](tools/screenshots.py)), so you can capture your own.
 
 ### Guidance where you need it
 
@@ -54,6 +54,12 @@ The vCPU-wait view on the bottleneck dashboard measures the same contention as C
 The Overview turns CPU ready into four tiles: worst VM, worst single vCPU (which a VM's average can hide), and how many VMs are in the contention or slowdown bands.
 
 ![CPU contention tiles](docs/images/cpu-contention.png)
+
+### Who's using the cluster
+
+Three treemaps show which VMs take the biggest share of the cluster's CPU, allocated memory and storage. Each VM is a rectangle sized and coloured by its share, labelled with its percentage.
+
+![CPU, memory and disk weight treemaps](docs/images/resource-weight.png)
 
 ### Right-sizing
 
@@ -90,7 +96,7 @@ Kernel-level pressure stall information (PSI), load per core and vCPU wait show 
 <details>
 <summary>Full-page screenshots of all nine dashboards</summary>
 
-**VME Overview**: estate, cluster capacity, N+1 headroom, hosts, datastores, manager, CPU contention, top VMs, fleet (VM disk size, idle VMs)
+**VME Overview**: estate, cluster capacity, N+1 headroom, hosts, datastores, manager, CPU contention, VM resource weight (treemaps), top VMs, fleet (VM disk size, idle VMs)
 ![VME Overview](docs/images/overview.png)
 
 **VME Hosts**: inventory, CPU, CPU ready, memory, swap, network, local storage, filesystems, N+1, vCPU:core
@@ -179,6 +185,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | vme-insight | VME | vme-insight-plugin (optional) |
 |---|---|---|
+| 0.4.0 | 9.1 or later | 0.1.0 or later |
 | 0.3.0 | 9.1 or later | 0.1.0 or later |
 | 0.2.0 | 9.1 or later | 0.1.0 or later |
 | 0.1.0 | 9.1 or later | Not supported (no https front end or anonymous viewing) |

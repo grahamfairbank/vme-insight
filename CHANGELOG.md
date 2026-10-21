@@ -1,7 +1,9 @@
 # Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2026-10-21)
 
+* **VM resource weight treemaps** on the Overview: CPU, allocated memory and storage share per VM, labelled with the share. Uses the Treemap panel by Grafana Labs (`marcusolsson-treemap-panel` 2.1.1, signed, pinned), installed by Grafana on first start; `GRAFANA_PLUGINS` and [offline installs](docs/INSTALL.md#offline-installs) documented.
+* Screenshot tool blurs only the sensitive part of a label (names inside longer text stay hidden while the rest stays readable), including SVG labels.
 * **Safer certificates for the https front end.** New `tools/make-cert.sh`: a self-signed certificate for this host only (`CA:FALSE`), or a private CA limited by name constraints to your domain and network, with every `openssl` command printed (`--dry-run` to only print). The certificate docs now rank the options from least to most new trust (your organisation's CA, a public certificate, `make-cert.sh host`, `make-cert.sh ca`, the built-in CA as a lab shortcut), explain the built-in CA's risks, and add a fingerprint check before importing, per-account import as the default, and how to remove trust.
 
 ## 0.3.0 (2026-10-21)

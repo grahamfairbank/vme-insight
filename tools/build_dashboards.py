@@ -221,6 +221,17 @@ def gauge_cell(field, steps, maxv=100):
         {"id": "custom.cellOptions", "value": {"type": "gauge", "mode": "basic"}}]}
 
 
+def treemap(title, sql, scheme, desc=""):
+    """Rectangles sized by the "share" column, labelled by "VM" (Treemap panel by Grafana Labs)."""
+    return {
+        "type": "marcusolsson-treemap-panel", "title": title, "description": desc,
+        "targets": [target(sql, "table")],
+        "fieldConfig": {"defaults": {"unit": "percent", "decimals": 2, "color": {"mode": scheme}}, "overrides": []},
+        "options": {"tiling": "treemapSquarify", "textField": "VM", "sizeField": "share", "colorByField": "share",
+                    "labelFields": []},
+    }
+
+
 def table(title, sql, overrides=(), desc="", sort=None):
     p = {
         "type": "table", "title": title, "description": desc, "targets": [target(sql, "table")],
@@ -348,6 +359,34 @@ def idle_vms_sql(where, select):
                      AND s.present AND s.power_state = 'on' {where}
                    GROUP BY 1 HAVING count(*) >= 10)
         {select}"""
+
+
+# Resource weight: each VM's current usage as a share of the cluster's capacity (latest VME sample).
+WEIGHT_HOSTS = "s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster))"
+WEIGHT_VMS = "v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster))"
+WEIGHT_CPU_SQL = f"""
+    WITH cap AS (SELECT sum(s.max_cores)::float AS total FROM servers s WHERE {WEIGHT_HOSTS})
+    SELECT v.name || ' · ' || to_char(100.0 * (v.raw->'stats'->>'cpuUsage')::float / 100.0 * v.max_cores / NULLIF(cap.total, 0), 'FM990.00') || '%' AS "VM",
+           100.0 * (v.raw->'stats'->>'cpuUsage')::float / 100.0 * v.max_cores / NULLIF(cap.total, 0) AS share
+    FROM servers v, cap WHERE {WEIGHT_VMS} AND v.power_state = 'on' AND (v.raw->'stats'->>'cpuUsage')::float > 0
+    ORDER BY 2 DESC"""
+WEIGHT_MEM_SQL = f"""
+    WITH cap AS (SELECT sum(s.max_memory)::float AS total FROM servers s WHERE {WEIGHT_HOSTS})
+    SELECT v.name || ' · ' || to_char(100.0 * v.max_memory::float / NULLIF(cap.total, 0), 'FM990.00') || '%' AS "VM",
+           100.0 * v.max_memory::float / NULLIF(cap.total, 0) AS share
+    FROM servers v, cap WHERE {WEIGHT_VMS} AND v.power_state = 'on' AND v.max_memory > 0
+    ORDER BY 2 DESC"""
+WEIGHT_DISK_SQL = f"""
+    WITH used_ds AS (SELECT DISTINCT (vol->'datastore'->>'id')::bigint AS id
+                     FROM servers v, jsonb_array_elements(v.raw->'volumes') vol WHERE {WEIGHT_VMS}),
+         cap AS (SELECT sum(d.capacity_bytes)::float AS total FROM datastores d JOIN used_ds USING (id) WHERE d.present)
+    SELECT v.name || ' · ' || to_char(100.0 * (v.raw->'stats'->>'usedStorage')::float / NULLIF(cap.total, 0), 'FM990.00') || '%' AS "VM",
+           100.0 * (v.raw->'stats'->>'usedStorage')::float / NULLIF(cap.total, 0) AS share
+    FROM servers v, cap WHERE {WEIGHT_VMS} AND (v.raw->'stats'->>'usedStorage')::float > 0
+    ORDER BY 2 DESC"""
+WEIGHT_DESC = ("Each rectangle is a VM, sized and coloured by its share of the cluster's {what}. "
+               "Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. {detail} "
+               "Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.")
 
 
 CLUSTER_VAR = qvar("cluster", "Cluster", "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name")
@@ -499,6 +538,18 @@ def overview():
     t = contention_tiles()
     for name in ("worst_vm_ready", "worst_vcpu_ready", "vms_ready_5_10", "vms_ready_over_10"):
         b.add(t[name], 6, 4)
+
+    b.row("VM resource weight")
+    b.add(treemap("VME CPU weight", WEIGHT_CPU_SQL, "continuous-blues", WEIGHT_DESC.format(
+        what="CPU", detail="Share = the VM's CPU usage × its vCPUs, divided by the cores of all hosts. Running VMs only.")), 8, 9)
+    b.add(treemap("VME memory weight (allocated)", WEIGHT_MEM_SQL, "continuous-YlRd", WEIGHT_DESC.format(
+        what="memory", detail="Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a "
+                              "VM's full allocation (no memory overcommit by default), so allocation is what it takes "
+                              "from the cluster; VME's in-guest usage figure is unreliable without a guest agent. "
+                              "Running VMs only.")), 8, 9)
+    b.add(treemap("VME disk weight", WEIGHT_DISK_SQL, "continuous-purples", WEIGHT_DESC.format(
+        what="storage", detail="Share = the VM's disk space in use divided by the capacity of the datastores its disks are "
+                               "on. Includes stopped VMs, which still occupy storage.")), 8, 9)
 
     b.row("Top VMs")
     b.add(bargauge("Top VMs by CPU", latest_metric("vm", "cpu_pct", where=vmw, limit="$topn"), steps=CPU_STEPS, desc=CPU_DESC), 8, 10)

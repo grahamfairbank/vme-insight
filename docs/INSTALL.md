@@ -138,6 +138,18 @@ Done. vme-insight will start scraping this host within a minute.
 
 Allow TCP 9100 and 9177 from the vme-insight host if a firewall is active. Prometheus finds the hosts by itself.
 
+## Offline installs
+
+Grafana downloads one panel plugin on first start: **Treemap** by Grafana Labs (`marcusolsson-treemap-panel`, pinned to 2.1.1), used by the VM resource-weight panels. Without internet access from the Docker host, either:
+
+* host the plugin zip on an internal web server and point Grafana at it. On a connected machine, download `https://grafana.com/api/plugins/marcusolsson-treemap-panel/versions/2.1.1/download`, then set in `.env`:
+  ```bash
+  GRAFANA_PLUGINS="https://intranet.example.com/marcusolsson-treemap-panel-2.1.1.zip;marcusolsson-treemap-panel"
+  ```
+* or set `GRAFANA_PLUGINS=` (empty) to skip it. Everything else works; the three treemap panels show *Panel plugin not found*.
+
+The other images (TimescaleDB, Grafana, Prometheus, Python) need to be in a reachable registry as usual.
+
 ## Upgrading
 
 ```bash

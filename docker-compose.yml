@@ -64,6 +64,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
+      # Treemap panel (Grafana Labs, signed) for the VM resource-weight panels, pinned. Downloaded from
+      # grafana.com on first start; for offline hosts see docs/INSTALL.md "Offline installs".
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS-marcusolsson-treemap-panel 2.1.1}
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_SECURITY_ALLOW_EMBEDDING: ${GRAFANA_ALLOW_EMBEDDING:-false}
       # Anonymous read-only access, e.g. for the VME UI plugin. Restrict who can reach Grafana first.

@@ -42,6 +42,7 @@ CROPS = [
     ("bottlenecks-cpu", "vme-hvm-bottlenecks", ["CPU pressure (PSI some)", "vCPU wait % now (healthy < 5%)"]),
     ("capacity-table", "vme-hvm-capacity", ["Capacity per host", "Memory allocated / host memory"]),
     ("fleet-tiles", "vme-overview", ["VM disk size (provisioned)", "Running VMs assessed"]),
+    ("resource-weight", "vme-overview", ["VME CPU weight", "VME disk weight"]),
     ("idle-vms", "vme-vms", ["Running VMs by peak CPU (idle = never above 5% in 24 hours)"]),
 ]
 
@@ -83,17 +84,48 @@ BLUR_JS = """
   // whole words only, so a VM called "test" doesn't blur "latest"
   const parts = terms.filter(Boolean).map(t => '(?<![\\\\w])' + esc(t) + '(?![\\\\w])').concat(patterns);
   if (!parts.length) return 0;
-  const rx = new RegExp(parts.join('|'), 'i');
-  const hits = new Set();
+  const rx = new RegExp(parts.join('|'), 'gi');
+  const nodes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
-    const node = walker.currentNode;
-    if (node.parentElement && rx.test(node.nodeValue)) hits.add(node.parentElement);
+    const n = walker.currentNode;
+    rx.lastIndex = 0;
+    if (n.parentElement && !n.parentElement.closest('[data-blurred]') && rx.test(n.nodeValue)) nodes.push(n);
   }
-  // text inside inputs (e.g. a variable picker showing a host)
-  document.querySelectorAll('input').forEach(i => { if (rx.test(i.value || '')) hits.add(i); });
-  hits.forEach(el => { el.style.filter = 'blur(6px)'; });
-  return hits.size;
+  let count = 0;
+  for (const node of nodes) {
+    const parent = node.parentElement;
+    const svg = parent instanceof SVGElement;
+    const text = node.nodeValue, frag = document.createDocumentFragment();
+    let last = 0;
+    rx.lastIndex = 0;
+    for (const m of text.matchAll(rx)) {
+      if (m.index > last) frag.append(text.slice(last, m.index));
+      let el;
+      if (svg) {  // SVG text can't take a CSS filter on part of a line: transparent glyphs + soft shadow
+        el = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+        const fill = getComputedStyle(parent).fill || '#ccc';
+        el.setAttribute('style', `fill: transparent; text-shadow: 0 0 6px ${fill}, 0 0 6px ${fill};`);
+      } else {
+        el = document.createElement('span');
+        el.style.filter = 'blur(6px)';
+        el.style.display = 'inline-block';
+      }
+      el.setAttribute('data-blurred', '1');
+      el.textContent = m[0];
+      frag.append(el);
+      last = m.index + m[0].length;
+      count++;
+    }
+    if (last < text.length) frag.append(text.slice(last));
+    node.replaceWith(frag);
+  }
+  // text inside inputs (e.g. a variable picker showing a host): blur the whole field
+  const rx1 = new RegExp(parts.join('|'), 'i');
+  document.querySelectorAll('input').forEach(i => {
+    if (rx1.test(i.value || '')) { i.style.filter = 'blur(6px)'; i.setAttribute('data-blurred', '1'); count++; }
+  });
+  return count;
 }
 """
 
@@ -105,12 +137,13 @@ LEAK_JS = """
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const n = walker.currentNode, el = n.parentElement;
-    if (!el || !rx.test(n.nodeValue)) continue;
-    let blurred = false;
-    for (let e = el; e; e = e.parentElement) if ((e.style.filter || '').includes('blur')) { blurred = true; break; }
+    if (!el || !rx.test(n.nodeValue) || el.closest('[data-blurred]')) continue;
     const r = el.getBoundingClientRect();
-    if (!blurred && r.width > 0 && r.height > 0) leaks.push(n.nodeValue.trim().slice(0, 60));
+    if (r.width > 0 && r.height > 0) leaks.push(n.nodeValue.trim().slice(0, 60));
   }
+  document.querySelectorAll('input').forEach(i => {
+    if (rx.test(i.value || '') && !i.closest('[data-blurred]')) leaks.push('input: ' + i.value.slice(0, 40));
+  });
   return leaks;
 }
 """

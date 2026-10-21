@@ -17,6 +17,7 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 | `GRAFANA_ADMIN_PASSWORD` | *required* | Grafana admin password (only applied when Grafana's volume is first created; change it in the UI afterwards) |
 | `GRAFANA_PORT` | `3000` | Host port for Grafana |
 | `GRAFANA_BIND` | `0.0.0.0` | Address Grafana's port is published on. `127.0.0.1` keeps it to the Docker host, so other machines must come through the [https front end](#https-front-end). |
+| `GRAFANA_PLUGINS` | `marcusolsson-treemap-panel 2.1.1` | Grafana panel plugins installed on start (the treemap panels need this one). See [Offline installs](INSTALL.md#offline-installs). |
 | `GRAFANA_ALLOW_EMBEDDING` | `false` | Allow Grafana pages in iframes (for example inside a VME UI plugin) |
 | `GRAFANA_ANONYMOUS` | `false` | Let anyone who can reach Grafana view dashboards without signing in, as a read-only Viewer. Only together with `GRAFANA_BIND=127.0.0.1` and the https front end's network allowlist. See [SECURITY](SECURITY.md#anonymous-viewers). |
 | `GRAFANA_ANONYMOUS_ORG` | `Main Org.` | Grafana organisation anonymous viewers see. Must match its name exactly. |

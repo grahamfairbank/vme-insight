@@ -2558,12 +2558,163 @@
     },
     {
       "type": "row",
-      "title": "Top VMs",
+      "title": "VM resource weight",
       "collapsed": false,
       "id": 40,
       "gridPos": {
         "x": 0,
         "y": 75,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "marcusolsson-treemap-panel",
+      "title": "VME CPU weight",
+      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's CPU. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's CPU usage \u00d7 its vCPUs, divided by the cores of all hosts. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH cap AS (SELECT sum(s.max_cores)::float AS total FROM servers s WHERE s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster))) SELECT v.name || ' \u00b7 ' || to_char(100.0 * (v.raw->'stats'->>'cpuUsage')::float / 100.0 * v.max_cores / NULLIF(cap.total, 0), 'FM990.00') || '%' AS \"VM\", 100.0 * (v.raw->'stats'->>'cpuUsage')::float / 100.0 * v.max_cores / NULLIF(cap.total, 0) AS share FROM servers v, cap WHERE v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster)) AND v.power_state = 'on' AND (v.raw->'stats'->>'cpuUsage')::float > 0 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "color": {
+            "mode": "continuous-blues"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tiling": "treemapSquarify",
+        "textField": "VM",
+        "sizeField": "share",
+        "colorByField": "share",
+        "labelFields": []
+      },
+      "id": 41,
+      "gridPos": {
+        "x": 0,
+        "y": 76,
+        "w": 8,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "marcusolsson-treemap-panel",
+      "title": "VME memory weight (allocated)",
+      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's memory. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a VM's full allocation (no memory overcommit by default), so allocation is what it takes from the cluster; VME's in-guest usage figure is unreliable without a guest agent. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH cap AS (SELECT sum(s.max_memory)::float AS total FROM servers s WHERE s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster))) SELECT v.name || ' \u00b7 ' || to_char(100.0 * v.max_memory::float / NULLIF(cap.total, 0), 'FM990.00') || '%' AS \"VM\", 100.0 * v.max_memory::float / NULLIF(cap.total, 0) AS share FROM servers v, cap WHERE v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster)) AND v.power_state = 'on' AND v.max_memory > 0 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "color": {
+            "mode": "continuous-YlRd"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tiling": "treemapSquarify",
+        "textField": "VM",
+        "sizeField": "share",
+        "colorByField": "share",
+        "labelFields": []
+      },
+      "id": 42,
+      "gridPos": {
+        "x": 8,
+        "y": 76,
+        "w": 8,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "marcusolsson-treemap-panel",
+      "title": "VME disk weight",
+      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's storage. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's disk space in use divided by the capacity of the datastores its disks are on. Includes stopped VMs, which still occupy storage. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH used_ds AS (SELECT DISTINCT (vol->'datastore'->>'id')::bigint AS id FROM servers v, jsonb_array_elements(v.raw->'volumes') vol WHERE v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster))), cap AS (SELECT sum(d.capacity_bytes)::float AS total FROM datastores d JOIN used_ds USING (id) WHERE d.present) SELECT v.name || ' \u00b7 ' || to_char(100.0 * (v.raw->'stats'->>'usedStorage')::float / NULLIF(cap.total, 0), 'FM990.00') || '%' AS \"VM\", 100.0 * (v.raw->'stats'->>'usedStorage')::float / NULLIF(cap.total, 0) AS share FROM servers v, cap WHERE v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster)) AND (v.raw->'stats'->>'usedStorage')::float > 0 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "color": {
+            "mode": "continuous-purples"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tiling": "treemapSquarify",
+        "textField": "VM",
+        "sizeField": "share",
+        "colorByField": "share",
+        "labelFields": []
+      },
+      "id": 43,
+      "gridPos": {
+        "x": 16,
+        "y": 76,
+        "w": 8,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Top VMs",
+      "collapsed": false,
+      "id": 44,
+      "gridPos": {
+        "x": 0,
+        "y": 85,
         "w": 24,
         "h": 1
       },
@@ -2629,10 +2780,10 @@
           "fields": ""
         }
       },
-      "id": 41,
+      "id": 45,
       "gridPos": {
         "x": 0,
-        "y": 76,
+        "y": 86,
         "w": 8,
         "h": 10
       },
@@ -2701,10 +2852,10 @@
           "fields": ""
         }
       },
-      "id": 42,
+      "id": 46,
       "gridPos": {
         "x": 8,
-        "y": 76,
+        "y": 86,
         "w": 8,
         "h": 10
       },
@@ -2773,10 +2924,10 @@
           "fields": ""
         }
       },
-      "id": 43,
+      "id": 47,
       "gridPos": {
         "x": 16,
-        "y": 76,
+        "y": 86,
         "w": 8,
         "h": 10
       },
@@ -2839,10 +2990,10 @@
           "sort": "desc"
         }
       },
-      "id": 44,
+      "id": 48,
       "gridPos": {
         "x": 0,
-        "y": 86,
+        "y": 96,
         "w": 12,
         "h": 9
       },
@@ -2904,10 +3055,10 @@
           "sort": "desc"
         }
       },
-      "id": 45,
+      "id": 49,
       "gridPos": {
         "x": 12,
-        "y": 86,
+        "y": 96,
         "w": 12,
         "h": 9
       },
@@ -2920,10 +3071,10 @@
       "type": "row",
       "title": "Fleet",
       "collapsed": false,
-      "id": 46,
+      "id": 50,
       "gridPos": {
         "x": 0,
-        "y": 95,
+        "y": 105,
         "w": 24,
         "h": 1
       },
@@ -2978,10 +3129,10 @@
         "justifyMode": "center",
         "orientation": "horizontal"
       },
-      "id": 47,
+      "id": 51,
       "gridPos": {
         "x": 0,
-        "y": 96,
+        "y": 106,
         "w": 8,
         "h": 5
       },
@@ -3048,10 +3199,10 @@
           "url": "/d/vme-vms"
         }
       ],
-      "id": 48,
+      "id": 52,
       "gridPos": {
         "x": 8,
-        "y": 96,
+        "y": 106,
         "w": 8,
         "h": 5
       },
@@ -3108,10 +3259,10 @@
         "textMode": "value",
         "justifyMode": "center"
       },
-      "id": 49,
+      "id": 53,
       "gridPos": {
         "x": 16,
-        "y": 96,
+        "y": 106,
         "w": 8,
         "h": 5
       },
@@ -3171,10 +3322,10 @@
           "sort": "desc"
         }
       },
-      "id": 50,
+      "id": 54,
       "gridPos": {
         "x": 0,
-        "y": 101,
+        "y": 111,
         "w": 12,
         "h": 8
       },
@@ -3230,10 +3381,10 @@
           "mode": "single"
         }
       },
-      "id": 51,
+      "id": 55,
       "gridPos": {
         "x": 12,
-        "y": 101,
+        "y": 111,
         "w": 6,
         "h": 8
       },
@@ -3289,10 +3440,10 @@
           "mode": "single"
         }
       },
-      "id": 52,
+      "id": 56,
       "gridPos": {
         "x": 18,
-        "y": 101,
+        "y": 111,
         "w": 6,
         "h": 8
       },
