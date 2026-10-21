@@ -7,3 +7,4 @@ __pycache__/
 installer/dist/
 https/certs/*
 !https/certs/README.md
+.env.bak*
