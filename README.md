@@ -127,6 +127,8 @@ Kernel-level pressure stall information (PSI), load per core and vCPU wait show 
 
 ## How it works
 
+One-page diagram of the components, ports and data flows: **[architecture (PDF)](docs/architecture/vme-insight-architecture.pdf)**. Its source is [`docs/architecture/architecture.html`](docs/architecture/architecture.html); re-render it with `docs/architecture/render.py` (see the file) after changes.
+
 ```
                  every 60 s (metrics) / 5 min / 15 min / daily
  VME manager  ─── REST API (OAuth, TLS pinned) ───▶  collector  ──▶  TimescaleDB ──┐
@@ -163,6 +165,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | | |
 |---|---|
+| [ARCHITECTURE](docs/architecture/vme-insight-architecture.pdf) | One-page diagram: components, ports, data flows, core vs optional, security |
 | [INSTALL](docs/INSTALL.md) | Step by step install, reader account, verification, upgrades, backup |
 | [CONFIGURATION](docs/CONFIGURATION.md) | Every setting in `config.yaml` and `.env`, TLS options |
 | [DASHBOARDS](docs/DASHBOARDS.md) | Every panel, what it means, and how it maps to the vSphere dashboard |
