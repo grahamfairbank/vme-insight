@@ -57,7 +57,8 @@ services:
       - collector
       - prometheus
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      # GRAFANA_BIND=127.0.0.1 leaves the https proxy (below) as the only way in from other machines
+      - "${GRAFANA_BIND:-0.0.0.0}:${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
@@ -65,12 +66,39 @@ services:
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_SECURITY_ALLOW_EMBEDDING: ${GRAFANA_ALLOW_EMBEDDING:-false}
+      # Anonymous read-only access, e.g. for the VME UI plugin. Restrict who can reach Grafana first.
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}
+      GF_AUTH_ANONYMOUS_ORG_NAME: ${GRAFANA_ANONYMOUS_ORG:-Main Org.}
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_ANONYMOUS_HIDE_VERSION: "true"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-}
+      GF_SECURITY_COOKIE_SECURE: ${GRAFANA_COOKIE_SECURE:-false}
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/vme-overview.json
       GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  # Optional: https in front of Grafana, limited to HTTPS_ALLOW networks. Needed to embed
+  # Grafana in https pages such as VME. Start with:
+  #   docker compose --profile https up -d https
+  https:
+    image: caddy:2.8.4-alpine
+    profiles: [https]
+    restart: unless-stopped
+    depends_on:
+      - grafana
+    ports:
+      - "${HTTPS_PORT:-3443}:443"
+    environment:
+      HTTPS_HOSTNAME: ${HTTPS_HOSTNAME:-localhost}
+      HTTPS_ALLOW: ${HTTPS_ALLOW:-127.0.0.1/32}
+      HTTPS_TLS: ${HTTPS_TLS:-internal}
+    volumes:
+      - ./https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./https/certs:/certs:ro
+      - https-data:/data
 
   # Optional: serves tools/install-exporters.sh to HVM hosts. Start with:
   #   docker compose --profile installer up -d installer
@@ -90,3 +118,4 @@ volumes:
   grafana-data:
   prom-data:
   prom-targets:
+  https-data:

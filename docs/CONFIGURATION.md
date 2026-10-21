@@ -16,10 +16,47 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 | `GRAFANA_ADMIN_USER` | `admin` | Grafana admin login |
 | `GRAFANA_ADMIN_PASSWORD` | *required* | Grafana admin password (only applied when Grafana's volume is first created; change it in the UI afterwards) |
 | `GRAFANA_PORT` | `3000` | Host port for Grafana |
+| `GRAFANA_BIND` | `0.0.0.0` | Address Grafana's port is published on. `127.0.0.1` keeps it to the Docker host, so other machines must come through the [https front end](#https-front-end). |
 | `GRAFANA_ALLOW_EMBEDDING` | `false` | Allow Grafana pages in iframes (for example inside a VME UI plugin) |
+| `GRAFANA_ANONYMOUS` | `false` | Let anyone who can reach Grafana view dashboards without signing in, as a read-only Viewer. Only together with `GRAFANA_BIND=127.0.0.1` and the https front end's network allowlist. See [SECURITY](SECURITY.md#anonymous-viewers). |
+| `GRAFANA_ANONYMOUS_ORG` | `Main Org.` | Grafana organisation anonymous viewers see. Must match its name exactly. |
+| `GRAFANA_ROOT_URL` | *(blank)* | Grafana's public address, e.g. `https://vme-insight.example.com:3443/`. Set it when using the https front end. |
+| `GRAFANA_COOKIE_SECURE` | `false` | `true` once Grafana is only reached over https |
+| `HTTPS_PORT` | `3443` | Host port of the https front end |
+| `HTTPS_HOSTNAME` | `localhost` | Name(s) users type for Grafana, space-separated; the certificate is issued for these |
+| `HTTPS_ALLOW` | `127.0.0.1/32` | Networks allowed through the https front end, space-separated CIDRs (quote the value). Everyone else gets 403. |
+| `HTTPS_TLS` | `internal` | `internal` issues certificates from the front end's own CA. Or `/certs/<cert>.pem /certs/<key>.pem` for your own certificate in `https/certs/`. |
 | `DB_MEMORY` | `1GB` | Memory TimescaleDB tunes itself for on first start |
 | `PROM_RETENTION` | `90d` | How long Prometheus keeps exporter data |
 | `TZ` | `UTC` | Time zone for collector logs. Dashboards use the browser's time zone. |
+
+### https front end
+
+An optional Caddy service (`https/Caddyfile`) that serves Grafana over https and only to the `HTTPS_ALLOW` networks. You need it to embed Grafana in https pages, for example with the [vme-insight VME plugin](https://github.com/grahamfairbank/vme-insight-plugin), because browsers block http frames inside https pages.
+
+```bash
+# in .env
+GRAFANA_BIND=127.0.0.1
+GRAFANA_ALLOW_EMBEDDING=true
+GRAFANA_ANONYMOUS=true
+GRAFANA_ROOT_URL=https://vme-insight.example.com:3443/
+GRAFANA_COOKIE_SECURE=true
+HTTPS_HOSTNAME=vme-insight.example.com
+HTTPS_ALLOW="10.20.0.0/16 192.168.13.0/24"
+
+docker compose up -d grafana
+docker compose --profile https up -d https
+```
+
+Grafana is then at `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>`. With `HTTPS_TLS=internal`, browsers trust it only after you install the front end's root certificate on the client machines:
+
+```bash
+docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.crt vme-insight-root.crt
+```
+
+Import `vme-insight-root.crt` as a trusted root CA (Windows: *certlm.msc → Trusted Root Certification Authorities*; macOS: Keychain Access → System, set to Always Trust). A frame can't show a certificate warning, so an untrusted certificate leaves embedded dashboards blank. With your own certificate, put the files in `https/certs/` and set `HTTPS_TLS`.
+
+The allowlist uses the client's real address, which Docker keeps for published ports. Check from an allowed and a non-allowed machine: `curl -sk -o /dev/null -w '%{http_code}' https://<host>:3443/api/health` should give `200` and `403`.
 
 ## config.yaml
 

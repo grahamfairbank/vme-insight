@@ -18,7 +18,8 @@ vme-insight only reads from VME. It holds a credential for your virtualization m
 
 | Port | Service | Exposed by default | Notes |
 |---|---|---|---|
-| `GRAFANA_PORT` (3000) | Grafana | Yes | Put a reverse proxy with TLS in front if it's reachable beyond a trusted network. Change the admin password. Sign-up is disabled. |
+| `GRAFANA_PORT` (3000) | Grafana | Yes, unless `GRAFANA_BIND=127.0.0.1` | Put a reverse proxy with TLS in front if it's reachable beyond a trusted network (the optional https front end does this). Change the admin password. Sign-up is disabled. |
+| `HTTPS_PORT` (3443) | https front end | Only with `--profile https` | TLS, and only the `HTTPS_ALLOW` networks get through. See [CONFIGURATION](CONFIGURATION.md#https-front-end). |
 | 5432 | TimescaleDB | No | Internal to the compose network. A commented `127.0.0.1` mapping is available for admin access. |
 | 9090 | Prometheus | No | Internal. A commented `127.0.0.1` mapping is available. |
 | 9100, 9177 on HVM hosts | Exporters | Only if you install them | No authentication. Bind to the management IP and firewall to the vme-insight host. |
@@ -26,6 +27,15 @@ vme-insight only reads from VME. It holds a credential for your virtualization m
 ## Grafana users
 
 Anyone with Grafana **Editor** or **Admin** rights can run arbitrary read queries against the database through Explore. The database contains the full API objects (`raw` columns), including host names, IPs and user names, but **no VME credentials**. Give Editor rights only to people who could already see this in VME.
+
+## Anonymous viewers
+
+`GRAFANA_ANONYMOUS=true` lets anyone who reaches Grafana view every dashboard as a read-only **Viewer**, without signing in. The VME UI plugin needs it, because a sign-in inside a frame on another site doesn't stick. Enable it only with:
+
+* `GRAFANA_BIND=127.0.0.1`, so Grafana's own port isn't reachable from other machines, and
+* the https front end with `HTTPS_ALLOW` set to the networks your VME admins use.
+
+What an anonymous Viewer can do: open every dashboard and change its time range and variables; download CSV exports; list data sources (names and types, no passwords); send read queries to the data sources through Grafana's API, as the `SELECT`-only `grafana_ro` user. It can't edit dashboards, use Explore, or see users and settings. There is no per-person identity: everyone on the allowed networks sees the same data. Admins still sign in (top right) for anything else.
 
 ## What's stored
 

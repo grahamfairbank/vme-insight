@@ -1,0 +1,17 @@
+# https front end for Grafana (docker compose --profile https). Settings come from .env:
+#   HTTPS_HOSTNAME  name (or names, space-separated) users type, e.g. vme-insight.example.com
+#   HTTPS_ALLOW     networks allowed in, space-separated CIDRs; everyone else gets 403
+#   HTTPS_TLS       "internal" (Caddy's own CA; trust https-data's root.crt) or
+#                   "/certs/<cert>.pem /certs/<key>.pem" for your own certificate in https/certs/
+{
+	admin off
+}
+
+{$HTTPS_HOSTNAME} {
+	tls {$HTTPS_TLS}
+
+	@blocked not remote_ip {$HTTPS_ALLOW}
+	respond @blocked "Forbidden" 403
+
+	reverse_proxy grafana:3000
+}

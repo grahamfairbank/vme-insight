@@ -5,3 +5,5 @@ probe/
 __pycache__/
 *.pyc
 installer/dist/
+https/certs/*
+!https/certs/README.md

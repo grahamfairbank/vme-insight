@@ -17,6 +17,7 @@ First version.
 * Fixed: manager memory percentages were shown as fractions.
 * README tour with screenshots (server names and IPs blurred in the browser before capture, data unedited) and `tools/screenshots.py` to regenerate them; community-project disclaimer.
 * Fixed: the VME manager's node_exporter was counted as an HVM host on the exporter dashboards.
+* Optional https front end (`--profile https`, Caddy) with a network allowlist, optional anonymous Viewer access and `GRAFANA_BIND`, for embedding Grafana in VME through the vme-insight VME plugin.
 * Manager "days until disk full" waits for a day of history instead of extrapolating from a few hours.
 * CSV exports: a **VME Data Export** dashboard (metric samples, hourly rollups, inventory, changes, alarms, activity, raw API records) and `tools/export_csv.py` for unlimited command-line exports.
 * Hourly rollups use real-time aggregation, so they include the current hour.
