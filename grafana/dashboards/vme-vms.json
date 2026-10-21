@@ -1,0 +1,963 @@
+{
+  "uid": "vme-vms",
+  "title": "VME Virtual Machines",
+  "tags": [
+    "vme-insight",
+    "vms"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "cluster",
+        "label": "Cluster",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name",
+        "definition": "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "host",
+        "label": "Host",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'host' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) ORDER BY name",
+        "definition": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'host' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) ORDER BY name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "vm",
+        "label": "VM",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'vm' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) AND (-1 IN ($host) OR host_id IN ($host)) ORDER BY name",
+        "definition": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'vm' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) AND (-1 IN ($host) OR host_id IN ($host)) ORDER BY name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "vme-insight"
+      ],
+      "asDropdown": true,
+      "title": "VME dashboards",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Performance",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU usage",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'cpu_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory usage",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'mem_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk usage",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'storage_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network receive",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'net_rx' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network transmit",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'net_tx' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk IOPS",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'disk_iops' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU ready (healthy < 5%, act > 10%)",
+      "description": "**CPU ready** is the share of time a VM's vCPUs were ready to run but had to wait for a physical core.\nVME reports it per VM as the average across its vCPUs (for a host: across the VMs on it).\n\n| Per vCPU | What it means | What to do |\n|---|---|---|\n| **under 5%** | Healthy | Nothing |\n| **5 to 10%** | Contention: VMs are queuing for CPU | Check the host's CPU usage and vCPU:core ratio; watch the trend |\n| **over 10%** | VMs are noticeably slowed | Move VMs to a quieter host, cut vCPUs on oversized VMs, or add capacity |\n\nLook at sustained values: short spikes during backups, patching or boot storms are normal.\nToo many vCPUs per physical core raises ready time for every VM on the host, so right-size large VMs first.\n\nVME added this \"CPU Ready-equivalent metric\" in 9.1.0; HPE doesn't document how it's calculated or a threshold. At low load it reads several times higher than the kernel's\nown measurement (*vCPU wait* on the exporter dashboards), so these thresholds err on the side of warning early.\nWhen the two disagree, trust vCPU wait.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'cpu_ready_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 8,
+        "y": 18,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Powered on",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, min(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'up' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "min"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 16,
+        "y": 18,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Worst single vCPU ready (healthy < 5%)",
+      "description": "**CPU ready** is the share of time a VM's vCPUs were ready to run but had to wait for a physical core.\nVME reports it per VM as the average across its vCPUs (for a host: across the VMs on it).\n\n| Per vCPU | What it means | What to do |\n|---|---|---|\n| **under 5%** | Healthy | Nothing |\n| **5 to 10%** | Contention: VMs are queuing for CPU | Check the host's CPU usage and vCPU:core ratio; watch the trend |\n| **over 10%** | VMs are noticeably slowed | Move VMs to a quieter host, cut vCPUs on oversized VMs, or add capacity |\n\nLook at sustained values: short spikes during backups, patching or boot storms are normal.\nToo many vCPUs per physical core raises ready time for every VM on the host, so right-size large VMs first.\n\nVME added this \"CPU Ready-equivalent metric\" in 9.1.0; HPE doesn't document how it's calculated or a threshold. At low load it reads several times higher than the kernel's\nown measurement (*vCPU wait* on the exporter dashboards), so these thresholds err on the side of warning early.\nWhen the two disagree, trust vCPU wait.\n\nThis panel: the most-starved vCPU of each VM. Compare with the average to spot one overloaded vCPU.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'vm' AND m.metric = 'cpu_ready_max_vcpu_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Details",
+      "collapsed": false,
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Virtual machines",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT s.name AS \"VM\", s.power_state AS \"Power\", s.status AS \"Status\", h.name AS \"Host\", cl.name AS \"Cluster\", s.ip_internal AS \"IP\", s.max_cores AS \"vCPU\", s.max_memory AS \"Memory\", s.max_storage AS \"Disk\", s.os_name AS \"OS\", s.guest_agent_status AS \"Guest agent\", s.agent_version AS \"Morpheus agent\", cd.name AS \"Cloud\", s.plan AS \"Plan\", s.source_image AS \"Image\", i.owner AS \"Owner\", s.date_created AS \"Created\" FROM servers s LEFT JOIN servers h ON h.id = s.host_id LEFT JOIN clusters cl ON cl.id = s.cluster_id LEFT JOIN instances i ON s.id = ANY(i.server_ids) AND i.present LEFT JOIN clouds cd ON cd.id = s.cloud_id WHERE s.kind = 'vm' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Disk"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "on": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "off": {
+                        "color": "gray",
+                        "index": 1
+                      },
+                      "unknown": {
+                        "color": "#EAB839",
+                        "index": 2
+                      },
+                      "suspended": {
+                        "color": "#EAB839",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Guest agent"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "connected": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "disconnected": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "unknown": {
+                        "color": "gray",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

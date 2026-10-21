@@ -1,0 +1,24 @@
+apiVersion: 1
+datasources:
+  - name: VME TimescaleDB
+    uid: vme-tsdb
+    type: grafana-postgresql-datasource
+    url: timescaledb:5432
+    user: grafana_ro
+    isDefault: true
+    jsonData:
+      database: vme
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true
+      maxOpenConns: 10
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+
+  - name: VME Prometheus
+    uid: vme-prom
+    type: prometheus
+    url: http://prometheus:9090
+    jsonData:
+      timeInterval: 30s
+      httpMethod: POST

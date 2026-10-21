@@ -1,0 +1,7 @@
+.env
+config/*
+!config/config.example.yaml
+probe/
+__pycache__/
+*.pyc
+installer/dist/

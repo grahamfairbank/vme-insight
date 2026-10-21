@@ -1,0 +1,61 @@
+# vme-insight configuration. Copy to config/config.yaml (git-ignored).
+# Any morpheus.* value can instead come from the environment:
+# VME_URL, VME_USERNAME, VME_PASSWORD, VME_API_TOKEN, VME_TLS_FINGERPRINT, VME_CA_BUNDLE, VME_INSECURE.
+
+morpheus:
+  url: https://vme-manager.example.com      # VM Essentials manager (Morpheus) URL
+  # Use a dedicated read-only account (docs/INSTALL.md, "Create a reader account"). Either username/password ...
+  username: ""
+  password: ""
+  # ... or a long-lived API token (User Settings > API Access in the VME UI)
+  api_token: ""
+  # Use https. VME also answers API calls on plain http, which would send the
+  # password unencrypted, so http:// URLs are upgraded to https:// unless
+  # allow_http is true.
+  allow_http: false
+
+  # TLS: VME ships with a self-signed certificate. Choose ONE of:
+  #  1. tls_fingerprint (recommended for self-signed): pin the certificate's
+  #     SHA-256 fingerprint. Get it with:
+  #       docker compose run --rm collector python -m vmeinsight.tlsinfo
+  #     Re-pin if the certificate is replaced.
+  #  2. ca_bundle: path (inside the container) to a PEM file that signs the
+  #     manager's certificate, e.g. /config/vme-ca.pem. Use this when the
+  #     manager has a certificate from your own CA.
+  #  3. insecure: true  - no verification at all. Lab use only.
+  # With none set, the certificate must chain to a public CA.
+  tls_fingerprint: ""
+  ca_bundle: ""
+  insecure: false
+  timeout: 30
+  page_size: 250
+
+intervals:                 # seconds
+  metrics: 60              # hosts, VMs, clusters
+  storage: 300             # datastores
+  health: 300              # alarms, manager health
+  inventory: 900           # clouds, instances, networks, manager version
+  lifecycle: 86400         # OS end-of-life data from endoflife.date
+
+retention:                 # days
+  raw: 90                  # per-minute samples
+  hourly: 730              # hourly rollups (avg/min/max)
+  compress_after: 7
+
+classification:
+  # The collector treats computeServerType.vmHypervisor=true as a host and the
+  # rest as VMs. Override for specific type codes here if needed.
+  host_type_codes: []
+  vm_type_codes: []
+
+lifecycle:
+  enabled: true
+  api: https://endoflife.date
+  expected_agent_version: ""   # blank = newest agent version seen in the fleet
+  extra_products: []           # extra endoflife.date product ids to fetch
+  os_rules: []                 # checked before the built-in rules, e.g.:
+  #  - match: "my-golden-image"     # regex on OS name/platform text
+  #    product: ubuntu              # endoflife.date product id
+  #    cycle: "(\\d{2}\\.\\d{2})"   # regex whose first group is the release cycle
+
+log_level: INFO

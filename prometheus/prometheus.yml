@@ -1,0 +1,38 @@
+# Prometheus for the optional exporter layer (node_exporter + libvirt exporter on HVM hosts).
+# Targets are written by the collector from the VME API into /targets; no host list to maintain.
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: hvm-node
+    file_sd_configs:
+      - files: [/targets/hvm-node.json]
+    relabel_configs: &strip_port
+      # instance = host address without the port, so node and libvirt series join on it
+      - source_labels: [__address__]
+        regex: '(.+):\d+'
+        target_label: instance
+        replacement: '$1'
+
+  - job_name: hvm-libvirt
+    file_sd_configs:
+      - files: [/targets/hvm-libvirt.json]
+    relabel_configs: *strip_port
+
+  - job_name: vme-manager
+    file_sd_configs:
+      - files: [/targets/vme-manager.json]
+    relabel_configs: *strip_port
+
+  # VME names for exporter series (datastore per mount point, VM per libvirt domain),
+  # published by the collector from its inventory tables
+  - job_name: vme-info
+    scrape_interval: 60s
+    static_configs:
+      - targets: [collector:9105]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]

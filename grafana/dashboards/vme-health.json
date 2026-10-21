@@ -1,0 +1,2450 @@
+{
+  "uid": "vme-health",
+  "title": "VME Manager & Collector",
+  "tags": [
+    "vme-insight",
+    "health"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "type": "textbox",
+        "name": "appliance_metric",
+        "label": "Manager metric regex",
+        "query": "cpu|memory",
+        "current": {
+          "text": "cpu|memory",
+          "value": "cpu|memory"
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "vme-insight"
+      ],
+      "asDropdown": true,
+      "title": "VME dashboards",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Alarms",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Alarms",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT start_date AS \"Started\", severity AS \"Severity\", name AS \"Alarm\", resource_name AS \"Resource\", message AS \"Message\", acknowledged AS \"Ack\", active AS \"Active\" FROM alarms WHERE present AND (active OR last_seen > now() - INTERVAL '7 days') ORDER BY active DESC, start_date DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "error": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "critical": {
+                        "color": "red",
+                        "index": 1
+                      },
+                      "warning": {
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "info": {
+                        "color": "blue",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Active alarms",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), metric, max(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'summary' AND metric IN ('alarms_active', 'alarms_unacknowledged') GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Manager resources",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Disk used (amber 75%, red 85%)",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT max((f->>'percent')::numeric) FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Disk free",
+      "description": "Free space on the fullest manager filesystem. The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT min((f->>'available')::bigint) FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 10000000000.0
+              },
+              {
+                "color": "green",
+                "value": 25000000000.0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 4,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Days until disk full",
+      "description": "At the growth rate of the last 7 days. Blank while usage isn't growing.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT min((SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days')) FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 8,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "System memory",
+      "description": "Memory used in the manager VM, including the database and OpenSearch/Elasticsearch. Some cache is normal.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT value FROM metrics WHERE entity_type = 'appliance' AND metric = 'memory.systemMemoryPercent' AND time > now() - INTERVAL '30 minutes' ORDER BY time DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "JVM memory",
+      "description": "Heap used by the VME application (Java).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT value FROM metrics WHERE entity_type = 'appliance' AND metric = 'memory.memoryPercent' AND time > now() - INTERVAL '30 minutes' ORDER BY time DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 16,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Swap used",
+      "description": "Steady or growing swap use on the manager means it needs more memory.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT value FROM metrics WHERE entity_type = 'appliance' AND metric = 'memory.systemUsedSwap' AND time > now() - INTERVAL '30 minutes' ORDER BY time DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 512000000.0
+              },
+              {
+                "color": "red",
+                "value": 2000000000.0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 20,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Manager filesystems (reported by VME)",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT f->>'path' AS \"Mount\", f->>'name' AS \"Device\", (f->>'total')::bigint AS \"Size\", (f->>'used')::bigint AS \"Used\", (f->>'available')::bigint AS \"Free\", (f->>'percent')::numeric AS \"Used %\", (SELECT CASE WHEN regr_slope(m.value, extract(epoch FROM m.time)) < 0 THEN (array_agg(m.value ORDER BY m.time DESC))[1] / -regr_slope(m.value, extract(epoch FROM m.time)) / 86400 END FROM metrics m WHERE m.entity_type = 'appliance' AND m.metric = 'storage.fs.' || (f->>'path') || '.available' AND m.time > now() - INTERVAL '7 days') AS \"Days to full\" FROM appliance a, jsonb_array_elements(a.health->'storage'->'files') f WHERE a.id = 1 ORDER BY 6 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Free"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days to full"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 85
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Manager size vs HPE recommendation",
+      "description": "The manager's resources compared with HPE's recommendation for an all-in-one appliance:\n4 CPU cores, 16 GB memory (8 GB minimum) and 200 GB storage ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH m AS (SELECT DISTINCT ON (metric) metric, value FROM metrics WHERE entity_type = 'appliance' AND metric IN ('cpu.processorCount', 'memory.systemMemory', 'storage.total') AND time > now() - INTERVAL '1 hour' ORDER BY metric, time DESC) SELECT r.resource AS \"Resource\", r.have AS \"Manager\", r.want AS \"HPE recommends\", CASE WHEN r.ok THEN 'meets' ELSE 'below' END AS \"Status\" FROM (SELECT 1 AS o, 'CPU cores' AS resource, value::int::text AS have, '4' AS want, value >= 4 AS ok FROM m WHERE metric = 'cpu.processorCount' UNION ALL SELECT 2, 'Memory', pg_size_pretty(value::bigint), '16 GB', value >= 15.5 * 2^30 FROM m WHERE metric = 'memory.systemMemory' UNION ALL SELECT 3, 'Storage', pg_size_pretty(value::bigint), '200 GB', value >= 195e9 FROM m WHERE metric = 'storage.total') r ORDER BY r.o"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "meets": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "below": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager disk used % (amber 75, red 85)",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), substr(metric, 12, length(metric) - 19) AS metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric LIKE 'storage.fs.%.percent' GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Manager",
+      "collapsed": false,
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Services",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT initcap(k) AS \"Service\", COALESCE(a.health -> k ->> 'status', 'n/a') AS \"Status\" FROM appliance a, unnest(ARRAY['database', 'elastic', 'rabbit', 'cpu', 'memory', 'storage']) AS k WHERE a.id = 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "ok": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "warning": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "error": {
+                        "color": "red",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 6,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager CPU and memory",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), CASE metric WHEN 'cpu.cpuTotalLoad' THEN 'CPU' WHEN 'memory.memoryPercent' THEN 'JVM memory' ELSE 'system memory' END AS metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric IN ('cpu.cpuTotalLoad', 'memory.memoryPercent', 'memory.systemMemoryPercent') GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 6,
+        "y": 33,
+        "w": 18,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Database connections",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), substr(metric, 10) AS metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric IN ('database.usedConnections', 'database.maxUsedConnections', 'database.busyConnections') GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "RabbitMQ",
+      "description": "Messages waiting across manager queues. A growing backlog means the manager is falling behind.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), substr(metric, 8) AS metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric IN ('rabbit.queued_messages', 'rabbit.busy_queues', 'rabbit.error_queues') GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 8,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Elasticsearch",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), substr(metric, 9) AS metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric LIKE 'elastic.%Percent' GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 16,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "All manager metrics (regex)",
+      "description": "Every metric collected from /api/health. Narrow with the regex box at the top.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), metric, avg(value) AS value FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric ~* '${appliance_metric:raw}' GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Manager VM detail (node_exporter, optional)",
+      "collapsed": false,
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager CPU % (node_exporter)",
+      "description": "Needs node_exporter inside the manager VM: run the exporter installer there (see docs/EXPORTERS.md).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "100 * (1 - avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", job=\"vme-manager\"}[$__rate_interval])))",
+          "legendFormat": "CPU",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager memory used %",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{job=\"vme-manager\"} / node_memory_MemTotal_bytes{job=\"vme-manager\"})",
+          "legendFormat": "memory",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 23,
+      "gridPos": {
+        "x": 8,
+        "y": 56,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager pressure (PSI)",
+      "description": "Share of time work waited for CPU, memory or disk. Sustained I/O pressure slows the database and Elasticsearch.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "100 * rate(node_pressure_cpu_waiting_seconds_total{job=\"vme-manager\"}[$__rate_interval])",
+          "legendFormat": "cpu",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "100 * rate(node_pressure_memory_waiting_seconds_total{job=\"vme-manager\"}[$__rate_interval])",
+          "legendFormat": "memory",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "100 * rate(node_pressure_io_waiting_seconds_total{job=\"vme-manager\"}[$__rate_interval])",
+          "legendFormat": "io",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 24,
+      "gridPos": {
+        "x": 16,
+        "y": 56,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "table",
+      "title": "Host filesystems (node_exporter)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "D",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "E",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_files_free{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_files_free{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "F",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "G",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_readonly{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_readonly{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Available"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days to full"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read-only"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "READ-ONLY",
+                        "color": "red"
+                      },
+                      "0": {
+                        "text": "rw",
+                        "color": "green"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value #A": "Size",
+              "Value #B": "Used",
+              "Value #C": "Available",
+              "Value #D": "Used %",
+              "Value #E": "Inodes used %",
+              "Value #F": "Days to full",
+              "Value #G": "Read-only",
+              "nodename": "Host",
+              "fs": "Filesystem",
+              "fstype": "Type",
+              "mountpoint": "Mount point"
+            }
+          }
+        }
+      ],
+      "id": 25,
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem used % (amber 80, red 90)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 26,
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem free space",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{job=\"vme-manager\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 27,
+      "gridPos": {
+        "x": 12,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Manager disk latency",
+      "description": "Write latency above ~20 ms slows the manager's database.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "sum(rate(node_disk_read_time_seconds_total{job=\"vme-manager\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval])) / sum(rate(node_disk_reads_completed_total{job=\"vme-manager\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "read",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "sum(rate(node_disk_write_time_seconds_total{job=\"vme-manager\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval])) / sum(rate(node_disk_writes_completed_total{job=\"vme-manager\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "write",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 28,
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 24,
+        "h": 7
+      }
+    },
+    {
+      "type": "row",
+      "title": "Collector",
+      "collapsed": false,
+      "id": 29,
+      "gridPos": {
+        "x": 0,
+        "y": 87,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Last run per task",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT DISTINCT ON (task) task AS \"Task\", time AS \"Last run\", ok AS \"OK\", duration_ms AS \"ms\", items AS \"Items\", error AS \"Error\" FROM collector_runs ORDER BY task, time DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OK"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "true": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "false": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 30,
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Task duration",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(time, $__interval), task AS metric, avg(duration_ms) AS value FROM collector_runs WHERE $__timeFilter(time) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 31,
+      "gridPos": {
+        "x": 12,
+        "y": 88,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Recent errors",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT time AS \"Time\", task AS \"Task\", error AS \"Error\" FROM collector_runs WHERE NOT ok AND $__timeFilter(time) ORDER BY time DESC LIMIT 50"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 32,
+      "gridPos": {
+        "x": 0,
+        "y": 95,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Database size",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT 'metrics (raw)' AS \"Table\", pg_size_pretty(hypertable_size('metrics')) AS \"Size\", (SELECT count(*) FROM timescaledb_information.chunks WHERE hypertable_name = 'metrics') AS \"Chunks\" UNION ALL SELECT 'database total', pg_size_pretty(pg_database_size(current_database())), NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 33,
+      "gridPos": {
+        "x": 0,
+        "y": 101,
+        "w": 12,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

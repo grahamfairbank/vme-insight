@@ -1,0 +1,1926 @@
+{
+  "uid": "vme-hvm-hosts",
+  "title": "VME HVM Hosts & VMs (exporters)",
+  "tags": [
+    "vme-insight",
+    "exporters",
+    "hosts",
+    "vms"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "source",
+        "label": "Estate",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "vme-prom"
+        },
+        "query": {
+          "query": "label_values(node_uname_info, source)",
+          "refId": "source",
+          "qryType": 1
+        },
+        "definition": "label_values(node_uname_info, source)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "type": "query",
+        "name": "cluster",
+        "label": "Cluster",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "vme-prom"
+        },
+        "query": {
+          "query": "label_values(node_uname_info{source=~\"$source\"}, cluster)",
+          "refId": "cluster",
+          "qryType": 1
+        },
+        "definition": "label_values(node_uname_info{source=~\"$source\"}, cluster)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "type": "query",
+        "name": "host",
+        "label": "Host",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "vme-prom"
+        },
+        "query": {
+          "query": "label_values(node_uname_info{source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
+          "refId": "host",
+          "qryType": 1
+        },
+        "definition": "label_values(node_uname_info{source=~\"$source\", cluster=~\"$cluster\"}, nodename)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "type": "query",
+        "name": "domain",
+        "label": "VM",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "vme-prom"
+        },
+        "query": {
+          "query": "label_values(libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}, domain)",
+          "refId": "domain",
+          "qryType": 1
+        },
+        "definition": "label_values(libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}, domain)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "vme-insight"
+      ],
+      "asDropdown": true,
+      "title": "VME dashboards",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Hosts",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Hosts",
+      "description": "One row per HVM host, from node_exporter and libvirt exporter.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "max by (nodename) (100 * (1 - avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval]))))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "max by (nodename) (100 * (1 - node_memory_MemAvailable_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} / node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "max by (nodename) (node_load5{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} / on (nodename) count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "D",
+          "expr": "max by (nodename) (count by (nodename) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} == 1) or on (nodename) 0 * node_uname_info{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "E",
+          "expr": "max by (nodename) (count by (nodename) (node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "F",
+          "expr": "max by (nodename) (node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "G",
+          "expr": "max by (nodename) (time() - node_boot_time_seconds{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load / core"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Running VMs"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cores"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Uptime"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value #A": "CPU %",
+              "Value #B": "Memory %",
+              "Value #C": "Load / core",
+              "Value #D": "Running VMs",
+              "Value #E": "Cores",
+              "Value #F": "Memory",
+              "Value #G": "Uptime"
+            }
+          }
+        }
+      ],
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 7
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host CPU %",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "100 * (1 - avg by (nodename) (rate(node_cpu_seconds_total{mode=\"idle\", source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"}[$__rate_interval])))",
+          "legendFormat": "{{nodename}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host memory used %",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"} / node_memory_MemTotal_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\"})",
+          "legendFormat": "{{nodename}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host disk IOPS",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "sum by (nodename) (rate(node_disk_reads_completed_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} read",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "sum by (nodename) (rate(node_disk_writes_completed_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} write",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host disk latency",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "sum by (nodename) (rate(node_disk_read_time_seconds_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval])) / sum by (nodename) (rate(node_disk_reads_completed_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} read",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "sum by (nodename) (rate(node_disk_write_time_seconds_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval])) / sum by (nodename) (rate(node_disk_writes_completed_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"dm-.*|sr.*|md.*|loop.*|ram.*|nbd.*|zram.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} write",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 8,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host network",
+      "description": "Physical interfaces only. Transmit drawn below zero.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "sum by (nodename) (rate(node_network_receive_bytes_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"lo|vnet.*|veth.*|tap.*|virbr.*|docker.*|br-.*|ovs.*|genev_sys.*|vxlan.*|vme.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} rx",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "-sum by (nodename) (rate(node_network_transmit_bytes_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", device!~\"lo|vnet.*|veth.*|tap.*|virbr.*|docker.*|br-.*|ovs.*|genev_sys.*|vxlan.*|vme.*\"}[$__rate_interval]))",
+          "legendFormat": "{{nodename}} tx",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 16,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Filesystems",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Host filesystems (node_exporter)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "D",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "E",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_files_free{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_files_free{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "F",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "G",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_readonly{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_readonly{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Available"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days to full"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read-only"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "READ-ONLY",
+                        "color": "red"
+                      },
+                      "0": {
+                        "text": "rw",
+                        "color": "green"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value #A": "Size",
+              "Value #B": "Used",
+              "Value #C": "Available",
+              "Value #D": "Used %",
+              "Value #E": "Inodes used %",
+              "Value #F": "Days to full",
+              "Value #G": "Read-only",
+              "nodename": "Host",
+              "fs": "Filesystem",
+              "fstype": "Type",
+              "mountpoint": "Mount point"
+            }
+          }
+        }
+      ],
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem used % (amber 80, red 90)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem free space",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Virtual machines",
+      "collapsed": false,
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Virtual machines",
+      "description": "CPU % is of the VM's allocated vCPUs. vCPU wait is the kernel's measure of CPU ready: healthy under 5%, contention 5 to 10%, VMs slowed above 10%.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "max by (nodename, domain) (libvirt_domain_info_state{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "max by (nodename, domain) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "max by (nodename, domain) (100 * sum by (nodename, domain) (rate(libvirt_domain_info_cpu_time_seconds_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])) / on (nodename, domain) max by (nodename, domain) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "D",
+          "expr": "max by (nodename, domain) (100 * sum by (nodename, domain) (rate(libvirt_domain_vcpu_delay_seconds_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])) / on (nodename, domain) max by (nodename, domain) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "E",
+          "expr": "max by (nodename, domain) (libvirt_domain_info_maximum_memory_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"})",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "F",
+          "expr": "max by (nodename, domain) (libvirt_domain_memory_stats_rss_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"} * 1)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "G",
+          "expr": "max by (nodename, domain) (sum by (nodename, domain) (rate(libvirt_domain_block_stats_read_requests_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "H",
+          "expr": "max by (nodename, domain) (sum by (nodename, domain) (rate(libvirt_domain_block_stats_write_requests_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "I",
+          "expr": "max by (nodename, domain) (sum by (nodename, domain) (rate(libvirt_domain_interface_stats_receive_bytes_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "J",
+          "expr": "max by (nodename, domain) (sum by (nodename, domain) (rate(libvirt_domain_interface_stats_transmit_bytes_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vCPU"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "vCPU wait %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RSS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read IOPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "iops"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write IOPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "iops"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rx"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Tx"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "running",
+                        "color": "green"
+                      },
+                      "3": {
+                        "text": "paused",
+                        "color": "orange"
+                      },
+                      "5": {
+                        "text": "shut off",
+                        "color": "gray"
+                      },
+                      "6": {
+                        "text": "crashed",
+                        "color": "red"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value #A": "State",
+              "Value #B": "vCPU",
+              "Value #C": "CPU %",
+              "Value #D": "vCPU wait %",
+              "Value #E": "Memory",
+              "Value #F": "RSS",
+              "Value #G": "Read IOPS",
+              "Value #H": "Write IOPS",
+              "Value #I": "Rx",
+              "Value #J": "Tx"
+            }
+          }
+        }
+      ],
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 10
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Top 10 VMs by CPU %",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "topk(10, 100 * sum by (nodename, domain) (rate(libvirt_domain_info_cpu_time_seconds_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])) / on (nodename, domain) max by (nodename, domain) (libvirt_domain_info_virtual_cpus{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}))",
+          "legendFormat": "{{domain}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Top 10 VMs by host memory (RSS)",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "topk(10, libvirt_domain_memory_stats_rss_bytes{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"})",
+          "legendFormat": "{{domain}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 12,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Top 10 VMs by write IOPS",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "topk(10, sum by (nodename, domain) (rate(libvirt_domain_block_stats_write_requests_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "{{domain}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Top 10 VMs by network receive",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "topk(10, sum by (nodename, domain) (rate(libvirt_domain_interface_stats_receive_bytes_total{source=~\"$source\", cluster=~\"$cluster\", nodename=~\"$host\", domain=~\"$domain\"}[$__rate_interval])))",
+          "legendFormat": "{{domain}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 12,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

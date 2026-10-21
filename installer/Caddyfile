@@ -1,0 +1,11 @@
+# Serves the exporter installer to HVM hosts:
+#   curl -fsSL http://<this host>:8097/install-exporters.sh | sudo bash
+:8080 {
+	root * /srv
+	# fill the server's own address into the script (FROM=...) so hosts need no arguments
+	@script path /install-exporters.sh
+	header @script Content-Type "text/plain; charset=utf-8"
+	templates @script
+	file_server
+	log
+}

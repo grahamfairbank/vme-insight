@@ -1,0 +1,1895 @@
+{
+  "uid": "vme-hosts",
+  "title": "VME Hosts",
+  "tags": [
+    "vme-insight",
+    "hosts"
+  ],
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "cluster",
+        "label": "Cluster",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name",
+        "definition": "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "host",
+        "label": "Host",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'host' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) ORDER BY name",
+        "definition": "SELECT name AS __text, id AS __value FROM servers WHERE kind = 'host' AND present AND (-1 IN ($cluster) OR cluster_id IN ($cluster)) ORDER BY name",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  },
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "vme-insight"
+      ],
+      "asDropdown": true,
+      "title": "VME dashboards",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Host inventory",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Hosts",
+      "description": "Agent age: time since the host's Morpheus agent last reported. HPE: healthy within 2 minutes; over 5 minutes VME raises Host Unreachable ([HVM monitoring](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/monitoring.rst)). The value is as of the last collection, so it can read up to a minute high.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT s.name AS \"Host\", cl.name AS \"Cluster\", s.power_state AS \"Power\", s.status AS \"Status\", s.ip_internal AS \"IP\", s.os_name AS \"OS\", s.platform_version AS \"Version\", s.max_cores AS \"Cores\", s.max_memory AS \"Memory\", (SELECT count(*) FROM servers v WHERE v.host_id = s.id AND v.present AND v.kind = 'vm') AS \"VMs\", (SELECT count(*) FROM servers v WHERE v.host_id = s.id AND v.present AND v.kind = 'vm' AND v.power_state = 'on') AS \"Running\", s.agent_version AS \"Agent\", s.agent_last_update AS \"Agent check-in\", EXTRACT(epoch FROM now() - s.agent_last_update)::int AS \"Agent age\", s.member_status AS \"Cluster member\", s.maintenance AS \"Maintenance\", s.cpu_model AS \"CPU model\", s.hw_vendor || ' ' || s.hw_model AS \"Hardware\" FROM servers s LEFT JOIN clusters cl ON cl.id = s.cluster_id WHERE s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "on": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "off": {
+                        "color": "gray",
+                        "index": 1
+                      },
+                      "unknown": {
+                        "color": "#EAB839",
+                        "index": 2
+                      },
+                      "suspended": {
+                        "color": "#EAB839",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster member"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "online": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "offline": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Maintenance"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "true": {
+                        "color": "orange",
+                        "index": 0
+                      },
+                      "false": {
+                        "color": "transparent",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Agent age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 120
+                    },
+                    {
+                      "color": "red",
+                      "value": 300
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "CPU and memory",
+      "collapsed": false,
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU usage",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'cpu_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory usage",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'mem_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory used",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'mem_used_bytes' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU ready (healthy < 5%, act > 10%)",
+      "description": "**CPU ready** is the share of time a VM's vCPUs were ready to run but had to wait for a physical core.\nVME reports it per VM as the average across its vCPUs (for a host: across the VMs on it).\n\n| Per vCPU | What it means | What to do |\n|---|---|---|\n| **under 5%** | Healthy | Nothing |\n| **5 to 10%** | Contention: VMs are queuing for CPU | Check the host's CPU usage and vCPU:core ratio; watch the trend |\n| **over 10%** | VMs are noticeably slowed | Move VMs to a quieter host, cut vCPUs on oversized VMs, or add capacity |\n\nLook at sustained values: short spikes during backups, patching or boot storms are normal.\nToo many vCPUs per physical core raises ready time for every VM on the host, so right-size large VMs first.\n\nVME added this \"CPU Ready-equivalent metric\" in 9.1.0; HPE doesn't document how it's calculated or a threshold. At low load it reads several times higher than the kernel's\nown measurement (*vCPU wait* on the exporter dashboards), so these thresholds err on the side of warning early.\nWhen the two disagree, trust vCPU wait.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'cpu_ready_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Swap used",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'swap_used_bytes' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Storage and network",
+      "collapsed": false,
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Network receive",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'net_rx' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Network transmit",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'net_tx' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Local filesystems",
+      "collapsed": false,
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Host local storage (reported by VME)",
+      "description": "VME reports one total per host for its local disks. Per-mount detail (below) needs node_exporter on the host.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT s.name AS \"Host\", (s.raw->'stats'->>'maxStorage')::bigint AS \"Size\", (s.raw->'stats'->>'usedStorage')::bigint AS \"Used\", (s.raw->'stats'->>'maxStorage')::bigint - (s.raw->'stats'->>'usedStorage')::bigint AS \"Free\", 100.0 * (s.raw->'stats'->>'usedStorage')::numeric / NULLIF((s.raw->'stats'->>'maxStorage')::numeric, 0) AS \"Used %\" FROM servers s WHERE s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) ORDER BY 5 DESC NULLS LAST"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Free"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 10,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host local storage used % (reported by VME)",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'storage_pct' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 10,
+        "y": 43,
+        "w": 14,
+        "h": 7
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Host filesystems (node_exporter)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "B",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "C",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "D",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "E",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((100 * (1 - node_filesystem_files_free{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_files_free{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_files{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "F",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / (-deriv(node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}[1d]) > 0) / 86400) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "G",
+          "expr": "max by (nodename, fs, fstype, mountpoint) (label_replace(label_replace(((node_filesystem_readonly{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_readonly{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\"))",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Size"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Available"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days to full"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Inodes used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read-only"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "READ-ONLY",
+                        "color": "red"
+                      },
+                      "0": {
+                        "text": "rw",
+                        "color": "green"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value #A": "Size",
+              "Value #B": "Used",
+              "Value #C": "Available",
+              "Value #D": "Used %",
+              "Value #E": "Inodes used %",
+              "Value #F": "Days to full",
+              "Value #G": "Read-only",
+              "nodename": "Host",
+              "fs": "Filesystem",
+              "fstype": "Type",
+              "mountpoint": "Mount point"
+            }
+          }
+        }
+      ],
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem used % (amber 80, red 90)",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((100 * (1 - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((100 * (1 - node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"} / node_filesystem_size_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"})) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 59,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Filesystem free space",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vme-prom"
+          },
+          "refId": "A",
+          "expr": "label_replace(label_replace(((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) * on (mountpoint) group_left (datastore, datastore_type) vme_datastore_info or ((node_filesystem_avail_bytes{vme_host_id=~\"${host:pipe}\", fstype!~\"tmpfs|devtmpfs|overlay|squashfs|ramfs|nsfs|tracefs|autofs|efivarfs|iso9660|fuse.*\", mountpoint!~\"/run.*|/snap/.*|/var/lib/docker/.*|/var/lib/kubelet/.*\"}) unless on (mountpoint) vme_datastore_info)), \"fs\", \"$1\", \"mountpoint\", \"(.*)\"), \"fs\", \"$1 (datastore)\", \"datastore\", \"(.+)\")",
+          "legendFormat": "{{nodename}} {{fs}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vme-prom"
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 12,
+        "y": 59,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Failover capacity (N+1)",
+      "collapsed": false,
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 67,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "N+1 failover capacity per cluster",
+      "description": "Memory allocated to running VMs, as a share of what the cluster could still hold if its largest host failed.\nEach host keeps 4 GB for itself (OS, cluster services, agent, libvirt). VME treats VM memory as a reservation\n(no memory overcommit by default), so **over 100% means a host failure or maintenance evacuation can't place every VM**.\nHPE's rule: never allocate more than (N-1)/N of cluster memory, e.g. keep 33% free on 3 hosts\n([capacity planning](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/capacity_planning.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH h AS (SELECT cluster_id, id, max_memory - 4294967296 AS usable FROM servers WHERE kind = 'host' AND present AND cluster_id IS NOT NULL), c AS (SELECT cluster_id, count(*) AS hosts, sum(usable) AS usable, sum(usable) - max(usable) AS n1 FROM h GROUP BY 1), v AS (SELECT h.cluster_id, sum(vm.max_memory) AS alloc FROM servers vm JOIN h ON h.id = vm.host_id WHERE vm.kind = 'vm' AND vm.present AND vm.power_state = 'on' GROUP BY 1) SELECT cl.name AS \"Cluster\", c.hosts AS \"Hosts\", c.usable AS \"Usable memory\", c.n1 AS \"Usable if largest host fails\", COALESCE(v.alloc, 0) AS \"Allocated to running VMs\", c.n1 - COALESCE(v.alloc, 0) AS \"Headroom\", 100.0 * COALESCE(v.alloc, 0) / NULLIF(c.n1, 0) AS \"% of N+1 capacity\" FROM c JOIN clusters cl ON cl.id = c.cluster_id LEFT JOIN v USING (cluster_id) ORDER BY 7 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Usable memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Usable if largest host fails"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocated to running VMs"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Headroom"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "% of N+1 capacity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 150
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 90
+                    },
+                    {
+                      "color": "red",
+                      "value": 100
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 0,
+        "y": 68,
+        "w": 24,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Workload",
+      "collapsed": false,
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 73,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Running VMs",
+      "description": "",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), s.name AS metric, avg(m.value) AS value FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE $__timeFilter(m.time) AND m.entity_type = 'host' AND m.metric = 'vm_running' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": 300000,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 74,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "vCPU : core ratio (running VMs)",
+      "description": "vCPUs of running VMs on the host divided by the host's cores. HPE's guidance: 1:1 for latency-sensitive workloads, 2:1 general purpose, 4:1 dev/test, 8:1 or more only for idle or bursty workloads. Over-committed CPU means more scheduling latency (CPU ready), not failures ([capacity planning](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/capacity_planning.rst)).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT s.name, sum(v.max_cores)::float / NULLIF(s.max_cores, 0) AS ratio FROM servers s JOIN servers v ON v.host_id = s.id AND v.present AND v.kind = 'vm' AND v.power_state = 'on' WHERE s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.id IN ($host)) GROUP BY s.name, s.max_cores ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "reduceOptions": {
+          "values": true,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 12,
+        "y": 74,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}
