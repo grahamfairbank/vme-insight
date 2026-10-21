@@ -57,23 +57,28 @@ docker compose --profile https cp https:/data/caddy/pki/authorities/local/root.c
 
 Import `vme-insight-root.crt` as a trusted root CA on each machine whose browser opens Grafana:
 
-* **Windows** (Edge, Chrome): use PowerShell, in the folder holding the file. Writing to the machine-wide store needs administrator rights, so the first command asks Windows to elevate: approve the **UAC** prompt (*Do you want to allow this app to make changes to your device?* → **Yes**). Without elevation, `Import-Certificate` fails with *Access is denied*. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
+* **Windows** (Edge, Chrome): use PowerShell, in the folder holding `vme-insight-root.crt`. Pick one option. Don't double-click the certificate to install it: Windows' import wizard files it under *Intermediate Certification Authorities*, where browsers still reject it.
+
+  **Option 1: every user on the machine (needs administrator rights).** Writing to the machine-wide store needs an elevated PowerShell; in a normal window, `Import-Certificate` fails with *Access is denied*. This command opens an elevated window and runs the import there. Approve the **UAC** prompt (*Do you want to allow this app to make changes to your device?* → **Yes**):
   ```powershell
-  # Trust the vme-insight root for every user on this machine.
-  # Opens an elevated PowerShell (approve the UAC prompt) and imports the file from the current folder.
   Start-Process powershell -Verb RunAs -ArgumentList '-NoExit','-Command',"Import-Certificate -FilePath '$PWD\vme-insight-root.crt' -CertStoreLocation Cert:\LocalMachine\Root"
+  ```
 
-  # No administrator rights? Trust it for your account only. Edge and Chrome use this store too;
-  # Windows asks you to confirm installing a root certificate: click Yes.
+  **Option 2: just your Windows account (no administrator rights needed).** Edge and Chrome trust this store too. Windows shows a security warning asking you to confirm installing a root certificate; click **Yes**:
+  ```powershell
   Import-Certificate -FilePath .\vme-insight-root.crt -CertStoreLocation Cert:\CurrentUser\Root
+  ```
 
-  # Check: should list "Caddy Local Authority - <year> ECC Root"
+  **Check** that it landed in a Root store. It should list *Caddy Local Authority - &lt;year&gt; ECC Root*, under `LocalMachine\Root` (option 1) or `CurrentUser\Root` (option 2):
+  ```powershell
   Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root | Where-Object Subject -like '*Caddy Local Authority*' | Format-List PSParentPath, Subject, Thumbprint, NotAfter
+  ```
 
-  # If it was imported before by double-clicking the file, remove the copy Windows filed as an intermediate
-  # (the LocalMachine part needs the elevated window; CurrentUser works in any window)
+  **Clean up** a copy left by an earlier double-click install, which Windows filed as an intermediate. Removing it from `LocalMachine\CA` needs the elevated window from option 1; `CurrentUser\CA` works in any window:
+  ```powershell
   Get-ChildItem Cert:\LocalMachine\CA, Cert:\CurrentUser\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
   ```
+
   Then close every browser window and reopen it.
 * **macOS**: Keychain Access → System, import, then set it to **Always Trust**.
 * **Firefox** keeps its own list: Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import.
