@@ -41,6 +41,8 @@ CROPS = [
     ("host-filesystems", "vme-hvm-hosts", ["Host filesystems (node_exporter)", "Filesystem free space"]),
     ("bottlenecks-cpu", "vme-hvm-bottlenecks", ["CPU pressure (PSI some)", "vCPU wait % now (healthy < 5%)"]),
     ("capacity-table", "vme-hvm-capacity", ["Capacity per host", "Memory allocated / host memory"]),
+    ("fleet-tiles", "vme-overview", ["VM disk size (provisioned)", "Running VMs assessed"]),
+    ("idle-vms", "vme-vms", ["Running VMs by peak CPU (idle = never above 5% in 24 hours)"]),
 ]
 
 # (file name, dashboard uid, panel title): the panel with its guidance tooltip open

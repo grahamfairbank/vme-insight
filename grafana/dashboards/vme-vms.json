@@ -797,12 +797,140 @@
     },
     {
       "type": "row",
-      "title": "Details",
+      "title": "Idle VM candidates",
       "collapsed": false,
       "id": 11,
       "gridPos": {
         "x": 0,
         "y": 34,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Running VMs by peak CPU (idle = never above 5% in 24 hours)",
+      "description": "Running VMs whose CPU never went above 5% in the last 24 hours (VME's CPU figure, sampled every minute). VME's figure reads about 2% even for an idle VM, so the threshold sits above that. Candidates to power off, shrink or reclaim; check the list on the VME Virtual Machines dashboard first. Change IDLE_PCT / IDLE_WINDOW in tools/build_dashboards.py to redefine idle.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH w AS (SELECT m.entity_id, max(m.value) AS peak, avg(m.value) AS mean, count(*) AS samples FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric = 'cpu_pct' AND m.time > now() - INTERVAL '24 hours' AND s.present AND s.power_state = 'on' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm)) GROUP BY 1 HAVING count(*) >= 10) SELECT s.name AS \"VM\", h.name AS \"Host\", s.max_cores AS \"vCPU\", s.max_memory AS \"Memory\", w.peak AS \"Peak CPU\", w.mean AS \"Average CPU\", w.peak < 5 AS \"Idle\" FROM w JOIN servers s ON s.id = w.entity_id LEFT JOIN servers h ON h.id = s.host_id ORDER BY w.peak"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak CPU"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Average CPU"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Idle"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "true": {
+                        "color": "#EAB839",
+                        "index": 0
+                      },
+                      "false": {
+                        "color": "transparent",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Details",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
         "w": 24,
         "h": 1
       },
@@ -944,10 +1072,10 @@
           "show": false
         }
       },
-      "id": 12,
+      "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 35,
+        "y": 42,
         "w": 24,
         "h": 10
       },

@@ -79,14 +79,15 @@ class Board:
         }
 
 
-def stat(title, sql, unit="none", color="blue", thresholds=None, desc="", text=False, link=None):
+def stat(title, sql, unit="none", color="blue", thresholds=None, desc="", text=False, link=None, names=False):
     steps = thresholds or [{"color": color, "value": None}]
     p = {
         "type": "stat", "title": title, "description": desc, "targets": [target(sql, "table")],
         "fieldConfig": {"defaults": {"unit": unit, "color": {"mode": "thresholds"},
                                      "thresholds": {"mode": "absolute", "steps": steps}}, "overrides": []},
         "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "/.*/" if text else "", "values": False},
-                    "colorMode": "value", "graphMode": "none", "textMode": "value", "justifyMode": "center"},
+                    "colorMode": "value", "graphMode": "none", "textMode": "value_and_name" if names else "value",
+                    "justifyMode": "center", **({"orientation": "horizontal"} if names else {})},
     }
     if link:
         p["links"] = [{"title": title, "url": link}]
@@ -329,6 +330,26 @@ SERVICES_SQL = """
     FROM appliance a, unnest(ARRAY['database', 'elastic', 'rabbit', 'cpu', 'memory', 'storage']) AS k
     WHERE a.id = 1"""
 
+# Idle VM: running, and VME's CPU figure never above IDLE_PCT for the whole IDLE_WINDOW.
+# VME reports about 2% CPU even for a VM the kernel measures at under 1%, so 1% would never match.
+IDLE_PCT = 5
+IDLE_WINDOW = "24 hours"
+IDLE_DESC = (f"Running VMs whose CPU never went above {IDLE_PCT}% in the last {IDLE_WINDOW} (VME's CPU figure, "
+             "sampled every minute). VME's figure reads about 2% even for an idle VM, so the threshold sits above that. "
+             "Candidates to power off, shrink or reclaim; check the list on the VME Virtual "
+             f"Machines dashboard first. Change IDLE_PCT / IDLE_WINDOW in tools/build_dashboards.py to redefine idle.")
+
+
+def idle_vms_sql(where, select):
+    return f"""
+        WITH w AS (SELECT m.entity_id, max(m.value) AS peak, avg(m.value) AS mean, count(*) AS samples
+                   FROM metrics m JOIN servers s ON s.id = m.entity_id
+                   WHERE m.entity_type = 'vm' AND m.metric = 'cpu_pct' AND m.time > now() - INTERVAL '{IDLE_WINDOW}'
+                     AND s.present AND s.power_state = 'on' {where}
+                   GROUP BY 1 HAVING count(*) >= 10)
+        {select}"""
+
+
 CLUSTER_VAR = qvar("cluster", "Cluster", "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name")
 HOST_VAR = qvar("host", "Host", f"""SELECT name AS __text, id AS __value FROM servers
     WHERE kind = 'host' AND present AND {f('cluster', 'cluster_id')} ORDER BY name""")
@@ -502,6 +523,17 @@ def overview():
         GROUP BY 1, 2 ORDER BY 1""", "Bps"), 12, 9)
 
     b.row("Fleet")
+    b.add(stat("VM disk size (provisioned)", f"""
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY s.max_storage) AS "Median", avg(s.max_storage) AS "Average"
+        FROM servers s WHERE s.kind = 'vm' AND s.present AND s.max_storage > 0 {VM_F}""", "bytes", names=True,
+        desc="Median and average disk space provisioned per VM (all disks of all current VMs, running or not). "
+             "A median well below the average means a few very large VMs."), 8, 5)
+    b.add(stat(f"Idle VMs (CPU never above {IDLE_PCT}% in {IDLE_WINDOW})",
+               idle_vms_sql(VM_F, f"SELECT count(*) FILTER (WHERE peak < {IDLE_PCT}) FROM w"),
+               thresholds=[{"color": "green", "value": None}, {"color": "#EAB839", "value": 1}], desc=IDLE_DESC,
+               link="/d/vme-vms"), 8, 5)
+    b.add(stat("Running VMs assessed", idle_vms_sql(VM_F, "SELECT count(*) FROM w"), color="text",
+               desc=f"Running VMs with at least 10 CPU samples in the last {IDLE_WINDOW}, the base for the idle count."), 8, 5)
     b.add(timeseries("VMs running vs stopped", """
         SELECT $__timeGroupAlias(time, $__interval), CASE metric WHEN 'vms_on' THEN 'running' ELSE 'stopped' END AS metric,
                max(value) AS value
@@ -603,6 +635,14 @@ def vms():
     b.add(timeseries("Worst single vCPU ready (healthy < 5%)", series("vm", "cpu_ready_max_vcpu_pct", where=VM_ONLY_F),
                      "percent", minv=0, bands=READY_STEPS,
                      desc=READY_GUIDE + "\n\nThis panel: the most-starved vCPU of each VM. Compare with the average to spot one overloaded vCPU."), 24, 8)
+    b.row("Idle VM candidates")
+    b.add(table(f"Running VMs by peak CPU (idle = never above {IDLE_PCT}% in {IDLE_WINDOW})",
+        idle_vms_sql(VM_ONLY_F, f"""SELECT s.name AS "VM", h.name AS "Host", s.max_cores AS "vCPU", s.max_memory AS "Memory",
+               w.peak AS "Peak CPU", w.mean AS "Average CPU", w.peak < {IDLE_PCT} AS "Idle"
+        FROM w JOIN servers s ON s.id = w.entity_id LEFT JOIN servers h ON h.id = s.host_id ORDER BY w.peak"""),
+        [unit_override("Memory", "bytes"), unit_override("Peak CPU", "percent"), unit_override("Average CPU", "percent"),
+         colored("Idle", {"true": "#EAB839", "false": "transparent"})], desc=IDLE_DESC), 24, 6)
+
     b.row("Details")
     b.add(table("Virtual machines", f"""
         SELECT s.name AS "VM", s.power_state AS "Power", s.status AS "Status", h.name AS "Host", cl.name AS "Cluster",

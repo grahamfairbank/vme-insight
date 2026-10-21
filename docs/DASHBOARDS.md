@@ -41,7 +41,7 @@ The home page. It plays the same role as the vSphere Overview dashboard.
 | Datastores | Used % per datastore, free space over time, and a table with type, status, size and used % |
 | VME manager | Manager CPU, JVM memory, system memory, storage, service status (database, Elasticsearch, RabbitMQ), clouds with last sync time, recent activity |
 | Top VMs | Top N (picker) by CPU, memory and CPU ready. CPU and network of the busiest VMs over time. |
-| Fleet | Running vs stopped VMs over time, power state, OS families |
+| Fleet | **VM disk size**: median and average provisioned disk per VM (a median well below the average means a few very large VMs). **Idle VMs**: running VMs whose CPU never went above 5% in 24 hours, out of the running VMs assessed. Running vs stopped VMs over time, power state, OS families. |
 
 ### CPU ready guidance
 
@@ -86,7 +86,11 @@ VME's per-vCPU values average exactly to its VM value, so it is a per-vCPU avera
 
 ## VME Virtual Machines
 
-CPU, memory and disk usage (%), network, disk IOPS, CPU ready (average and worst single vCPU, with guidance bands) and power history per VM, and a VM table: power, status, host, cluster, IP, vCPU, memory, disk, OS, QEMU guest agent, Morpheus agent, cloud, plan, image, owner and creation date.
+CPU, memory and disk usage (%), network, disk IOPS, CPU ready (average and worst single vCPU, with guidance bands) and power history per VM, a list of **idle VM candidates** (running VMs ordered by peak CPU over 24 hours, idle when never above 5%), and a VM table: power, status, host, cluster, IP, vCPU, memory, disk, OS, QEMU guest agent, Morpheus agent, cloud, plan, image, owner and creation date.
+
+![Idle VM candidates](images/idle-vms.png)
+
+Why 5%: VME reports about 2% CPU even for a VM the kernel measures at under 1% (seen on a 9.1 lab), so a lower threshold would never match. To redefine idle, change `IDLE_PCT` and `IDLE_WINDOW` in `tools/build_dashboards.py` and rebuild.
 
 VM memory % comes from inside the guest and needs the **QEMU guest agent**. Without it VME reports host-side figures, or nothing.
 

@@ -55,6 +55,14 @@ The Overview turns CPU ready into four tiles: worst VM, worst single vCPU (which
 
 ![CPU contention tiles](docs/images/cpu-contention.png)
 
+### Right-sizing
+
+How big VMs typically are, and which ones are doing nothing. Idle means running with CPU never above 5% for a day; VME's own CPU figure reads about 2% even for an idle VM, so the threshold sits above that. The VMs dashboard lists the candidates.
+
+![VM disk size and idle VM tiles](docs/images/fleet-tiles.png)
+
+![Idle VM candidates](docs/images/idle-vms.png)
+
 ### Inventory and lifecycle
 
 Every host and VM, with its OS release, end-of-life date, latest point release, Morpheus agent version and QEMU guest agent status, worst first. Lifecycle data comes from endoflife.date and refreshes daily.
@@ -82,13 +90,13 @@ Kernel-level pressure stall information (PSI), load per core and vCPU wait show 
 <details>
 <summary>Full-page screenshots of all nine dashboards</summary>
 
-**VME Overview**: estate, cluster capacity, N+1 headroom, hosts, datastores, manager, CPU contention, top VMs, fleet
+**VME Overview**: estate, cluster capacity, N+1 headroom, hosts, datastores, manager, CPU contention, top VMs, fleet (VM disk size, idle VMs)
 ![VME Overview](docs/images/overview.png)
 
 **VME Hosts**: inventory, CPU, CPU ready, memory, swap, network, local storage, filesystems, N+1, vCPU:core
 ![VME Hosts](docs/images/hosts.png)
 
-**VME Virtual Machines**: CPU, memory, disk, network, IOPS, CPU ready (average and worst vCPU), power, inventory
+**VME Virtual Machines**: CPU, memory, disk, network, IOPS, CPU ready (average and worst vCPU), power, idle VM candidates, inventory
 ![VME Virtual Machines](docs/images/vms.png)
 
 **VME Inventory & Lifecycle**: OS and agent currency, releases in use, unrecognised OS strings, change log
@@ -171,6 +179,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | vme-insight | VME | vme-insight-plugin (optional) |
 |---|---|---|
+| 0.3.0 | 9.1 or later | 0.1.0 or later |
 | 0.2.0 | 9.1 or later | 0.1.0 or later |
 | 0.1.0 | 9.1 or later | Not supported (no https front end or anonymous viewing) |
 

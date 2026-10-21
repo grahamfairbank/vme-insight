@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (2026-10-21)
+
+* New Overview tiles: **VM disk size** (median and average provisioned disk per VM) and **Idle VMs** (running VMs whose CPU never went above 5% in 24 hours; VME reports about 2% even for an idle VM, so the threshold sits above that), with an idle-candidates list on the VMs dashboard.
+* Screenshots refreshed.
+
 ## 0.2.0 (2026-10-21)
 
 Support for showing the dashboards inside VME with the companion [vme-insight-plugin](https://github.com/grahamfairbank/vme-insight-plugin). Everything is optional; defaults are unchanged.

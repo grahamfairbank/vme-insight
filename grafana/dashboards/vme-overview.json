@@ -2930,6 +2930,197 @@
       "panels": []
     },
     {
+      "type": "stat",
+      "title": "VM disk size (provisioned)",
+      "description": "Median and average disk space provisioned per VM (all disks of all current VMs, running or not). A median well below the average means a few very large VMs.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY s.max_storage) AS \"Median\", avg(s.max_storage) AS \"Average\" FROM servers s WHERE s.kind = 'vm' AND s.present AND s.max_storage > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "horizontal"
+      },
+      "id": 47,
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 8,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Idle VMs (CPU never above 5% in 24 hours)",
+      "description": "Running VMs whose CPU never went above 5% in the last 24 hours (VME's CPU figure, sampled every minute). VME's figure reads about 2% even for an idle VM, so the threshold sits above that. Candidates to power off, shrink or reclaim; check the list on the VME Virtual Machines dashboard first. Change IDLE_PCT / IDLE_WINDOW in tools/build_dashboards.py to redefine idle.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH w AS (SELECT m.entity_id, max(m.value) AS peak, avg(m.value) AS mean, count(*) AS samples FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric = 'cpu_pct' AND m.time > now() - INTERVAL '24 hours' AND s.present AND s.power_state = 'on' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) GROUP BY 1 HAVING count(*) >= 10) SELECT count(*) FILTER (WHERE peak < 5) FROM w"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "links": [
+        {
+          "title": "Idle VMs (CPU never above 5% in 24 hours)",
+          "url": "/d/vme-vms"
+        }
+      ],
+      "id": 48,
+      "gridPos": {
+        "x": 8,
+        "y": 96,
+        "w": 8,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Running VMs assessed",
+      "description": "Running VMs with at least 10 CPU samples in the last 24 hours, the base for the idle count.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH w AS (SELECT m.entity_id, max(m.value) AS peak, avg(m.value) AS mean, count(*) AS samples FROM metrics m JOIN servers s ON s.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric = 'cpu_pct' AND m.time > now() - INTERVAL '24 hours' AND s.present AND s.power_state = 'on' AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) GROUP BY 1 HAVING count(*) >= 10) SELECT count(*) FROM w"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 49,
+      "gridPos": {
+        "x": 16,
+        "y": 96,
+        "w": 8,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
       "type": "timeseries",
       "title": "VMs running vs stopped",
       "description": "",
@@ -2980,10 +3171,10 @@
           "sort": "desc"
         }
       },
-      "id": 47,
+      "id": 50,
       "gridPos": {
         "x": 0,
-        "y": 96,
+        "y": 101,
         "w": 12,
         "h": 8
       },
@@ -3039,10 +3230,10 @@
           "mode": "single"
         }
       },
-      "id": 48,
+      "id": 51,
       "gridPos": {
         "x": 12,
-        "y": 96,
+        "y": 101,
         "w": 6,
         "h": 8
       },
@@ -3098,10 +3289,10 @@
           "mode": "single"
         }
       },
-      "id": 49,
+      "id": 52,
       "gridPos": {
         "x": 18,
-        "y": 96,
+        "y": 101,
         "w": 6,
         "h": 8
       },
