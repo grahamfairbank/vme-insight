@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 (2026-10-22)
+
+* **Fixed:** the collector failed with `PermissionError: /config/config.yaml` when the config file belonged to another user (e.g. installed as root) with mode 600, as the install guide recommends. The container now starts as root only to copy the config into a private `/config`, then drops to uid 1000 with no capabilities and no-new-privileges. `docker-compose.yml` mounts `./config` at `/config-src`; rebuild the collector after upgrading.
+
 ## 0.4.0 (2026-10-21)
 
 * **VM resource weight treemaps** on the Overview: CPU, allocated memory and storage share per VM, labelled with the share. Uses the Treemap panel by Grafana Labs (`marcusolsson-treemap-panel` 2.1.1, signed, pinned), installed by Grafana on first start; `GRAFANA_PLUGINS` and [offline installs](docs/INSTALL.md#offline-installs) documented.

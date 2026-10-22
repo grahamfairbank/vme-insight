@@ -54,6 +54,8 @@ cp config/config.example.yaml config/config.yaml
 chmod 600 config/config.yaml
 ```
 
+The file can belong to any user, including root: the collector container reads it once at start, as root, keeps a private copy, then drops to an unprivileged user before running anything.
+
 Set `morpheus.url` (for example `https://vme-manager.example.com`), `username` and `password`.
 
 **TLS.** VME installs a self-signed certificate. Pin it rather than turning verification off:

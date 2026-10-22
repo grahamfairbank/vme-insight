@@ -13,7 +13,7 @@ docker compose logs --tail 50 collector
 |---|---|---|
 | `config: morpheus.url is not set` | No `config/config.yaml`, or `url` empty | Copy `config.example.yaml` and fill it in |
 | `morpheus: set api_token, or username and password` | Credentials missing | Set them in `config.yaml` |
-| `PermissionError ... /config/config.yaml` | The container user (uid 1000) can't read the file | `chmod 640 config/config.yaml`, or make uid 1000 its owner |
+| `PermissionError ... /config/config.yaml` (versions before 0.4.1) | The collector ran as uid 1000 and couldn't read a config owned by another user (e.g. root) with mode 600 | Upgrade to 0.4.1 or later (`git pull && docker compose build && docker compose up -d`). Since 0.4.1 the config can have any owner and mode: the container copies it privately before dropping privileges. Workaround on older versions: `chown 1000 config/config.yaml`. |
 | `waiting for database` repeating | TimescaleDB not ready | `docker compose logs timescaledb` |
 
 ## Connecting to VME

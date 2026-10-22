@@ -7,6 +7,7 @@ vme-insight only reads from VME. It holds a credential for your virtualization m
 * Use a **dedicated read-only VME account** ([INSTALL](INSTALL.md#1-create-a-reader-account-in-vme), [Role Permissions](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/roles/role_permissions.rst)). Never use an admin account in production. If the collector host is compromised, a read-only credential exposes inventory, not control.
 * `config/config.yaml` and `.env` hold secrets. Keep them `chmod 600`. They are git-ignored; keep them that way.
 * All `morpheus.*` settings can come from environment variables instead (`VME_PASSWORD`, etc.) if you'd rather inject them from a secrets manager.
+* The collector container starts as root only to copy the mounted config into a private, mode-600 copy, then runs as uid 1000 with no Linux capabilities and no-new-privileges (`collector/entrypoint.sh`).
 * The database has two users: `vme` (owner, used by the collector) and `grafana_ro` (SELECT only, used by Grafana). Grafana can't modify data.
 
 ## Transport

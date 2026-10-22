@@ -31,7 +31,7 @@ services:
       GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?set GRAFANA_DB_PASSWORD in .env}
       TZ: ${TZ:-UTC}
     volumes:
-      - ./config:/config:ro
+      - ./config:/config-src:ro   # copied to a private /config by the entrypoint
       - ./probe:/probe
       - prom-targets:/targets
 

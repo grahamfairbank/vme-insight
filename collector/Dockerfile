@@ -6,9 +6,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY vmeinsight ./vmeinsight
 
-# uid 1000 so a bind-mounted config owned by a normal host user is readable
+# unprivileged user the collector runs as (see entrypoint.sh)
 RUN useradd --uid 1000 --create-home app && mkdir /probe /targets && chown app /probe /targets
-USER app
+COPY entrypoint.sh /entrypoint.sh
+
+# The entrypoint starts as root only to copy the mounted config (whatever its host owner or mode)
+# into a private /config, then drops to uid 1000 with no capabilities before running anything.
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=60s --timeout=5s --start-period=120s \
   CMD python -c "import os,time,sys; sys.exit(time.time()-os.path.getmtime('/tmp/heartbeat') > 300)"
