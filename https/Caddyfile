@@ -1,10 +1,14 @@
 # https front end for Grafana (docker compose --profile https). Settings come from .env:
-#   HTTPS_HOSTNAME  name (or names, space-separated) users type, e.g. vme-insight.example.com
+#   HTTPS_HOSTNAME  names and IPs users type, space-separated, e.g. "vme-insight.example.com 10.0.0.25"
+#   HTTPS_DEFAULT_SNI  the IP users type (if any). Browsers send no server name when given an IP,
+#                   and behind Docker Caddy can't tell which address was used, so without this,
+#                   https://<ip>:<port> fails the TLS handshake (ERR_SSL_PROTOCOL_ERROR).
 #   HTTPS_ALLOW     networks allowed in, space-separated CIDRs; everyone else gets 403
 #   HTTPS_TLS       "internal" (Caddy's own CA; trust https-data's root.crt) or
 #                   "/certs/<cert>.pem /certs/<key>.pem" for your own certificate in https/certs/
 {
 	admin off
+	default_sni {$HTTPS_DEFAULT_SNI:localhost}
 	# HTTPS_LOG_LEVEL=DEBUG logs every request and failed TLS handshakes ("unknown certificate" =
 	# the browser doesn't trust the certificate). Leave it at INFO normally.
 	log {

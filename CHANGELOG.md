@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 (2026-10-22)
+
+* **Fixed:** browsing to the https front end by IP (`https://<ip>:3443`) failed with `ERR_SSL_PROTOCOL_ERROR`: browsers send no server name for an IP, and behind Docker the front end couldn't tell which address was used. New `HTTPS_DEFAULT_SNI`: set it to that IP (and list the IP in `HTTPS_HOSTNAME` and the certificate). Unset, behaviour is unchanged.
+* Troubleshooting: an https front end section (protocol error, untrusted certificate, name mismatch, 403).
+
 ## 0.4.1 (2026-10-22)
 
 * **Fixed:** the collector failed with `PermissionError: /config/config.yaml` when the config file belonged to another user (e.g. installed as root) with mode 600, as the install guide recommends. The container now starts as root only to copy the config into a private `/config`, then drops to uid 1000 with no capabilities and no-new-privileges. `docker-compose.yml` mounts `./config` at `/config-src`; rebuild the collector after upgrading.

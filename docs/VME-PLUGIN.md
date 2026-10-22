@@ -48,10 +48,13 @@ GRAFANA_ALLOW_EMBEDDING=true                 # allow Grafana inside VME pages
 GRAFANA_ANONYMOUS=true                       # read-only Viewer without signing in
 GRAFANA_ROOT_URL=https://vme-insight.example.com:3443/
 GRAFANA_COOKIE_SECURE=true
-HTTPS_HOSTNAME=vme-insight.example.com       # the name users type
+HTTPS_HOSTNAME=vme-insight.example.com       # the name users type (add the IP too if they use it)
+# HTTPS_DEFAULT_SNI=10.0.0.25                # only if users browse by IP: that IP (see below)
 HTTPS_ALLOW="10.20.0.0/16 192.168.13.0/24"   # networks allowed in; everyone else gets 403
 HTTPS_TLS="/certs/vme-insight.crt /certs/vme-insight.key"   # see step 3 to choose and create it
 ```
+
+**Browsing by IP.** Prefer a name. If users do type an IP (e.g. over a VPN), add it to `HTTPS_HOSTNAME`, set `HTTPS_DEFAULT_SNI` to it, and include it in the certificate (`tools/make-cert.sh host <name> <ip>`). Without `HTTPS_DEFAULT_SNI`, `https://<ip>:3443` fails with `ERR_SSL_PROTOCOL_ERROR`. Use the same address in `GRAFANA_ROOT_URL` and in the plugin's settings that users actually browse to, or Grafana's links and redirects will point at the other one.
 
 Decide on the certificate first ([step 3](#3-make-browsers-trust-the-certificate)). If you have no certificate yet, `tools/make-cert.sh host <name> [<ip>]` makes one for this host only in a few seconds. `HTTPS_TLS=internal` also works without any files, but it's a lab shortcut with real risks, explained in step 3.
 

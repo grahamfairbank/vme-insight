@@ -24,7 +24,8 @@ Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already ex
 | `GRAFANA_ROOT_URL` | *(blank)* | Grafana's public address, e.g. `https://vme-insight.example.com:3443/`. Set it when using the https front end. |
 | `GRAFANA_COOKIE_SECURE` | `false` | `true` once Grafana is only reached over https |
 | `HTTPS_PORT` | `3443` | Host port of the https front end |
-| `HTTPS_HOSTNAME` | `localhost` | Name(s) users type for Grafana, space-separated; the certificate is issued for these |
+| `HTTPS_HOSTNAME` | `localhost` | Names **and IPs** users type, space-separated, e.g. `"vme-insight.example.com 10.0.0.25"`. The certificate must cover all of them. |
+| `HTTPS_DEFAULT_SNI` | `localhost` | Set to the IP users type, if any. Browsers send no server name when connecting to an IP, so without this the front end can't pick a certificate and the browser shows `ERR_SSL_PROTOCOL_ERROR`. |
 | `HTTPS_ALLOW` | `127.0.0.1/32` | Networks allowed through the https front end, space-separated CIDRs (quote the value). Everyone else gets 403. |
 | `HTTPS_LOG_LEVEL` | `INFO` | `DEBUG` logs every request and failed TLS handshakes, for troubleshooting |
 | `HTTPS_TLS` | `internal` | `/certs/<cert> /certs/<key>` for a certificate in `https/certs/`: one from your organisation's CA, a public one, or one made with `tools/make-cert.sh`. `internal` (the default) makes the front end issue certificates from its own unrestricted CA: a lab shortcut only. See [Make browsers trust the certificate](VME-PLUGIN.md#3-make-browsers-trust-the-certificate) for the trade-offs. |

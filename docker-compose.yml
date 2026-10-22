@@ -96,6 +96,7 @@ services:
       - "${HTTPS_PORT:-3443}:443"
     environment:
       HTTPS_HOSTNAME: ${HTTPS_HOSTNAME:-localhost}
+      HTTPS_DEFAULT_SNI: ${HTTPS_DEFAULT_SNI:-localhost}
       HTTPS_ALLOW: ${HTTPS_ALLOW:-127.0.0.1/32}
       HTTPS_TLS: ${HTTPS_TLS:-internal}
       HTTPS_LOG_LEVEL: ${HTTPS_LOG_LEVEL:-INFO}

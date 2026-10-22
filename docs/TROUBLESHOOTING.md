@@ -61,6 +61,15 @@ The role also needs access to the groups and clouds to be monitored. Missing gro
 
 `python3 tools/check_dashboards.py` runs every panel query and prints any SQL or PromQL errors.
 
+## https front end
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `ERR_SSL_PROTOCOL_ERROR` / "sent an invalid response" when opening `https://<ip>:3443` | Browsing by IP: the browser sends no server name and the front end has no certificate to offer | Add the IP to `HTTPS_HOSTNAME`, set `HTTPS_DEFAULT_SNI=<ip>`, make sure the certificate covers the IP, then `docker compose --profile https up -d https`. Or browse by name. |
+| `ERR_CERT_AUTHORITY_INVALID` / blank VME tabs | The browser doesn't trust the certificate | [Make browsers trust the certificate](VME-PLUGIN.md#3-make-browsers-trust-the-certificate) |
+| `ERR_CERT_COMMON_NAME_INVALID` | The address typed isn't in the certificate | Reissue it with every name and IP users type |
+| `403 Forbidden` | The client's network isn't in `HTTPS_ALLOW` | Add its network (CIDR); over a VPN that's the VPN's address range |
+
 ## Exporter installer
 
 | Output on the host | Cause | Fix |
