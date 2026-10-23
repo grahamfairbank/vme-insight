@@ -52,7 +52,7 @@ TOOLTIPS = [
     ("tip-memory-alarm", "vme-hosts", "Memory usage"),
     ("tip-n-plus-1", "vme-hosts", "N+1 failover capacity per cluster"),
     ("tip-manager-disk", "vme-health", "Disk used (amber 75%, red 85%)"),
-    ("tip-manager-size", "vme-health", "Manager size vs HPE recommendation"),
+    ("tip-manager-size", "vme-health", "Manager size: Essentials and Enterprise"),
     ("tip-vcpu-wait", "vme-hvm-bottlenecks", "Top 10 VMs by vCPU wait % (healthy < 5%, act > 10%)"),
     ("tip-host-filesystems", "vme-hvm-hosts", "Host filesystems (node_exporter)"),
 ]
@@ -176,8 +176,14 @@ def open_dashboard(page, uid, extra):
     page.set_viewport_size({"width": WIDTH, "height": 6000})  # tall, so lazy panels all load
     page.goto(f"{BASE}/d/{uid}?orgId=1&kiosk&theme=dark{rng}", wait_until="domcontentloaded")
     settle(page)
-    n = page.evaluate(BLUR_JS, [TERMS, PATTERNS])
-    leaks = page.evaluate(LEAK_JS, [TERMS, PATTERNS])
+    # some panels (e.g. treemaps) redraw after loading and bring names back: blur again, then recheck
+    n = 0
+    for _ in range(4):
+        n += page.evaluate(BLUR_JS, [TERMS, PATTERNS])
+        time.sleep(2)
+        leaks = page.evaluate(LEAK_JS, [TERMS, PATTERNS])
+        if not leaks:
+            break
     if leaks:
         raise SystemExit(f"{uid}: unblurred sensitive text found, not saving: {leaks}")
     bottom = page.evaluate("Math.max(...[...document.querySelectorAll('.react-grid-item')]"

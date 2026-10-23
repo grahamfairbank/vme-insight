@@ -222,7 +222,7 @@
     {
       "type": "stat",
       "title": "Disk used (amber 75%, red 85%)",
-      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the manager's disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from.",
       "targets": [
         {
           "datasource": {
@@ -290,7 +290,7 @@
     {
       "type": "stat",
       "title": "Disk free",
-      "description": "Free space on the fullest manager filesystem. The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "description": "Free space on the fullest manager filesystem. The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the manager's disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from.",
       "targets": [
         {
           "datasource": {
@@ -630,7 +630,7 @@
     {
       "type": "table",
       "title": "Manager filesystems (reported by VME)",
-      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the manager's disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from.",
       "targets": [
         {
           "datasource": {
@@ -760,8 +760,8 @@
       "gridPos": {
         "x": 0,
         "y": 21,
-        "w": 12,
-        "h": 6
+        "w": 24,
+        "h": 5
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -770,8 +770,8 @@
     },
     {
       "type": "table",
-      "title": "Manager size vs HPE recommendation",
-      "description": "The manager's resources compared with HPE's recommendation for an all-in-one appliance:\n4 CPU cores, 16 GB memory (8 GB minimum) and 200 GB storage ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "title": "Manager size: Essentials and Enterprise",
+      "description": "How this manager compares with both HPE sizing guides, each with its own result.\n\n**VM Essentials** (applies to a VME manager): the HPE Morpheus Manager Installer and `hvmcli deploy` create the manager\nfrom the VME QCOW2 image with a sizing profile: **Small = 12 GB RAM, 2 vCPUs**; **Medium** (the `hvmcli` default) and\n**Large** are bigger, but HPE doesn't publish their values or a manager disk size ([installer](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/installation/singleNode/hpe_installer.rst)).\nHPE publishes no per-manager object limits and asks for a workload-specific sizing review before large deployments\n([maximums](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/maximums.rst)).\n\n**Morpheus Enterprise** (for reference, e.g. before moving to an Enterprise licence): the appliance requirements are\n**16 GB RAM, 4 cores, 200 GB disk** ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).\n\nMemory allows 1 GB for what the OS doesn't report. Sustained CPU pressure, high JVM memory or swap use on this\ndashboard are the signs to move up a profile.",
       "targets": [
         {
           "datasource": {
@@ -782,13 +782,13 @@
           "rawQuery": true,
           "editorMode": "code",
           "format": "table",
-          "rawSql": "WITH m AS (SELECT DISTINCT ON (metric) metric, value FROM metrics WHERE entity_type = 'appliance' AND metric IN ('cpu.processorCount', 'memory.systemMemory', 'storage.total') AND time > now() - INTERVAL '1 hour' ORDER BY metric, time DESC) SELECT r.resource AS \"Resource\", r.have AS \"Manager\", r.want AS \"HPE recommends\", CASE WHEN r.ok THEN 'meets' ELSE 'below' END AS \"Status\" FROM (SELECT 1 AS o, 'CPU cores' AS resource, value::int::text AS have, '4' AS want, value >= 4 AS ok FROM m WHERE metric = 'cpu.processorCount' UNION ALL SELECT 2, 'Memory', pg_size_pretty(value::bigint), '16 GB', value >= 15.5 * 2^30 FROM m WHERE metric = 'memory.systemMemory' UNION ALL SELECT 3, 'Storage', pg_size_pretty(value::bigint), '200 GB', value >= 195e9 FROM m WHERE metric = 'storage.total') r ORDER BY r.o"
+          "rawSql": "WITH m AS (SELECT DISTINCT ON (metric) metric, value FROM metrics WHERE entity_type = 'appliance' AND metric IN ('cpu.processorCount', 'memory.systemMemory', 'storage.total') AND time > now() - INTERVAL '1 hour' ORDER BY metric, time DESC), c AS (SELECT (SELECT value FROM m WHERE metric = 'cpu.processorCount') AS cores, (SELECT value FROM m WHERE metric = 'memory.systemMemory') AS mem, (SELECT value FROM m WHERE metric = 'storage.total') AS disk) SELECT r.resource AS \"Item\", r.have AS \"Manager has\", r.ess AS \"Essentials needs\", r.ess_res AS \"Essentials result\", r.ent AS \"Enterprise needs\", r.ent_res AS \"Enterprise result\" FROM (SELECT 1 AS o, 'Overall' AS resource, cores::int || ' vCPUs, ' || pg_size_pretty(mem::bigint) AS have, 'Small profile: 2 vCPUs, 12 GB' AS ess, CASE WHEN cores < 2 OR mem < 11 * 2^30 THEN 'below Small' WHEN cores <= 2 AND mem < 13 * 2^30 THEN 'matches Small' ELSE 'Medium or Large' END AS ess_res, '4 cores, 16 GB, 200 GB' AS ent, CASE WHEN cores >= 4 AND mem >= 15 * 2^30 AND disk >= 200e9 THEN 'meets' ELSE 'below' END AS ent_res FROM c UNION ALL SELECT 2, 'CPU cores', cores::int::text, '2', CASE WHEN cores >= 2 THEN 'meets' ELSE 'below' END, '4', CASE WHEN cores >= 4 THEN 'meets' ELSE 'below' END FROM c WHERE cores IS NOT NULL UNION ALL SELECT 3, 'Memory', pg_size_pretty(mem::bigint), '12 GB', CASE WHEN mem >= 11 * 2^30 THEN 'meets' ELSE 'below' END, '16 GB', CASE WHEN mem >= 15 * 2^30 THEN 'meets' ELSE 'below' END FROM c WHERE mem IS NOT NULL UNION ALL SELECT 4, 'Disk', pg_size_pretty(disk::bigint), 'not published', 'n/a', '200 GB', CASE WHEN disk >= 200e9 THEN 'meets' ELSE 'below' END FROM c WHERE disk IS NOT NULL ) r ORDER BY r.o"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "filterable": true,
+            "filterable": false,
             "align": "auto"
           }
         },
@@ -796,7 +796,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Status"
+              "options": "Essentials result"
             },
             "properties": [
               {
@@ -819,6 +819,71 @@
                       "below": {
                         "color": "orange",
                         "index": 1
+                      },
+                      "below Small": {
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "matches Small": {
+                        "color": "blue",
+                        "index": 3
+                      },
+                      "Medium or Large": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "n/a": {
+                        "color": "transparent",
+                        "index": 5
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Enterprise result"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "meets": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "below": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "below Small": {
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "matches Small": {
+                        "color": "blue",
+                        "index": 3
+                      },
+                      "Medium or Large": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "n/a": {
+                        "color": "transparent",
+                        "index": 5
                       }
                     }
                   }
@@ -837,9 +902,9 @@
       },
       "id": 12,
       "gridPos": {
-        "x": 12,
-        "y": 21,
-        "w": 12,
+        "x": 0,
+        "y": 26,
+        "w": 24,
         "h": 6
       },
       "datasource": {
@@ -850,7 +915,7 @@
     {
       "type": "timeseries",
       "title": "Manager disk used % (amber 75, red 85)",
-      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at\nleast 200 GB for the manager ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)).",
+      "description": "The VME manager stores its database (MySQL), OpenSearch/Elasticsearch data (logs and stats),\nRabbitMQ queues, uploaded images and local backups on its disk, mostly under `/var/opt/morpheus`.\n\n| Used | Meaning |\n|---|---|\n| **under 75%** | Healthy |\n| **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |\n| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). |\n\nTo free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**\n(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the manager's disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from.",
       "targets": [
         {
           "datasource": {
@@ -925,7 +990,7 @@
       "id": 13,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 32,
         "w": 24,
         "h": 6
       },
@@ -941,7 +1006,7 @@
       "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 38,
         "w": 24,
         "h": 1
       },
@@ -1021,7 +1086,7 @@
       "id": 15,
       "gridPos": {
         "x": 0,
-        "y": 34,
+        "y": 39,
         "w": 6,
         "h": 7
       },
@@ -1088,7 +1153,7 @@
       "id": 16,
       "gridPos": {
         "x": 6,
-        "y": 34,
+        "y": 39,
         "w": 18,
         "h": 7
       },
@@ -1154,7 +1219,7 @@
       "id": 17,
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 46,
         "w": 8,
         "h": 7
       },
@@ -1220,7 +1285,7 @@
       "id": 18,
       "gridPos": {
         "x": 8,
-        "y": 41,
+        "y": 46,
         "w": 8,
         "h": 7
       },
@@ -1287,7 +1352,7 @@
       "id": 19,
       "gridPos": {
         "x": 16,
-        "y": 41,
+        "y": 46,
         "w": 8,
         "h": 7
       },
@@ -1352,7 +1417,7 @@
       "id": 20,
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 53,
         "w": 24,
         "h": 8
       },
@@ -1368,7 +1433,7 @@
       "id": 21,
       "gridPos": {
         "x": 0,
-        "y": 56,
+        "y": 61,
         "w": 24,
         "h": 1
       },
@@ -1438,7 +1503,7 @@
       "id": 22,
       "gridPos": {
         "x": 0,
-        "y": 57,
+        "y": 62,
         "w": 8,
         "h": 7
       }
@@ -1507,7 +1572,7 @@
       "id": 23,
       "gridPos": {
         "x": 8,
-        "y": 57,
+        "y": 62,
         "w": 8,
         "h": 7
       }
@@ -1601,7 +1666,7 @@
       "id": 24,
       "gridPos": {
         "x": 16,
-        "y": 57,
+        "y": 62,
         "w": 8,
         "h": 7
       }
@@ -1952,7 +2017,7 @@
       "id": 25,
       "gridPos": {
         "x": 0,
-        "y": 64,
+        "y": 69,
         "w": 24,
         "h": 9
       }
@@ -2041,7 +2106,7 @@
       "id": 26,
       "gridPos": {
         "x": 0,
-        "y": 73,
+        "y": 78,
         "w": 12,
         "h": 8
       }
@@ -2109,7 +2174,7 @@
       "id": 27,
       "gridPos": {
         "x": 12,
-        "y": 73,
+        "y": 78,
         "w": 12,
         "h": 8
       }
@@ -2190,7 +2255,7 @@
       "id": 28,
       "gridPos": {
         "x": 0,
-        "y": 81,
+        "y": 86,
         "w": 24,
         "h": 7
       }
@@ -2202,7 +2267,7 @@
       "id": 29,
       "gridPos": {
         "x": 0,
-        "y": 88,
+        "y": 93,
         "w": 24,
         "h": 1
       },
@@ -2278,7 +2343,7 @@
       "id": 30,
       "gridPos": {
         "x": 0,
-        "y": 89,
+        "y": 94,
         "w": 12,
         "h": 7
       },
@@ -2344,7 +2409,7 @@
       "id": 31,
       "gridPos": {
         "x": 12,
-        "y": 89,
+        "y": 94,
         "w": 12,
         "h": 7
       },
@@ -2389,7 +2454,7 @@
       "id": 32,
       "gridPos": {
         "x": 0,
-        "y": 96,
+        "y": 101,
         "w": 24,
         "h": 6
       },
@@ -2434,7 +2499,7 @@
       "id": 33,
       "gridPos": {
         "x": 0,
-        "y": 102,
+        "y": 107,
         "w": 12,
         "h": 5
       },

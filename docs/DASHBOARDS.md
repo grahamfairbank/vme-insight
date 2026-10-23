@@ -132,28 +132,27 @@ To free space:
 * Lower **Stats Retainment** (30, 60 or 90 days) in **Administration → Settings → Appliance** ([Appliance settings](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/settings/appliance.rst)).
 * Shorten the log retention, set by **Availability Time Frame** in **Administration → Settings → Monitoring** ([Logs](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/settings/logs.rst)).
 * Send backups to a Storage Provider instead of the manager's disk.
-* Grow the disk. HPE recommends at least 200 GB.
+* Grow the disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from.
 
 ### Manager size
 
-The **Manager size vs HPE recommendation** table compares the manager's CPU cores, memory and storage with HPE's recommendation for an all-in-one appliance: 4 cores, 16 GB memory (8 GB minimum) and 200 GB storage ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). An undersized manager shows up as sustained CPU pressure, high JVM memory or swap use on this dashboard.
+The **Manager size: Essentials and Enterprise** table compares the manager with both HPE sizing guides and gives a result for each.
 
-![Manager size vs HPE recommendation](images/tip-manager-size.png)
+**VM Essentials** applies to a VME manager. The HPE Morpheus Manager Installer and `hvmcli deploy` create the manager from the VME QCOW2 image with one of three sizing profiles ([installer](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/installation/singleNode/hpe_installer.rst), [hvmcli deploy](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/tools/hvmcli/deploy.rst)):
 
-| Panel | Meaning |
-|---|---|
-| Alarms | Active alarms and those cleared in the last 7 days |
-| Active alarms | Active and unacknowledged alarm counts over time |
-| **Manager resources** row | Disk used % (fullest filesystem), disk free, days until disk full (7-day trend), system memory, JVM heap, swap used, a filesystem table (mount, device, size, used, free, used %, days to full), the manager's size against HPE's recommendation, and disk used % over time. From `/api/health`, so it works without any agent on the manager. |
-| Services | Database, Elasticsearch, RabbitMQ, CPU, memory, storage status from `/api/health` |
-| Manager CPU and memory | Manager VM resources over time |
-| **Manager VM detail** row (optional) | CPU, memory, pressure (PSI), every filesystem and disk latency from node_exporter inside the manager VM. See [EXPORTERS](EXPORTERS.md#the-vme-manager). |
-| Database connections | Used, peak used, busy |
-| RabbitMQ | Messages waiting across the manager's queues, busy and error queues. A growing backlog means the manager is falling behind. |
-| Elasticsearch | Heap and RAM % per node |
-| All manager metrics (regex) | Every numeric field collected from `/api/health`. Filter with the regex box. |
-| Last run per task, Task duration, Recent errors | Collector health |
-| Database size | Size of the metrics hypertable and the whole database |
+| Profile | vCPUs | Memory | Notes |
+|---|---|---|---|
+| Small | 2 | 12 GB | |
+| Medium | not published | not published | `hvmcli` default |
+| Large | not published | not published | |
+
+HPE says to choose the profile by expected managed hosts, VMs, total objects, enabled integrations and workload. It publishes no per-manager object limits and asks for a workload-specific sizing review before large deployments ([VME maximums](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/maximums.rst)). No manager disk size is published for VME. For each guide the table shows what it **needs** and the **result** for this manager. The **Essentials result** on the Overall row says *below Small*, *matches Small* or *Medium or Large*; anything above Small can't be placed more precisely.
+
+**Morpheus Enterprise** appliance requirements are 4 cores, 16 GB memory and 200 GB disk ([requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst)). The **Enterprise result** column shows whether the manager meets them, for reference, for example before moving to an Enterprise licence. A VME manager at the Small profile shows *below*, which is expected.
+
+Memory checks allow 1 GB for memory the OS doesn't report. Matching a profile doesn't prove the manager has enough capacity: sustained CPU pressure, high JVM memory or swap use on this dashboard are the signs to move up a profile.
+
+![Manager size: Essentials and Enterprise](images/tip-manager-size.png)
 
 ## VME Data Export
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6 (unreleased)
+
+* **Manager sizing against both HPE guides.** The "Manager size: Essentials and Enterprise" panel (was "Manager size vs HPE recommendation") gives a result for each guide. **VM Essentials:** which VME manager profile the manager matches (Small is 12 GB RAM and 2 vCPUs; HPE doesn't publish Medium and Large values or a disk size). **Morpheus Enterprise:** whether it meets the appliance requirements (4 cores, 16 GB, 200 GB). Previously only the Enterprise figures were used, so a correctly sized VME manager showed as "below". The manager disk guidance drops the 200 GB figure, which applies to Enterprise only.
+
 ## 0.4.5 (2026-10-23)
 
 * VME-PLUGIN certificate guide: switching away from the built-in CA (remove its old root), getting the certificate to browser machines via the installer service, step 4 errors for untrusted certificates, name mismatch and browsing by IP, and a Removing step that matches the current certificate options.

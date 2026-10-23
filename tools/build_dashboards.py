@@ -142,6 +142,8 @@ HPE_ALARMS = HPE_DOCS + "infrastructure/clusters/hvm/alarms.rst"
 HPE_CAPACITY = HPE_DOCS + "infrastructure/clusters/hvm/capacity_planning.rst"
 HPE_MONITORING = HPE_DOCS + "infrastructure/clusters/hvm/monitoring.rst"
 HPE_REQUIREMENTS = HPE_DOCS + "getting_started/requirements/requirements.rst"
+HPE_INSTALLER = HPE_DOCS + "getting_started/installation/singleNode/hpe_installer.rst"
+HPE_MAXIMUMS = HPE_DOCS + "infrastructure/clusters/hvm/maximums.rst"
 
 
 def _steps(amber, red):
@@ -278,11 +280,10 @@ RabbitMQ queues, uploaded images and local backups on its disk, mostly under `/v
 |---|---|
 | **under 75%** | Healthy |
 | **75 to 85%** | Plan: find what's growing (usually `elasticsearch`, `bitcan/backups` or `morpheus-ui/vms`) |
-| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly. |
+| **over 85%** | Act now. HPE: with the partition 85% full or more, Elasticsearch enters an unhealthy state and the appliance won't function properly ([requirements]({HPE_REQUIREMENTS})). |
 
 To free space: lower **Stats Retainment** (Administration > Settings > Appliance) or the log **Availability Time Frame**
-(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the disk. HPE recommends at
-least 200 GB for the manager ([requirements]({HPE_REQUIREMENTS}))."""
+(Administration > Settings > Monitoring), move backups to a Storage Provider, or grow the manager's disk. HPE doesn't publish a disk size for the VM Essentials manager; it comes with the QCOW2 image the manager is deployed from."""
 
 # days until a manager filesystem is full, from the last 7 days of free-space samples
 def mgr_days_to_full(path_sql):
@@ -321,20 +322,45 @@ Each host keeps 4 GB for itself (OS, cluster services, agent, libvirt). VME trea
 HPE's rule: never allocate more than (N-1)/N of cluster memory, e.g. keep 33% free on 3 hosts
 ([capacity planning]({HPE_CAPACITY}))."""
 
-MGR_SIZING_DESC = f"""The manager's resources compared with HPE's recommendation for an all-in-one appliance:
-4 CPU cores, 16 GB memory (8 GB minimum) and 200 GB storage ([requirements]({HPE_REQUIREMENTS}))."""
+MGR_SIZING_DESC = f"""How this manager compares with both HPE sizing guides, each with its own result.
+
+**VM Essentials** (applies to a VME manager): the HPE Morpheus Manager Installer and `hvmcli deploy` create the manager
+from the VME QCOW2 image with a sizing profile: **Small = 12 GB RAM, 2 vCPUs**; **Medium** (the `hvmcli` default) and
+**Large** are bigger, but HPE doesn't publish their values or a manager disk size ([installer]({HPE_INSTALLER})).
+HPE publishes no per-manager object limits and asks for a workload-specific sizing review before large deployments
+([maximums]({HPE_MAXIMUMS})).
+
+**Morpheus Enterprise** (for reference, e.g. before moving to an Enterprise licence): the appliance requirements are
+**16 GB RAM, 4 cores, 200 GB disk** ([requirements]({HPE_REQUIREMENTS})).
+
+Memory allows 1 GB for what the OS doesn't report. Sustained CPU pressure, high JVM memory or swap use on this
+dashboard are the signs to move up a profile."""
 MGR_SIZING_SQL = """
     WITH m AS (SELECT DISTINCT ON (metric) metric, value FROM metrics
                WHERE entity_type = 'appliance' AND metric IN ('cpu.processorCount', 'memory.systemMemory', 'storage.total')
-                 AND time > now() - INTERVAL '1 hour' ORDER BY metric, time DESC)
-    SELECT r.resource AS "Resource", r.have AS "Manager", r.want AS "HPE recommends",
-           CASE WHEN r.ok THEN 'meets' ELSE 'below' END AS "Status"
-    FROM (SELECT 1 AS o, 'CPU cores' AS resource, value::int::text AS have, '4' AS want, value >= 4 AS ok
-            FROM m WHERE metric = 'cpu.processorCount'
-          UNION ALL SELECT 2, 'Memory', pg_size_pretty(value::bigint), '16 GB', value >= 15.5 * 2^30
-            FROM m WHERE metric = 'memory.systemMemory'
-          UNION ALL SELECT 3, 'Storage', pg_size_pretty(value::bigint), '200 GB', value >= 195e9
-            FROM m WHERE metric = 'storage.total') r ORDER BY r.o"""
+                 AND time > now() - INTERVAL '1 hour' ORDER BY metric, time DESC),
+         c AS (SELECT (SELECT value FROM m WHERE metric = 'cpu.processorCount') AS cores,
+                      (SELECT value FROM m WHERE metric = 'memory.systemMemory') AS mem,
+                      (SELECT value FROM m WHERE metric = 'storage.total') AS disk)
+    SELECT r.resource AS "Item", r.have AS "Manager has",
+           r.ess AS "Essentials needs", r.ess_res AS "Essentials result",
+           r.ent AS "Enterprise needs", r.ent_res AS "Enterprise result"
+    FROM (SELECT 1 AS o, 'Overall' AS resource, cores::int || ' vCPUs, ' || pg_size_pretty(mem::bigint) AS have,
+                 'Small profile: 2 vCPUs, 12 GB' AS ess,
+                 CASE WHEN cores < 2 OR mem < 11 * 2^30 THEN 'below Small'
+                      WHEN cores <= 2 AND mem < 13 * 2^30 THEN 'matches Small'
+                      ELSE 'Medium or Large' END AS ess_res,
+                 '4 cores, 16 GB, 200 GB' AS ent,
+                 CASE WHEN cores >= 4 AND mem >= 15 * 2^30 AND disk >= 200e9 THEN 'meets' ELSE 'below' END AS ent_res FROM c
+          UNION ALL SELECT 2, 'CPU cores', cores::int::text, '2',
+                 CASE WHEN cores >= 2 THEN 'meets' ELSE 'below' END, '4',
+                 CASE WHEN cores >= 4 THEN 'meets' ELSE 'below' END FROM c WHERE cores IS NOT NULL
+          UNION ALL SELECT 3, 'Memory', pg_size_pretty(mem::bigint), '12 GB',
+                 CASE WHEN mem >= 11 * 2^30 THEN 'meets' ELSE 'below' END, '16 GB',
+                 CASE WHEN mem >= 15 * 2^30 THEN 'meets' ELSE 'below' END FROM c WHERE mem IS NOT NULL
+          UNION ALL SELECT 4, 'Disk', pg_size_pretty(disk::bigint), 'not published', 'n/a', '200 GB',
+                 CASE WHEN disk >= 200e9 THEN 'meets' ELSE 'below' END FROM c WHERE disk IS NOT NULL
+         ) r ORDER BY r.o"""
 
 SERVICES_SQL = """
     SELECT initcap(k) AS "Service", COALESCE(a.health -> k ->> 'status', 'n/a') AS "Status"
@@ -800,9 +826,13 @@ def health():
                desc="Steady or growing swap use on the manager means it needs more memory."), 4, 4)
     b.add(table("Manager filesystems (reported by VME)", MGR_FS_SQL,
         [unit_override("Size", "bytes"), unit_override("Used", "bytes"), unit_override("Free", "bytes"),
-         unit_override("Days to full", "d"), gauge_cell("Used %", MGR_DISK_STEPS)], desc=MGR_DISK_GUIDE), 12, 6)
-    b.add(table("Manager size vs HPE recommendation", MGR_SIZING_SQL,
-        [colored("Status", {"meets": "green", "below": "orange"})], desc=MGR_SIZING_DESC), 12, 6)
+         unit_override("Days to full", "d"), gauge_cell("Used %", MGR_DISK_STEPS)], desc=MGR_DISK_GUIDE), 24, 5)
+    result_colors = {"meets": "green", "below": "orange", "below Small": "orange", "matches Small": "blue",
+                     "Medium or Large": "blue", "n/a": "transparent"}
+    sizing = table("Manager size: Essentials and Enterprise", MGR_SIZING_SQL,
+        [colored("Essentials result", result_colors), colored("Enterprise result", result_colors)], desc=MGR_SIZING_DESC)
+    sizing["fieldConfig"]["defaults"]["custom"]["filterable"] = False  # four fixed rows: filters only cost header space
+    b.add(sizing, 24, 6)
     b.add(timeseries("Manager disk used % (amber 75, red 85)", f"""
         SELECT $__timeGroupAlias(time, $__interval), substr(metric, 12, length(metric) - 19) AS metric, avg(value) AS value
         FROM metrics WHERE $__timeFilter(time) AND entity_type = 'appliance' AND metric LIKE 'storage.fs.%.percent'

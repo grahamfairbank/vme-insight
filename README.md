@@ -41,9 +41,9 @@ The dashboards don't just show numbers; they say what's normal and what to do. T
 |---|---|
 | ![CPU ready panel with its guidance tooltip open](docs/images/tip-cpu-ready.png) | ![Manager disk tile with its guidance tooltip open](docs/images/tip-manager-disk.png) |
 
-| Is the manager sized as HPE recommends? | Can the cluster survive losing a host? |
+| How does the manager compare with the Essentials and Enterprise sizing? | Can the cluster survive losing a host? |
 |---|---|
-| ![Manager size compared with HPE's recommendation](docs/images/manager-resources.png) | ![N+1 failover capacity with its tooltip open](docs/images/tip-n-plus-1.png) |
+| ![Manager size compared with the Essentials and Enterprise sizing](docs/images/manager-resources.png) | ![N+1 failover capacity with its tooltip open](docs/images/tip-n-plus-1.png) |
 
 The vCPU-wait view on the bottleneck dashboard measures the same contention as CPU ready, from the kernel. Its tooltip explains when to trust which:
 
@@ -210,7 +210,8 @@ HPE's documentation for Morpheus and VM Essentials is published at [HewlettPacka
 | Default alarm thresholds (CPU, memory, datastores) | [HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst) |
 | Healthy ranges for HVM hosts, clusters and storage | [HVM monitoring](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/monitoring.rst) |
 | N+1 failover, memory reservation, CPU overcommit ratios | [HVM capacity planning](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/capacity_planning.rst) |
-| Manager sizing, disk space, Elasticsearch at 85% | [Requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst) |
+| Manager sizing: Essentials profiles | [Manager installer](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/installation/singleNode/hpe_installer.rst), [VME maximums](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/maximums.rst) |
+| Manager sizing: Enterprise appliance, disk space, Elasticsearch at 85% | [Requirements](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/requirements/requirements.rst) |
 | Stats and log retention settings | [Appliance settings](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/settings/appliance.rst), [Logs](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/settings/logs.rst) |
 | Reader role permissions | [Role permissions](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/roles/role_permissions.rst) |
 | API tokens and OAuth clients | [User settings → API access](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/user_settings/user_settings.rst), [OAuth clients](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/settings/clients.rst) |
