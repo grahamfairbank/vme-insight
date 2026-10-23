@@ -22,6 +22,8 @@ docker compose logs --tail 50 collector
 | `morpheus: set api_token, or username and password` | Credentials missing | Set them in `config.yaml` |
 | `PermissionError ... /config/config.yaml` (versions before 0.4.1) | The collector ran as uid 1000 and couldn't read a config owned by another user (e.g. root) with mode 600 | Upgrade to 0.4.1 or later (`git pull && docker compose build && docker compose up -d`). Since 0.4.1 the config can have any owner and mode: the container copies it privately before dropping privileges. Workaround on older versions: `chown 1000 config/config.yaml`. |
 | `waiting for database` repeating | TimescaleDB not ready | `docker compose logs timescaledb` |
+| `The database rejected DB_PASSWORD from .env` (before 0.4.4: `waiting for database: … password authentication failed for user "vme"`, repeating) | The database was created by an earlier install with a different `DB_PASSWORD`. Its volume survives reinstalls and fresh clones, and keeps the password it was created with. | Put the original password back in `.env`; **or** keep the data and set the new one: `docker compose exec timescaledb psql -U vme -d vme -c "ALTER ROLE vme PASSWORD '<new DB_PASSWORD>'"`, then `docker compose restart collector`; **or** [start over](INSTALL.md#reinstalling-or-starting-over), which deletes all data. |
+| Can't sign in to Grafana with `GRAFANA_ADMIN_PASSWORD` | Same cause: Grafana's volume keeps the admin password it was created with | Use the old password, reset it with `docker compose exec grafana grafana cli admin reset-admin-password '<new>'`, or start over |
 
 ## Connecting to VME
 
@@ -111,3 +113,47 @@ This writes a sample of each endpoint the collector uses to `./probe/*.json`. Us
 ## Version
 
 The collector logs `VME x.y is older than the supported 9.1` if the manager is older. Older releases may work, but field names differ and some panels may be empty.
+
+## Starting over or removing vme-insight completely
+
+### Clean reinstall
+
+Everything vme-insight stores lives in Docker volumes named after the project, not in the checkout folder, so a fresh clone reuses them (see [Reinstalling or starting over](INSTALL.md#reinstalling-or-starting-over)). To start from nothing, remove them first. **This deletes all collected data, Grafana users and settings, and Prometheus data:**
+
+```bash
+cd ~/vme-insight
+docker compose --profile https --profile installer down -v
+docker compose up -d
+docker compose logs -f collector
+```
+
+Press Ctrl+C to stop following the log; the collector keeps running.
+
+### Full deinstallation
+
+1. **On the vme-insight host**: stop everything and delete the data, the images and the checkout:
+
+   ```bash
+   cd ~/vme-insight
+   docker compose --profile https --profile installer down -v --rmi all
+   cd ~ && rm -rf ~/vme-insight
+   ```
+
+   Also delete `~/vme-insight-ca` if you created a CA with `tools/make-cert.sh ca`, and `docker image rm vme-insight-shots` if you ran `tools/screenshots.py`.
+
+2. **On each HVM host and the VME manager**, if you installed the exporters:
+
+   ```bash
+   sudo systemctl disable --now vme-node-exporter prometheus-libvirt-exporter
+   sudo rm -f /etc/systemd/system/vme-node-exporter.service /usr/local/bin/node_exporter
+   sudo rm -rf /etc/systemd/system/prometheus-libvirt-exporter.service.d
+   sudo dpkg -r prometheus-libvirt-exporter
+   sudo systemctl daemon-reload
+   ```
+
+   On the manager, only the first lines apply (it has no libvirt exporter); errors about it not existing are harmless. Remove any firewall rule you added for ports 9100 and 9177.
+
+3. **On each browser machine** that trusts the vme-insight certificate, remove it ([Removing trust](VME-PLUGIN.md#removing-trust)).
+
+4. **In VME**: uninstall vme-insight-plugin if you installed it (Administration → Integrations → Plugins), delete the `vme-insight` reader user and its role, and regenerate any API token you created for it (User Settings → API Access).
+

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4 (unreleased)
+
+* **A database password mismatch is explained instead of waited on.** When `DB_PASSWORD` doesn't match the existing database (typically a reinstall or fresh clone reusing the old volume), the collector says so, with the three ways to fix it, and exits, instead of logging "waiting for database" forever.
+* Docs: [reinstalling or starting over](docs/INSTALL.md#reinstalling-or-starting-over) (volumes outlive the checkout and keep their passwords); troubleshooting for the database and Grafana admin password.
+
 ## 0.4.3 (2026-10-23)
 
 * **Rejected logins are handled safely.** A wrong VME username or password now gives one clear message (what to check, including YAML quoting) instead of a traceback per task, and the collector waits 15 minutes before trying again, so it can't lock the account by retrying. A rejected API token gets its own message.

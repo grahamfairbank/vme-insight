@@ -182,11 +182,26 @@ docker compose up -d
 
 To show these dashboards on VME's own host, VM, instance and cluster pages, continue with **[VME-PLUGIN](VME-PLUGIN.md)**.
 
+## Reinstalling or starting over
+
+The data lives in Docker volumes named after the project (`vme-insight_db-data` and so on), **not** in the checkout folder. Deleting the folder, cloning again or writing a new `.env` keeps them, together with the passwords they were created with: `DB_PASSWORD` and `GRAFANA_ADMIN_PASSWORD` only take effect when their volume is first created. A reinstall with new passwords then fails with *The database rejected DB_PASSWORD from .env*.
+
+For a truly clean install, remove the volumes before starting. **This deletes all collected data, Grafana users and settings, and Prometheus data:**
+
+```bash
+cd ~/vme-insight
+docker compose --profile https --profile installer down -v
+docker compose up -d
+docker compose logs -f collector
+```
+
+To keep the data, reuse the old `.env`, or change the passwords inside the running services instead (see [TROUBLESHOOTING](TROUBLESHOOTING.md#collector-wont-start)).
+
 ## Removing
 
 ```bash
-docker compose down        # stop, keep data
-docker compose down -v     # stop and delete all data
+docker compose --profile https --profile installer down      # stop, keep data
+docker compose --profile https --profile installer down -v   # stop and delete all data
 ```
 
-Delete the `vme-insight` user and role in VME, and if you installed them, remove the exporters (see [EXPORTERS](EXPORTERS.md#removing)).
+The `--profile` flags make sure the optional https front end and installer are included. For a complete removal (images, exporters on the hosts, certificates on browser machines, the VME account and plugin), follow [Full deinstallation](TROUBLESHOOTING.md#full-deinstallation).

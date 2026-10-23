@@ -10,6 +10,16 @@ log = logging.getLogger(__name__)
 SCHEMA = Path(__file__).with_name("schema.sql")
 
 
+DB_PASSWORD_HELP = (
+    "The database rejected DB_PASSWORD from .env. TimescaleDB keeps the password it was first created with, "
+    "and its data volume survives reinstalls and fresh clones (the project is always named vme-insight). "
+    "Fix one of three ways: put the original password back in .env; or keep the data and set the new one: "
+    "docker compose exec timescaledb psql -U vme -d vme -c \"ALTER ROLE vme PASSWORD '<DB_PASSWORD>'\" "
+    "&& docker compose restart collector; or start clean, DELETING all collected data: "
+    "docker compose --profile https --profile installer down -v && docker compose up -d. "
+    "See docs/TROUBLESHOOTING.md#collector-wont-start")
+
+
 class DB:
     def __init__(self, dsn):
         self.dsn = dsn
@@ -22,6 +32,10 @@ class DB:
                 self.conn = psycopg.connect(self.dsn, autocommit=True)
                 return
             except psycopg.OperationalError as e:
+                if "password authentication failed" in str(e):
+                    # waiting won't help: the database volume keeps the password it was created with
+                    log.error(DB_PASSWORD_HELP)
+                    raise SystemExit(1)
                 if time.time() > deadline:
                     raise
                 log.info("waiting for database: %s", str(e).strip().splitlines()[0])
