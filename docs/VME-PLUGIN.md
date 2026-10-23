@@ -26,7 +26,8 @@ This page is the whole setup, end to end. The plugin's own repository has the re
 
 | vme-insight-plugin | Needs vme-insight | VME |
 |---|---|---|
-| 0.1.2 and later | 0.2.0 or later (https front end, anonymous access, `vme-widget` dashboard) | 9.1 or later (Plugin API 1.5.0) |
+| 0.1.3 | 0.2.0 or later; tested with 0.4.4 | 9.1 or later (Plugin API 1.5.0) |
+| 0.1.2 | 0.2.0 or later (https front end, anonymous access, `vme-widget` dashboard) | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.0 – 0.1.1 | 0.2.0 or later | 9.1 or later |
 
 vme-insight works without the plugin. The plugin does nothing without vme-insight. Install them in that order, and upgrade vme-insight first when a plugin release asks for a newer version.

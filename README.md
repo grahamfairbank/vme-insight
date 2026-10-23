@@ -173,6 +173,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 | [EXPORTERS](docs/EXPORTERS.md) | Optional node and libvirt exporters on HVM hosts |
 | [LIFECYCLE](docs/LIFECYCLE.md) | How OS end of life, update and agent status are worked out |
 | [EXPORTS](docs/EXPORTS.md) | CSV exports from Grafana and from the command line |
+| [DEVELOPMENT](docs/DEVELOPMENT.md) | Changing dashboards, the collector or the docs; versions and the release process (shared with vme-insight-plugin) |
 | [DATA-MODEL](docs/DATA-MODEL.md) | Tables, metric catalogue, example SQL, building your own panels |
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | Symptoms and fixes |
 | [SECURITY](docs/SECURITY.md) | Credentials, TLS, network exposure |
@@ -190,7 +191,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | vme-insight | VME | vme-insight-plugin (optional) |
 |---|---|---|
-| 0.4.4 | 9.1 or later | 0.1.0 or later |
+| 0.4.4 | 9.1 or later | 0.1.0 or later (tested with 0.1.3) |
 | 0.4.3 | 9.1 or later | 0.1.0 or later |
 | 0.4.2 | 9.1 or later | 0.1.0 or later |
 | 0.4.1 | 9.1 or later | 0.1.0 or later |
