@@ -173,12 +173,11 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 | [EXPORTERS](docs/EXPORTERS.md) | Optional node and libvirt exporters on HVM hosts |
 | [LIFECYCLE](docs/LIFECYCLE.md) | How OS end of life, update and agent status are worked out |
 | [EXPORTS](docs/EXPORTS.md) | CSV exports from Grafana and from the command line |
-| [DEVELOPMENT](docs/DEVELOPMENT.md) | Changing dashboards, the collector or the docs; versions and the release process (shared with vme-insight-plugin) |
+| [DEVELOPMENT](docs/DEVELOPMENT.md) | Changing dashboards, the collector, the schema, the front end or the docs |
 | [DATA-MODEL](docs/DATA-MODEL.md) | Tables, metric catalogue, example SQL, building your own panels |
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | Symptoms and fixes |
 | [SECURITY](docs/SECURITY.md) | Credentials, TLS, network exposure |
 | [VME-PLUGIN](docs/VME-PLUGIN.md) | *Optional:* show the dashboards inside the VME UI with vme-insight-plugin: https front end, anonymous viewing, certificates, plugin install |
-| [RELEASING](docs/RELEASING.md) | For maintainers: the two repositories, versions, changelog, tags and GitHub releases |
 
 ## Requirements
 
