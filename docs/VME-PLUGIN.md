@@ -144,7 +144,19 @@ openssl x509 -in ~/vme-insight-ca/vme-insight-ca.crt -noout -fingerprint -sha256
 openssl x509 -in vme-insight-root.crt -noout -fingerprint -sha256   # option E
 ```
 
-Copy the file to the browser machine and check its fingerprint there before importing. It must match.
+Copy the file to the browser machine and check its fingerprint there before importing. It must match. If the [installer service](EXPORTERS.md#install) is running, it can serve the file, which is public (it holds no key):
+
+```bash
+# on the vme-insight host (option C; for D or E use that certificate file instead)
+cp https/certs/vme-insight.crt installer/dist/
+```
+
+```powershell
+# on a Windows browser machine
+Invoke-WebRequest http://<vme-insight-host>:8097/dist/vme-insight.crt -OutFile vme-insight.crt
+```
+
+The download is plain HTTP, which is why the fingerprint check matters. Stop the installer service when you're done (`docker compose --profile installer stop installer`).
 
 * **Windows** (PowerShell, in the folder holding the file; change the file name to match):
   ```powershell
@@ -177,6 +189,16 @@ Then import it, **for your own account** unless the machine is shared:
 * **macOS**: Keychain Access → **login** keychain (your account) → File → Import Items, then open the certificate → Trust → **Always Trust**. Use the System keychain only for shared Macs.
 * **Firefox** keeps its own list. For options D and E: Settings → Privacy & Security → Certificates → View Certificates → **Authorities** → Import, tick *Trust this CA to identify websites*. For option C (not a CA): open `https://<HTTPS_HOSTNAME>:<HTTPS_PORT>` directly once, check the fingerprint under *Advanced → View Certificate*, then *Accept the Risk and Continue*. That trusts this one certificate for this site only.
 
+### Switching away from the built-in CA
+
+If your browser machines already trust the built-in CA (option E) and you move to A to D: set `HTTPS_TLS` and restart the front end, then on each browser machine import the new certificate as above **and remove the old root**, which no longer serves any purpose and can still vouch for any site. On Windows (an elevated window for the `LocalMachine` stores):
+
+```powershell
+Get-ChildItem Cert:\CurrentUser\Root, Cert:\CurrentUser\CA, Cert:\LocalMachine\Root, Cert:\LocalMachine\CA | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
+```
+
+Until a machine imports the new certificate, its VME tabs stay blank.
+
 ### Removing trust
 
 When you replace the certificate or stop using vme-insight, remove what you imported.
@@ -196,7 +218,9 @@ Open `https://vme-insight.example.com:3443/d/vme-overview` in a new browser tab.
 
 | You see | Fix |
 |---|---|
-| Certificate warning | The root isn't trusted on this machine yet: step 3. |
+| Certificate warning (`ERR_CERT_AUTHORITY_INVALID`) | This machine doesn't trust the certificate (or its CA) yet: [step 3](#3-make-browsers-trust-the-certificate). |
+| `ERR_CERT_COMMON_NAME_INVALID` | The address you typed isn't in the certificate: reissue it with every name and IP users type. |
+| `ERR_SSL_PROTOCOL_ERROR` when browsing by IP | Set `HTTPS_DEFAULT_SNI` to that IP and add it to `HTTPS_HOSTNAME`: [Browsing by IP](#2-turn-on-https-and-anonymous-viewing). |
 | `Forbidden` | This machine's network isn't in `HTTPS_ALLOW`. |
 | Grafana's sign-in page | `GRAFANA_ANONYMOUS=true` missing, or Grafana not restarted. |
 | Nothing loads | Name resolution or a firewall between you and the Docker host. |
@@ -227,7 +251,4 @@ Reload VME, then open:
 
 1. In VME, delete the plugin on **Administration → Integrations → Plugins** (trash icon). If you added it to **Dashboards to Display**, check that list.
 2. In vme-insight, stop the front end with `docker compose --profile https stop https`, set `GRAFANA_ANONYMOUS=false` (and `GRAFANA_BIND=0.0.0.0` if you want the plain port back on the network), and `docker compose up -d grafana`.
-3. Optionally remove the root certificate from client machines. On Windows (elevated PowerShell for `LocalMachine`):
-   ```powershell
-   Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root | Where-Object Subject -like '*Caddy Local Authority*' | Remove-Item
-   ```
+3. Remove the certificate you imported on each browser machine: [Removing trust](#removing-trust). If you ever used the built-in CA, remove its *Caddy Local Authority* root too ([Switching away from the built-in CA](#switching-away-from-the-built-in-ca)).

@@ -2,6 +2,7 @@
 
 ## 0.4.5 (unreleased)
 
+* VME-PLUGIN certificate guide: switching away from the built-in CA (remove its old root), getting the certificate to browser machines via the installer service, step 4 errors for untrusted certificates, name mismatch and browsing by IP, and a Removing step that matches the current certificate options.
 * **Fixed:** RHEL-family guests (Rocky, RHEL, Alma, Oracle) could get the wrong OS release, because VME reports their kernel version (e.g. `6.12.0-…el10_2…`) as the platform version: Rocky Linux 10 showed as release 6. The OS version now comes from the kernel's `elN_M` marker or the OS name, so end-of-life and update status are right.
 * Docs: [RELEASING](docs/RELEASING.md), the release standard shared with vme-insight-plugin; [DEVELOPMENT](docs/DEVELOPMENT.md) for changing dashboards, the collector and the docs; compatibility rows for plugin 0.1.3.
 * Full deinstallation removes only images vme-insight built (`--rmi local`), keeping shared public images other projects may use; the docs say exactly what is and isn't removed.
