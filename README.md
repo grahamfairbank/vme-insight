@@ -178,6 +178,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 | [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) | Symptoms and fixes |
 | [SECURITY](docs/SECURITY.md) | Credentials, TLS, network exposure |
 | [VME-PLUGIN](docs/VME-PLUGIN.md) | *Optional:* show the dashboards inside the VME UI with vme-insight-plugin: https front end, anonymous viewing, certificates, plugin install |
+| [RELEASING](docs/RELEASING.md) | For maintainers: the two repositories, versions, changelog, tags and GitHub releases |
 
 ## Requirements
 
