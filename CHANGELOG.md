@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.4 (unreleased)
+## 0.4.4 (2026-10-23)
 
 * **A database password mismatch is explained instead of waited on.** When `DB_PASSWORD` doesn't match the existing database (typically a reinstall or fresh clone reusing the old volume), the collector says so, with the three ways to fix it, and exits, instead of logging "waiting for database" forever.
 * Docs: [reinstalling or starting over](docs/INSTALL.md#reinstalling-or-starting-over) (volumes outlive the checkout and keep their passwords); troubleshooting for the database and Grafana admin password.
