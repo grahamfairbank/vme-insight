@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.5 (unreleased)
+## 0.4.5 (2026-10-23)
 
 * VME-PLUGIN certificate guide: switching away from the built-in CA (remove its old root), getting the certificate to browser machines via the installer service, step 4 errors for untrusted certificates, name mismatch and browsing by IP, and a Removing step that matches the current certificate options.
 * **Fixed:** RHEL-family guests (Rocky, RHEL, Alma, Oracle) could get the wrong OS release, because VME reports their kernel version (e.g. `6.12.0-…el10_2…`) as the platform version: Rocky Linux 10 showed as release 6. The OS version now comes from the kernel's `elN_M` marker or the OS name, so end-of-life and update status are right.
