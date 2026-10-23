@@ -198,7 +198,7 @@ To show these dashboards on VME's own host, VM, instance and cluster pages, cont
 
 The data lives in Docker volumes named after the project (`vme-insight_db-data` and so on), **not** in the checkout folder. Deleting the folder, cloning again or writing a new `.env` keeps them, together with the passwords they were created with: `DB_PASSWORD` and `GRAFANA_ADMIN_PASSWORD` only take effect when their volume is first created. A reinstall with new passwords then fails with *The database rejected DB_PASSWORD from .env*.
 
-For a truly clean install, remove the volumes before starting. **This deletes all collected data, Grafana users and settings, and Prometheus data:**
+For a truly clean install, remove the volumes before starting. **This deletes all of vme-insight's collected data, Grafana users and settings, and Prometheus data.** These commands only touch vme-insight: its own containers, network and volumes (all named `vme-insight…`). Other Docker containers, volumes and projects on the machine are left alone.
 
 ```bash
 cd ~/vme-insight
@@ -216,4 +216,4 @@ docker compose --profile https --profile installer down      # stop, keep data
 docker compose --profile https --profile installer down -v   # stop and delete all data
 ```
 
-The `--profile` flags make sure the optional https front end and installer are included. For a complete removal (images, exporters on the hosts, certificates on browser machines, the VME account and plugin), follow [Full deinstallation](TROUBLESHOOTING.md#full-deinstallation).
+The `--profile` flags make sure the optional https front end and installer are included. These commands only touch vme-insight: its own containers, network and volumes (all named `vme-insight…`). Other Docker containers, volumes and projects on the machine are left alone. For a complete removal (images, exporters on the hosts, certificates on browser machines, the VME account and plugin), follow [Full deinstallation](TROUBLESHOOTING.md#full-deinstallation).

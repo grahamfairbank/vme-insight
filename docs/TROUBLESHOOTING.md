@@ -118,7 +118,7 @@ The collector logs `VME x.y is older than the supported 9.1` if the manager is o
 
 ### Clean reinstall
 
-Everything vme-insight stores lives in Docker volumes named after the project, not in the checkout folder, so a fresh clone reuses them (see [Reinstalling or starting over](INSTALL.md#reinstalling-or-starting-over)). To start from nothing, remove them first. **This deletes all collected data, Grafana users and settings, and Prometheus data:**
+Everything vme-insight stores lives in Docker volumes named after the project, not in the checkout folder, so a fresh clone reuses them (see [Reinstalling or starting over](INSTALL.md#reinstalling-or-starting-over)). To start from nothing, remove them first. **This deletes all of vme-insight's collected data, Grafana users and settings, and Prometheus data.** These commands only touch vme-insight: its own containers, network and volumes (all named `vme-insight…`). Other Docker containers, volumes and projects on the machine are left alone.
 
 ```bash
 cd ~/vme-insight
