@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3 (2026-10-23)
+
+* **Rejected logins are handled safely.** A wrong VME username or password now gives one clear message (what to check, including YAML quoting) instead of a traceback per task, and the collector waits 15 minutes before trying again, so it can't lock the account by retrying. A rejected API token gets its own message.
+* The collector refuses a `username`, `password` or `api_token` that YAML has read as a number or true/false (e.g. an unquoted `012345` losing its leading zero), and says to quote it.
+* Troubleshooting: Docker socket permission denied (fresh installs, apt and snap); rejected logins with a credential test that keeps the password out of shell history.
+
 ## 0.4.2 (2026-10-22)
 
 * **Fixed:** browsing to the https front end by IP (`https://<ip>:3443`) failed with `ERR_SSL_PROTOCOL_ERROR`: browsers send no server name for an IP, and behind Docker the front end couldn't tell which address was used. New `HTTPS_DEFAULT_SNI`: set it to that IP (and list the IP in `HTTPS_HOSTNAME` and the certificate). Unset, behaviour is unchanged.

@@ -8,7 +8,7 @@ from pathlib import Path
 from . import config, infoexport, lifecycle
 from .collect import Collector
 from .db import DB
-from .morpheus import Morpheus
+from .morpheus import AuthError, Morpheus
 
 log = logging.getLogger("vmeinsight")
 HEARTBEAT = Path(os.environ.get("HEARTBEAT_FILE", "/tmp/heartbeat"))
@@ -44,6 +44,7 @@ def main():
     ]
     intervals = cfg["intervals"]
     due = {name: 0.0 for name, _ in tasks}
+    last_auth_error = ""
     log.info("collecting from %s", api.base)
 
     while not _stop:
@@ -55,10 +56,21 @@ def main():
                 n = fn()
                 ms = int((time.time() - started) * 1000)
                 db.log_run(name, True, ms, n)
+                if last_auth_error and name != "lifecycle":
+                    log.info("VME accepted the credentials again")
+                    last_auth_error = ""
                 log.info("%s: %s items in %d ms", name, n, ms)
                 due[name] = started + int(intervals[name])
                 if name in ("metrics", "storage"):
                     infoexport.refresh(db)
+            except AuthError as e:  # one clear line, not a traceback per task
+                ms = int((time.time() - started) * 1000)
+                msg = str(e).split(" (not retrying until")[0]
+                if msg != last_auth_error:
+                    log.error("%s", msg)
+                    last_auth_error = msg
+                db.log_run(name, False, ms, error=str(e))
+                due[name] = started + min(int(intervals[name]), 120)
             except Exception as e:  # keep going; retry sooner than the full interval
                 ms = int((time.time() - started) * 1000)
                 log.exception("%s failed", name)

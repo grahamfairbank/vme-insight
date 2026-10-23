@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class ApiError(Exception):
     def __init__(self, status, path, body=""):
-        super().__init__(f"HTTP {status} on {path}: {body[:200]}")
+        super().__init__(f"HTTP {status} on {path}: {body[:200]}" if not isinstance(self, AuthError) else body)
         self.status = status
         self.path = path
 
@@ -42,6 +42,13 @@ def normalise_url(url, allow_http=False):
                     "in clear text (set morpheus.allow_http: true to override)")
         parts = parts._replace(scheme="https")
     return urlunsplit(parts._replace(path=parts.path.rstrip("/")))
+
+
+class AuthError(ApiError):
+    """VME rejected the credentials. Raised without a traceback-worthy cause."""
+
+
+AUTH_RETRY_AFTER = 900  # seconds to wait before trying a rejected login again (avoids account lockout)
 
 
 class Morpheus:
@@ -75,19 +82,34 @@ class Morpheus:
         self.s.headers.update({"Accept": "application/json", "User-Agent": "vme-insight"})
         self._token = None
         self._expires = 0.0
+        self._auth_failed_until = 0.0
+        self._auth_failure = ""
         if not self.static_token and not (self.username and self.password):
             raise ValueError("morpheus: set api_token, or username and password")
 
     # -- auth -----------------------------------------------------------
     def _login(self):
+        if time.time() < self._auth_failed_until:
+            # don't hammer VME with a password it already rejected: repeated failures can lock the account
+            raise AuthError(400, "/oauth/token", self._auth_failure + " (not retrying until "
+                            + time.strftime("%H:%M", time.localtime(self._auth_failed_until)) + ")")
         r = self.s.post(
             f"{self.base}/oauth/token",
             params={"client_id": self.client_id, "grant_type": "password", "scope": "write"},
             data={"username": self.username, "password": self.password},
             timeout=self.timeout,
         )
+        if (r.status_code in (400, 401) and "invalid_grant" in r.text) or r.status_code == 401:
+            self._auth_failed_until = time.time() + AUTH_RETRY_AFTER
+            self._auth_failure = (
+                f"VME rejected the login for user '{self.username}' ({r.status_code} invalid_grant). Check "
+                "morpheus.username and morpheus.password in config/config.yaml (put the password in single "
+                "quotes), and that this account can log in to the VME UI and isn't locked or awaiting a "
+                "password change. See docs/TROUBLESHOOTING.md#connecting-to-vme")
+            raise AuthError(r.status_code, "/oauth/token", self._auth_failure)
         if r.status_code != 200:
             raise ApiError(r.status_code, "/oauth/token", r.text)
+        self._auth_failed_until = 0.0
         j = r.json()
         self._token = j["access_token"]
         self._expires = time.time() + int(j.get("expires_in") or 3600)
@@ -118,6 +140,9 @@ class Morpheus:
                 last = ApiError(r.status_code, path, r.text)
                 time.sleep(2 ** attempt)
                 continue
+            if r.status_code == 401 and auth and self.static_token:
+                raise AuthError(401, path, "VME rejected morpheus.api_token (expired or revoked?). Generate a new "
+                                "one under User Settings -> API Access, or use username and password instead.")
             if r.status_code != 200:
                 raise ApiError(r.status_code, path, r.text)
             return r.json()

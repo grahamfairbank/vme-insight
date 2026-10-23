@@ -188,6 +188,7 @@ Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/IN
 
 | vme-insight | VME | vme-insight-plugin (optional) |
 |---|---|---|
+| 0.4.3 | 9.1 or later | 0.1.0 or later |
 | 0.4.2 | 9.1 or later | 0.1.0 or later |
 | 0.4.1 | 9.1 or later | 0.1.0 or later |
 | 0.4.0 | 9.1 or later | 0.1.0 or later |

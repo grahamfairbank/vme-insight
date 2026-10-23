@@ -6,7 +6,7 @@ morpheus:
   url: https://vme-manager.example.com      # VM Essentials manager (Morpheus) URL
   # Use a dedicated read-only account (docs/INSTALL.md, "Create a reader account"). Either username/password ...
   username: ""
-  password: ""
+  password: ""        # in single quotes, e.g. 'p@ss#123' (YAML can alter unquoted values)
   # ... or a long-lived API token (User Settings > API Access in the VME UI)
   api_token: ""
   # Use https. VME also answers API calls on plain http, which would send the

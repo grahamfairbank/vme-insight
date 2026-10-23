@@ -31,9 +31,20 @@ docker compose logs --tail 50 collector
 | `CERTIFICATE_VERIFY_FAILED` | Self-signed certificate and no TLS option set | Set `tls_fingerprint` (see [CONFIGURATION](CONFIGURATION.md#tls)) |
 | `hostname mismatch` | With `ca_bundle`, the hostname in `url` isn't on the certificate | Use a name on the certificate, or `tls_fingerprint` |
 | `switching to https://` warning | `url` starts with `http://` | Intended. Change `url` to `https://` to silence it. |
-| `HTTP 401 on /oauth/token` | Wrong username or password, or the account is locked | Log in to the VME UI with the same account to check |
+| `VME rejected the login for user '…' (400 invalid_grant)` (before 0.4.3: `HTTP 400 on /oauth/token: … Invalid user credentials`) | VME doesn't accept the username and password in `config.yaml` | 1. **Quote the password** in single quotes (`password: 'p@ss#123'`; write a `'` inside it as `''`). Unquoted, YAML can change it: `012345` loses its leading zero, `yes`/`no`/`on` become true/false, and ` #` starts a comment. 2. Log in to the VME UI with exactly that account: it may be wrong, locked, disabled, or waiting for a first-login password change. 3. Test outside vme-insight (see below). After a rejected login the collector waits 15 minutes before trying again, so it can't lock the account; restart it (`docker compose restart collector`) to retry at once after fixing the config. |
+| `config: morpheus.password … was read as a number` (or true/false) | The password isn't quoted and YAML read it as something other than text | Put it in single quotes |
 | `HTTP 401` on other endpoints, repeating | API token expired | Create a new token, or use username/password |
 | Connection timed out / refused | Network or firewall | From the Docker host: `curl -k https://<manager>/api/ping` should return `{"success":true,...}` |
+
+To test credentials without vme-insight (the password isn't shown or kept in shell history):
+
+```bash
+read -rp 'VME user: ' U; read -rsp 'Password: ' P; echo
+curl -sk -X POST "https://<vme-manager>/oauth/token?client_id=morph-api&grant_type=password&scope=write" \
+  --data-urlencode "username=$U" --data-urlencode "password=$P" | head -c 120; echo; unset P
+```
+
+A reply containing `access_token` means the credentials are right and the problem is how they're written in `config.yaml`; `invalid_grant` means VME rejects them.
 
 ## HTTP 403
 

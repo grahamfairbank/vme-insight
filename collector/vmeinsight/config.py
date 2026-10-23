@@ -99,6 +99,12 @@ def load(path=None):
             for k in keys[:-1]:
                 node = node[k]
             node[keys[-1]] = _coerce(os.environ[env])
+    for key in ("username", "password", "api_token"):
+        v = cfg["morpheus"].get(key)
+        if v is not None and not isinstance(v, str):
+            raise SystemExit(
+                f"config: morpheus.{key} in {path} was read as {'true/false' if isinstance(v, bool) else 'a number'}, "
+                f"not text, so it may have changed (e.g. a leading zero dropped). Put it in single quotes: {key}: '...'")
     if not cfg["morpheus"]["url"]:
         raise SystemExit(f"config: morpheus.url is not set (looked in {path} and $VME_URL)")
     return cfg
