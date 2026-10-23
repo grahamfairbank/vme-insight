@@ -131,13 +131,15 @@ Press Ctrl+C to stop following the log; the collector keeps running.
 
 ### Full deinstallation
 
-1. **On the vme-insight host**: stop everything and delete the data, the images and the checkout:
+1. **On the vme-insight host**: stop everything and delete the data, the collector image and the checkout:
 
    ```bash
    cd ~/vme-insight
-   docker compose --profile https --profile installer down -v --rmi all
+   docker compose --profile https --profile installer down -v --rmi local
    cd ~ && rm -rf ~/vme-insight
    ```
+
+   This only affects vme-insight: its containers and network, its own volumes (`vme-insight_*`), and the image it built (`vme-insight-collector`). Other containers, volumes and projects on the machine are untouched. The public images it pulled (Grafana, Prometheus, TimescaleDB, Caddy) stay, because other projects may use them. If nothing else on this host does, use `--rmi all` instead to remove them too; Docker refuses to delete any image a running container still uses.
 
    Also delete `~/vme-insight-ca` if you created a CA with `tools/make-cert.sh ca`, and `docker image rm vme-insight-shots` if you ran `tools/screenshots.py`.
 

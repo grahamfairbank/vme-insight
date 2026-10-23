@@ -2,6 +2,7 @@
 
 ## 0.4.5 (unreleased)
 
+* Full deinstallation removes only images vme-insight built (`--rmi local`), keeping shared public images other projects may use; the docs say exactly what is and isn't removed.
 * `vmeinsight.tlsinfo` prints the `tls_fingerprint:` line ready to paste into `config.yaml` (no leading `#`, which made YAML ignore the line). The install guide says to copy that line from the command's output, shows where it goes, and makes the independent fingerprint check clearly optional.
 
 ## 0.4.4 (2026-10-23)
