@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.5 (unreleased)
+
+* `vmeinsight.tlsinfo` prints the `tls_fingerprint:` line ready to paste into `config.yaml` (no leading `#`, which made YAML ignore the line). The install guide says to copy that line from the command's output, shows where it goes, and makes the independent fingerprint check clearly optional.
+
 ## 0.4.4 (2026-10-23)
 
 * **A database password mismatch is explained instead of waited on.** When `DB_PASSWORD` doesn't match the existing database (typically a reinstall or fresh clone reusing the old volume), the collector says so, with the three ways to fix it, and exits, instead of logging "waiting for database" forever.

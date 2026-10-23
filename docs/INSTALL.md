@@ -65,16 +65,28 @@ docker compose build
 docker compose run --rm collector python -m vmeinsight.tlsinfo
 ```
 
-This prints the certificate's SHA-256 fingerprint. Check that it matches what you see from a machine you trust. For example, open the manager in a browser and view the certificate details, or run this from another host:
+It prints the manager's certificate and a line ready to paste:
+
+```
+# Copy the next line into the morpheus: section of config/config.yaml,
+# replacing the empty tls_fingerprint: "" (keep the two leading spaces):
+  tls_fingerprint: "0B:6F:87:...:58:6B"
+```
+
+Copy that `tls_fingerprint:` line **from the command's output** into `config/config.yaml`, in place of the empty `tls_fingerprint: ""` under `morpheus:`. Keep the indent and the quotes, so it looks like this:
+
+```yaml
+morpheus:
+  url: https://vme-manager.example.com
+  username: "vme-insight"
+  password: 'your password'
+  tls_fingerprint: "0B:6F:87:...:58:6B"
+```
+
+**Optional: check the fingerprint independently.** The command reads the certificate over the network. To rule out anything intercepting that connection, compare the fingerprint with what a machine you trust sees: view the certificate details of `https://<manager>` in a browser, or run this on another host. The two must match exactly:
 
 ```bash
 echo | openssl s_client -connect vme-manager.example.com:443 2>/dev/null | openssl x509 -noout -fingerprint -sha256
-```
-
-Then paste it into `config.yaml`:
-
-```yaml
-  tls_fingerprint: "0B:6F:87:...:58:6B"
 ```
 
 The other TLS options are `ca_bundle` (if the manager has a certificate from your own CA) and `insecure: true` (lab only). See [CONFIGURATION](CONFIGURATION.md#tls). If you later replace the self-signed certificate with a CA-signed one ([SSL Certificates](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/getting_started/additional/morpheusSslCerts.rst)), switch to `ca_bundle` or re-pin.
