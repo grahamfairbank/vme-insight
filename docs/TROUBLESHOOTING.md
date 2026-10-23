@@ -7,6 +7,13 @@ docker compose ps
 docker compose logs --tail 50 collector
 ```
 
+## Docker commands fail
+
+| Log message | Cause | Fix |
+|---|---|---|
+| `permission denied while trying to connect to the docker API at unix:///var/run/docker.sock` | Your account isn't allowed to use Docker. Installing Docker doesn't add any user to the `docker` group, so this is normal on a fresh install. | **apt (`docker.io` or `docker-ce`):** `sudo usermod -aG docker $USER`, then log out and back in (or `newgrp docker`) and check with `docker ps`. **Snap** (`snap list docker` shows it): `sudo addgroup --system docker && sudo adduser $USER docker && sudo snap disable docker && sudo snap enable docker`, then log out and back in. Or prefix the commands with `sudo`; the `tools/` scripts that call Docker then need `sudo` too. Membership of the `docker` group is equivalent to root on that machine. |
+| Volumes or `./config` not found, only with the Docker snap | The snap can only reach files under your home directory | Keep the vme-insight checkout under `$HOME` |
+
 ## Collector won't start
 
 | Log message | Cause | Fix |
