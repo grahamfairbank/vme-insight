@@ -45,15 +45,26 @@ def _cycle(style, text, version):
     return m.group(1) if m else None
 
 
+# A Linux kernel release rather than an OS version: "5.14.0-427.13.1.el9_4.x86_64", "6.8.0-45-generic"
+KERNEL_RELEASE = re.compile(r"^\d+\.\d+\.\d+-|x86_64|aarch64|\.el\d|\.fc\d|-generic|-amd64")
+
+
 def detect(server, extra_rules=()):
     """Return (product, cycle, full_version) or (None, None, None)."""
     os_ = server.get("serverOs") or {}
     parts = [os_.get("name"), os_.get("vendor"), os_.get("version"),
              server.get("platform"), server.get("osType")]
     text = " ".join(str(p) for p in parts if p).lower()
-    pv = server.get("platformVersion") or os_.get("version") or ""
-    m = re.search(r"\d+(?:\.\d+)+|\d+", str(pv))
-    full = m.group(0) if m else None
+    pv = str(server.get("platformVersion") or os_.get("version") or "")
+    if KERNEL_RELEASE.search(pv):
+        # VME reports the kernel release for some guests (e.g. Rocky, RHEL):
+        # "6.12.0-211.16.1.el10_2.0.1.x86_64". Its "elN_M" marker is the OS version;
+        # otherwise the kernel numbers say nothing about the OS release.
+        el = re.search(r"\.el(\d+)(?:_(\d+))?", pv)
+        full = (f"{el.group(1)}.{el.group(2)}" if el.group(2) else el.group(1)) if el else None
+    else:
+        m = re.search(r"\d+(?:\.\d+)+|\d+", pv)
+        full = m.group(0) if m else None
     if not full:
         m = re.search(r"\d+\.\d+(?:\.\d+)*", text)
         full = m.group(0) if m else None

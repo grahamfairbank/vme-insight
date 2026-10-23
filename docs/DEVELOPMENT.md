@@ -1,4 +1,4 @@
-# Development and releases
+# Development
 
 ## Working on vme-insight
 

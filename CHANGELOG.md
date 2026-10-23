@@ -2,6 +2,7 @@
 
 ## 0.4.5 (unreleased)
 
+* **Fixed:** RHEL-family guests (Rocky, RHEL, Alma, Oracle) could get the wrong OS release, because VME reports their kernel version (e.g. `6.12.0-…el10_2…`) as the platform version: Rocky Linux 10 showed as release 6. The OS version now comes from the kernel's `elN_M` marker or the OS name, so end-of-life and update status are right.
 * Docs: [RELEASING](docs/RELEASING.md), the release standard shared with vme-insight-plugin; [DEVELOPMENT](docs/DEVELOPMENT.md) for changing dashboards, the collector and the docs; compatibility rows for plugin 0.1.3.
 * Full deinstallation removes only images vme-insight built (`--rmi local`), keeping shared public images other projects may use; the docs say exactly what is and isn't removed.
 * `vmeinsight.tlsinfo` prints the `tls_fingerprint:` line ready to paste into `config.yaml` (no leading `#`, which made YAML ignore the line). The install guide says to copy that line from the command's output, shows where it goes, and makes the independent fingerprint check clearly optional.
