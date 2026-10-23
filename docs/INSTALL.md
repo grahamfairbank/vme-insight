@@ -34,7 +34,7 @@ If a panel stays empty and the collector log shows `HTTP 403` for an endpoint, s
 ## 2. Get the code
 
 ```bash
-git clone <this repo> vme-insight
+git clone https://github.com/grahamfairbank/vme-insight.git
 cd vme-insight
 ```
 

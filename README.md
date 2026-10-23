@@ -148,7 +148,8 @@ One-page diagram of the components, ports and data flows: **[architecture (PDF)]
 ## Quick start
 
 ```bash
-git clone <this repo> vme-insight && cd vme-insight
+git clone https://github.com/grahamfairbank/vme-insight.git
+cd vme-insight
 cp .env.example .env                                # set the passwords
 cp config/config.example.yaml config/config.yaml    # set url, username, password
 chmod 600 .env config/config.yaml
