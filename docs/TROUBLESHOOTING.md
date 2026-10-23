@@ -41,10 +41,11 @@ To test credentials without vme-insight (the password isn't shown or kept in she
 ```bash
 read -rp 'VME user: ' U; read -rsp 'Password: ' P; echo
 curl -sk -X POST "https://<vme-manager>/oauth/token?client_id=morph-api&grant_type=password&scope=write" \
-  --data-urlencode "username=$U" --data-urlencode "password=$P" | head -c 120; echo; unset P
+  --data-urlencode "username=$U" --data-urlencode "password=$P" \
+  | grep -q '"access_token"' && echo "Accepted: VME issued a token" || echo "Rejected (or VME unreachable)"; unset P
 ```
 
-A reply containing `access_token` means the credentials are right and the problem is how they're written in `config.yaml`; `invalid_grant` means VME rejects them.
+It prints only *Accepted* or *Rejected*, never the token itself. *Accepted* means the credentials are right and the problem is how they're written in `config.yaml`. (A successful test creates a session token for that account; it expires on its own, or regenerate it under **User Settings → API Access**.)
 
 ## HTTP 403
 
