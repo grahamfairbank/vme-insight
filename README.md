@@ -127,7 +127,7 @@ Kernel-level pressure stall information (PSI), load per core and vCPU wait show 
 
 ## How it works
 
-One-page diagram of the components, ports and data flows: **[architecture (PDF)](docs/architecture/vme-insight-architecture.pdf)**. Its source is [`docs/architecture/architecture.html`](docs/architecture/architecture.html); re-render it with `docs/architecture/render.py` (see the file) after changes.
+One-page diagram of the components, ports and data flows: **[architecture (PDF)](docs/architecture/vme-insight-architecture.pdf)**. How the optional VME plugin shows these dashboards inside VME: **[plugin infographic](docs/architecture/vme-insight-plugin.png)**. Its source is [`docs/architecture/architecture.html`](docs/architecture/architecture.html); re-render it with `docs/architecture/render.py` (see the file) after changes.
 
 ```
                  every 60 s (metrics) / 5 min / 15 min / daily

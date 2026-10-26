@@ -8,15 +8,9 @@ This page is the whole setup, end to end. The plugin's own repository has the re
 
 ## How it fits together
 
-```
- Your browser ── VME page (https://vme-manager) ── vme-insight tab ──┐
-                                                                      │ frame, loaded by the browser
-                                                                      ▼
-                                   vme-insight https front end (:3443, allowlisted networks)
-                                                                      │
-                                                                      ▼
-                                   vme-insight Grafana (anonymous, read-only Viewer)
-```
+[![How vme-insight-plugin works: the VME page serves only the tab; the browser loads the dashboard from vme-insight's https front end and Grafana](architecture/vme-insight-plugin.png)](architecture/vme-insight-plugin.pdf)
+
+*Click the picture for the PDF. Source: [`architecture/plugin.html`](architecture/plugin.html), rendered with `architecture/render_plugin.py`.*
 
 * The plugin only builds a link. The **browser** loads the dashboard straight from vme-insight's Grafana, inside the tab. VME never connects to Grafana, and the plugin stores no credentials.
 * The browser must reach Grafana **over https** (VME is https, and browsers block http frames inside https pages), **without a sign-in** (a sign-in inside a frame on another site doesn't stick), and **trust its certificate** (a frame can't show a certificate warning; it just stays blank).

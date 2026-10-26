@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How vme-insight-plugin works</title>
+<style>
+  :root {
+    --ink: #1f2933; --muted: #5f6b7a; --line: #c9d2dc; --zone: #f5f7fa;
+    --vme: #475569; --plug: #7c3aed; --plug-bg: #f5f0ff; --core: #2563eb; --core-bg: #eef4ff;
+    --opt: #7c8794; --ok: #15803d; --warn: #b45309; --flow: #334155;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { width: 1600px; height: 1210px; position: relative; overflow: hidden; background: #fff;
+         font-family: "Inter", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif; color: var(--ink); }
+  h1 { position: absolute; left: 32px; top: 18px; margin: 0; font-size: 28px; letter-spacing: -0.3px; }
+  .sub { position: absolute; left: 32px; top: 56px; width: 1530px; font-size: 14.5px; color: var(--muted); line-height: 1.4; }
+  .zone { position: absolute; border: 1px solid var(--line); background: var(--zone); border-radius: 12px; }
+  .zt { position: absolute; left: 14px; top: -11px; background: #fff; padding: 0 7px; font-size: 12px; font-weight: 700;
+        letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+  .box { position: absolute; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.38; background: #fff;
+         border: 1.6px solid var(--vme); }
+  .box b.t { display: block; font-size: 15px; margin-bottom: 4px; }
+  .plug { border-color: var(--plug); background: var(--plug-bg); }
+  .core { border-color: var(--core); background: var(--core-bg); }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+         vertical-align: 2px; background: #e2e8f0; color: #334155; }
+  .tag.p { background: var(--plug); color: #fff; }
+  .mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.2px; }
+  ul { margin: 3px 0 0 0; padding-left: 16px; } li { margin: 1px 0; }
+  /* browser mock-up */
+  .browser { position: absolute; border: 1.6px solid #94a3b8; border-radius: 10px; background: #fff; overflow: hidden; }
+  .bar { height: 30px; background: #e2e8f0; display: flex; align-items: center; padding: 0 10px; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+  .url { margin-left: 10px; flex: 1; height: 19px; border-radius: 5px; background: #fff; font-size: 11px; color: #475569;
+         padding: 2px 8px; font-family: "DejaVu Sans Mono", monospace; }
+  .vmehead { height: 34px; background: #1e293b; color: #e2e8f0; font-size: 12.5px; padding: 9px 12px; }
+  .crumb { padding: 9px 12px 0 12px; font-size: 12px; color: #64748b; }
+  .tabs { display: flex; gap: 2px; padding: 8px 12px 0 12px; border-bottom: 1px solid #e2e8f0; }
+  .tabs span { font-size: 11.5px; padding: 5px 10px; color: #64748b; border-radius: 6px 6px 0 0; }
+  .tabs span.on { background: var(--plug-bg); color: var(--plug); font-weight: 700; border: 1px solid #ddd0fb; border-bottom: none; }
+  .frame { position: absolute; left: 12px; right: 12px; border: 2px dashed var(--core); border-radius: 8px; background: #fbfdff; }
+  .frame .fl { position: absolute; left: 10px; top: 8px; font-size: 11.5px; color: var(--core); font-weight: 700; }
+  .open { position: absolute; right: 12px; font-size: 11.5px; color: var(--plug); font-weight: 700; }
+  svg.chart { position: absolute; left: 10px; right: 10px; }
+  table.map { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.map th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 700; padding: 3px 6px 4px 0; border-bottom: 1px solid #dfe5ec; }
+  table.map td { padding: 4px 6px 4px 0; border-bottom: 1px solid #eef2f6; vertical-align: top; }
+  .card { position: absolute; top: 822px; height: 340px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+          font-size: 12.5px; line-height: 1.4; background: #fff; }
+  .card h3 { margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+  .card table { border-collapse: collapse; width: 100%; }
+  .card td { padding: 3px 8px 3px 0; vertical-align: top; border-bottom: 1px solid #eef2f6; }
+  .card td:first-child { white-space: nowrap; font-weight: 600; }
+  .steps { position: absolute; left: 24px; top: 732px; width: 1550px; height: 72px; display: flex; gap: 10px; }
+  .step { flex: 1; border-radius: 10px; padding: 8px 10px 8px 42px; position: relative; font-size: 12.3px; line-height: 1.35;
+          background: #f8fafc; border: 1px solid #e2e8f0; }
+  .step .n { position: absolute; left: 10px; top: 9px; width: 24px; height: 24px; border-radius: 50%; color: #fff; font-weight: 700;
+             font-size: 13px; text-align: center; line-height: 24px; }
+  .badge { font-size: 12px; font-weight: 700; fill: #fff; }
+  .lbl { font-size: 12px; fill: var(--flow); }
+  .lbl.b { font-weight: 700; }
+  svg#flows { position: absolute; left: 0; top: 0; width: 1600px; height: 1210px; pointer-events: none; overflow: visible; }
+  footer { position: absolute; left: 32px; right: 32px; bottom: 12px; font-size: 11px; color: var(--muted);
+           display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<h1>How vme-insight-plugin works</h1>
+<div class="sub">The plugin adds a <b>vme-insight</b> tab to VME's host, VM, instance and cluster pages, and an optional home-dashboard widget.
+VME only serves the tab: a frame and a link. The browser then loads the dashboard <b>directly from vme-insight</b>, so the VME manager never connects to vme-insight,
+and the plugin holds no passwords or data. Tabs match the right object because vme-insight's collector stores VME's own ids.</div>
+
+<!-- ============ zones -->
+<div class="zone" style="left:24px; top:116px; width:560px; height:600px;"><div class="zt">Admin's browser</div></div>
+<div class="zone" id="mgrzone" style="left:606px; top:116px; width:438px; height:282px;"><div class="zt">VME manager</div></div>
+<div class="zone" style="left:606px; top:424px; width:968px; height:292px;"><div class="zt">vme-insight host (Docker)</div></div>
+<div class="zone" style="left:1066px; top:116px; width:508px; height:282px; background:#fff;"><div class="zt">Which page shows which dashboard</div></div>
+
+<!-- ============ browser mock-up -->
+<div class="browser" id="browser" style="left:40px; top:138px; width:528px; height:560px;">
+  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">https://vme-manager/infrastructure/servers/42</span></div>
+  <div class="vmehead">VM Essentials &nbsp;·&nbsp; Operations &nbsp; Provisioning &nbsp; Infrastructure &nbsp; Library</div>
+  <div class="crumb">Infrastructure › Hosts › <b>host-01</b></div>
+  <div class="tabs"><span>Summary</span><span>VMs</span><span>Storage</span><span>Network</span><span class="on" id="tab">vme-insight</span></div>
+  <span class="open" style="top:150px;">Open in vme-insight ↗</span>
+  <div class="frame" id="frame" style="top:172px; height:374px;">
+    <span class="fl">iframe · VME Hosts dashboard (kiosk), filtered to host-01</span>
+    <svg class="chart" viewBox="0 0 480 330" style="top:30px; height:330px; width:480px;" xmlns="http://www.w3.org/2000/svg">
+      <g font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#64748b">
+        <rect x="0" y="0" width="230" height="140" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="16">CPU usage</text>
+        <polyline fill="none" stroke="#2563eb" stroke-width="2" points="10,120 40,96 70,104 100,76 130,88 160,58 190,70 220,52"/>
+        <rect x="246" y="0" width="230" height="140" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="254" y="16">Memory usage</text>
+        <polyline fill="none" stroke="#16a34a" stroke-width="2" points="256,96 286,94 316,92 346,90 376,91 406,88 436,87 466,86"/>
+        <rect x="0" y="152" width="476" height="70" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="168">CPU ready (healthy &lt; 5%, act &gt; 10%)</text>
+        <rect x="8" y="176" width="460" height="38" fill="#fef3c7" opacity="0.45"/>
+        <polyline fill="none" stroke="#7c3aed" stroke-width="1.6" points="10,206 70,204 130,207 190,200 250,205 310,203 370,206 466,204"/>
+        <rect x="0" y="234" width="476" height="90" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="250">Host filesystems</text>
+        <rect x="8" y="260" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="260" width="118" height="10" rx="3" fill="#16a34a"/>
+        <rect x="8" y="280" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="280" width="24" height="10" rx="3" fill="#16a34a"/>
+        <rect x="8" y="300" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="300" width="42" height="10" rx="3" fill="#16a34a"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- ============ VME manager -->
+<div class="box plug" id="plugin" style="left:622px; top:138px; width:406px; height:244px;">
+  <b class="t">vme-insight-plugin <span class="tag p">in VME</span></b>
+  <ul>
+    <li><b>Tab providers</b> for servers (hosts and VMs), instances and clusters</li>
+    <li><b>Home dashboard</b> "vme-insight", with a summary widget</li>
+    <li><b>Launcher</b> (optional): a vme-insight link on every page</li>
+    <li><b>show()</b>: tabs appear only when the Grafana URL is set, and, if enabled, for roles with the <i>vme-insight</i> permission</li>
+    <li><b>Returns</b>: tab HTML (iframe + link) and a page policy, <span class="mono">frame-src &lt;Grafana origin&gt;</span>, so VME lets the frame load</li>
+  </ul>
+</div>
+
+<!-- ============ page -> dashboard map -->
+<div class="box" style="left:1082px; top:138px; width:476px; height:244px; border:none; padding:6px 4px;">
+  <table class="map">
+    <tr><th>VME page</th><th>Tab / item</th><th>Opens (VME id passed)</th></tr>
+    <tr><td>Host</td><td>Server tab</td><td class="mono">/d/vme-hosts?var-host=&lt;id&gt;</td></tr>
+    <tr><td>Virtual machine</td><td>Server tab</td><td class="mono">/d/vme-vms?var-vm=&lt;id&gt;</td></tr>
+    <tr><td>Instance</td><td>Instance tab</td><td class="mono">/d/vme-vms?var-vm=&lt;each VM&gt;</td></tr>
+    <tr><td>Cluster</td><td>Cluster tab</td><td class="mono">/d/vme-overview?var-cluster=&lt;id&gt;</td></tr>
+    <tr><td>Home dashboard</td><td>Summary widget</td><td class="mono">/d-solo/vme-widget?panelId=…</td></tr>
+    <tr><td>Every page (opt.)</td><td>Launcher link</td><td>Grafana in a new tab, no frame</td></tr>
+  </table>
+  <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">Tabs add <span class="mono">&amp;kiosk</span>; "Open in vme-insight ↗" opens the same view full size. Host or VM is decided from VME's server type, or the plugin's <i>Treat as hosts / VMs</i> settings.</div>
+</div>
+
+<!-- ============ vme-insight host -->
+<div class="box core" id="front" style="left:622px; top:450px; width:286px; height:250px;">
+  <b class="t">https front end <span class="tag">Caddy · :3443</span></b>
+  <ul>
+    <li><b>TLS</b>: the browser must already trust the certificate. A frame can't show a warning, so an untrusted one leaves the tab blank.</li>
+    <li><b>Allowlist</b> (<span class="mono">HTTPS_ALLOW</span>): only admin networks; others get 403</li>
+    <li>Reverse proxy to Grafana</li>
+  </ul>
+</div>
+<div class="box core" id="grafana" style="left:936px; top:450px; width:290px; height:250px;">
+  <b class="t">Grafana <span class="tag">11.5</span></b>
+  <ul>
+    <li><b>Anonymous Viewer</b> (<span class="mono">GRAFANA_ANONYMOUS</span>): read-only, no sign-in inside the frame</li>
+    <li><b>Embedding allowed</b> (<span class="mono">GRAFANA_ALLOW_EMBEDDING</span>)</li>
+    <li><span class="mono">GRAFANA_ROOT_URL</span> = the plugin's Grafana URL, so links stay on one address</li>
+    <li>Dashboards filtered by the VME id in the URL</li>
+  </ul>
+</div>
+<div class="box core" id="data" style="left:1254px; top:450px; width:304px; height:136px;">
+  <b class="t">TimescaleDB · Prometheus</b>
+  History, inventory and lifecycle (SQL); exporter metrics (PromQL). Stored with VME's own host, VM and cluster ids.
+</div>
+<div class="box" id="collector" style="left:1254px; top:604px; width:304px; height:96px;">
+  <b class="t">collector</b>
+  Polls the VME API every minute with a read-only account. Separate from the plugin; doesn't involve the browser.
+</div>
+
+<svg id="flows" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
+    <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/></marker>
+    <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+  </defs>
+</svg>
+
+<div class="steps">
+  <div class="step"><span class="n" style="background:#334155">1</span>An admin opens a host, VM, instance or cluster page in VME.</div>
+  <div class="step"><span class="n" style="background:#7c3aed">2</span>The plugin returns the tab (an iframe and a link) and a <span class="mono">frame-src</span> policy that lets VME's page show it.</div>
+  <div class="step"><span class="n" style="background:#2563eb">3</span>The browser loads the dashboard itself, from vme-insight over https, e.g. <span class="mono">/d/vme-hosts?var-host=42</span>.</div>
+  <div class="step"><span class="n" style="background:#2563eb">4</span>The front end checks the certificate is trusted and the network is allowed, then passes the request to Grafana.</div>
+  <div class="step"><span class="n" style="background:#2563eb">5</span>Grafana, as a read-only anonymous Viewer, queries the stored data for that VME id and draws the dashboard.</div>
+</div>
+
+<!-- ============ bottom cards -->
+<div class="card" style="left:24px; width:500px;">
+  <h3>Plugin settings</h3>
+  <div style="font-size:11.5px; color:var(--muted); margin:-4px 0 6px 0;">Administration → Integrations → Plugins → vme-insight (pencil icon)</div>
+  <table>
+    <tr><td>vme-insight Grafana URL</td><td>The https address users browse to, e.g. <span class="mono">https://vme-insight.example.com:3443</span>. Unset = no tabs.</td></tr>
+    <tr><td>Grafana organisation, theme</td><td>Optional: organisation id; light or dark</td></tr>
+    <tr><td>Tab height</td><td>Pixels, default 1400</td></tr>
+    <tr><td>Home dashboard panel IDs</td><td>Tiles from <span class="mono">vme-widget</span>, default 1,2,3,4,7,8,9,12</td></tr>
+    <tr><td>Treat as hosts / VMs</td><td>Server type codes, for unusual estates</td></tr>
+    <tr><td>Require permission</td><td>Off by default; on = only roles with the vme-insight permission</td></tr>
+    <tr><td>Show launcher</td><td>Off by default; a link on every page</td></tr>
+  </table>
+</div>
+
+<div class="card" style="left:542px; width:504px;">
+  <h3>Needed in vme-insight first</h3>
+  <table>
+    <tr><td>https front end</td><td><span class="mono">docker compose --profile https up -d https</span>: VME pages are https, and browsers block http frames inside them</td></tr>
+    <tr><td>Certificate</td><td>From a CA your browsers already trust, or a <span class="mono">make-cert.sh host</span> certificate imported on each admin machine after checking its fingerprint</td></tr>
+    <tr><td>Who can reach it</td><td><span class="mono">HTTPS_ALLOW</span> = the networks your VME admins use</td></tr>
+    <tr><td>No sign-in</td><td><span class="mono">GRAFANA_ANONYMOUS=true</span> (read-only Viewer), <span class="mono">GRAFANA_ALLOW_EMBEDDING=true</span></td></tr>
+    <tr><td>One address</td><td><span class="mono">GRAFANA_ROOT_URL</span> = the plugin's Grafana URL (by IP? also <span class="mono">HTTPS_DEFAULT_SNI</span>)</td></tr>
+  </table>
+  <div style="font-size:11.5px; color:var(--muted); margin-top:8px;">Step by step: docs/VME-PLUGIN.md. vme-insight works without the plugin; the plugin needs vme-insight.</div>
+</div>
+
+<div class="card" style="left:1064px; width:510px;">
+  <h3>If the tab doesn't show the dashboard</h3>
+  <table>
+    <tr><td>No vme-insight tab</td><td>Grafana URL not set, or <i>Require permission</i> on and the role lacks it</td></tr>
+    <tr><td>Blank tab, "might be having issues"</td><td>This browser doesn't trust the certificate (on Windows: imported by double-click, as an intermediate)</td></tr>
+    <tr><td>"This content is blocked"</td><td>Page policy: check the URL setting is saved, reload; plugin 0.1.1 or later</td></tr>
+    <tr><td>Forbidden (403)</td><td>This network isn't in <span class="mono">HTTPS_ALLOW</span></td></tr>
+    <tr><td>Grafana sign-in page</td><td>Anonymous viewing off, or Grafana not restarted</td></tr>
+    <tr><td><span class="mono">ERR_SSL_PROTOCOL_ERROR</span></td><td>Browsing by IP: set <span class="mono">HTTPS_DEFAULT_SNI</span>, or use the name</td></tr>
+    <tr><td>Links jump to another address</td><td>Plugin URL and <span class="mono">GRAFANA_ROOT_URL</span> differ</td></tr>
+  </table>
+</div>
+
+<footer>
+  <span>vme-insight 0.4.5 · vme-insight-plugin 0.1.3 · VME 9.1+ (Plugin API 1.5.0)</span>
+  <span>Community project, not affiliated with HPE · github.com/grahamfairbank/vme-insight · github.com/grahamfairbank/vme-insight-plugin</span>
+</footer>
+
+<script>
+function anchor(spec) {
+  if (Array.isArray(spec)) return spec;
+  const [id, side, frac] = spec.split(':');
+  const r = document.getElementById(id).getBoundingClientRect(), f = frac === undefined ? 0.5 : parseFloat(frac);
+  return { l: [r.left, r.top + r.height * f], r: [r.right, r.top + r.height * f],
+           t: [r.left + r.width * f, r.top], b: [r.left + r.width * f, r.bottom] }[side];
+}
+const svg = document.getElementById('flows'), NS = 'http://www.w3.org/2000/svg';
+const COL = { vme: ['#334155', 'url(#ah)'], plug: ['#7c3aed', 'url(#ahp)'], core: ['#2563eb', 'url(#ahc)'], grey: ['#94a3b8', 'url(#ahg)'] };
+function flow(points, n, col, badgeAt, label, dashed) {
+  const pts = points.map(p => typeof p === 'function' ? p() : anchor(p));
+  const [stroke, marker] = COL[col];
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '));
+  path.setAttribute('fill', 'none'); path.setAttribute('stroke', stroke); path.setAttribute('stroke-width', '2.4');
+  if (dashed) path.setAttribute('stroke-dasharray', '6 4');
+  path.setAttribute('marker-end', marker); svg.appendChild(path);
+  if (!n) return;
+  const i = Math.min(badgeAt || 0, pts.length - 2), a = pts[i], b = pts[i + 1];
+  const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
+  const c = document.createElementNS(NS, 'circle');
+  c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 11); c.setAttribute('fill', stroke);
+  c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2'); svg.appendChild(c);
+  const t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', x); t.setAttribute('y', y + 4); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'badge');
+  t.textContent = n; svg.appendChild(t);
+  if (label) for (const [k, line] of label[0].split('\n').entries()) {
+    const l = document.createElementNS(NS, 'text');
+    l.setAttribute('x', x + label[1]); l.setAttribute('y', y + label[2] + k * 14);
+    l.setAttribute('class', 'lbl' + (k === 0 ? ' b' : '')); l.setAttribute('text-anchor', label[3] || 'start');
+    l.textContent = line; svg.appendChild(l);
+  }
+}
+// 1 browser opens a VME page -> manager
+flow(['browser:r:0.12', () => [anchor('plugin:l:0.18')[0], anchor('browser:r:0.12')[1]]], 1, 'vme', 0);
+// 2 manager returns the tab HTML + page policy
+flow([() => [anchor('plugin:l:0.62')[0], anchor('plugin:l:0.62')[1]], () => [anchor('browser:r:0.33')[0], anchor('plugin:l:0.62')[1]]], 2, 'plug', 0);
+// 3 browser loads the dashboard directly from vme-insight
+flow(['frame:r:0.55', () => [596, anchor('frame:r:0.55')[1]], () => [596, anchor('front:l:0.5')[1]], 'front:l:0.5'], 3, 'core', 1);
+// 4 front end -> Grafana
+flow(['front:r:0.5', 'grafana:l:0.5'], 4, 'core', 0);
+// 5 Grafana -> data
+flow(['grafana:r:0.3', () => [anchor('data:l:0.6')[0], anchor('grafana:r:0.3')[1]]], 5, 'core', 0);
+// collector reads the VME API: around the outside, into the VME manager (not the plugin)
+flow(['collector:r:0.5', () => [1566, anchor('collector:r:0.5')[1]], () => [1566, 411], () => [960, 411], () => [960, anchor('mgrzone:b:0.5')[1] + 1]], null, 'grey', 0, null, true);
+(function () {
+  const t = document.createElementNS(NS, 'text'); t.setAttribute('x', 1090); t.setAttribute('y', 405);
+  t.setAttribute('class', 'lbl'); t.textContent = 'collector reads the VME API (read-only account), separately from the plugin'; svg.appendChild(t);
+})();
+// step legend under the browser
+document.body.setAttribute('data-ready', '1');
+</script>
+</body>
+</html>
