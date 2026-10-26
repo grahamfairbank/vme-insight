@@ -1132,7 +1132,7 @@
     },
     {
       "type": "table",
-      "title": "Unrecognised OS strings",
+      "title": "Unrecognized OS strings",
       "description": "Add lifecycle.os_rules in config.yaml to map these.",
       "targets": [
         {

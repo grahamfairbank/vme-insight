@@ -13,7 +13,7 @@ def _date(v):
 
 
 def fetch(api, product, timeout=20):
-    """Return a list of normalised release-cycle dicts for one product."""
+    """Return a list of normalized release-cycle dicts for one product."""
     base = api.rstrip("/")
     r = requests.get(f"{base}/api/v1/products/{product}", timeout=timeout,
                      headers={"User-Agent": "vme-insight", "Accept": "application/json"})

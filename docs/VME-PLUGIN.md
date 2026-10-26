@@ -20,6 +20,7 @@ This page is the whole setup, end to end. The plugin's own repository has the re
 
 | vme-insight-plugin | Needs vme-insight | VME |
 |---|---|---|
+| 0.1.4 | 0.2.0 or later | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.3 | 0.2.0 or later; tested with 0.4.4 | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.2 | 0.2.0 or later (https front end, anonymous access, `vme-widget` dashboard) | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.0 – 0.1.1 | 0.2.0 or later | 9.1 or later |
@@ -70,7 +71,7 @@ Adding trust to a browser is a security decision: whatever you trust can vouch f
 
 | Option | What browsers must trust | If its key leaks |
 |---|---|---|
-| **A. Your organisation's CA** issues the certificate | Nothing new | Normal certificate risk |
+| **A. Your organization's CA** issues the certificate | Nothing new | Normal certificate risk |
 | **B. A public certificate** (e.g. Let's Encrypt via DNS) for a real DNS name | Nothing new | Normal certificate risk |
 | **C. `tools/make-cert.sh host`**: a self-signed certificate for this host only | That one certificate | Only this host's names can be impersonated |
 | **D. `tools/make-cert.sh ca`**: your own CA, limited to your domain and network | A CA restricted by name constraints | Only names inside the permitted domain and network |
@@ -91,7 +92,7 @@ docker compose --profile https up -d https
 
 Nothing needs importing on the browser machines. Renew before it expires, the same way.
 
-### C. A self-signed certificate for this host (recommended without an organisation CA)
+### C. A self-signed certificate for this host (recommended without an organization CA)
 
 ```bash
 tools/make-cert.sh host vme-insight.example.com 192.0.2.10
@@ -110,7 +111,7 @@ tools/make-cert.sh ca --permit example.com --permit 192.0.2.0/24 vme-insight.exa
 This creates a private CA whose **name constraints** only allow certificates for the permitted domains (and their subdomains) and networks, and uses it to sign the server certificate. Browsers import the CA once (`~/vme-insight-ca/vme-insight-ca.crt`). When the server certificate is due for renewal, run the script again and it reuses the CA, so nothing changes on the browser machines.
 
 * **Move the CA key off the vme-insight host** (`~/vme-insight-ca/vme-insight-ca.key`) once you've issued the certificate, and bring it back only to renew. Anyone holding it can issue certificates for the permitted names.
-* The constraint is enforced by the client. We've confirmed with OpenSSL that a certificate this CA signs for another domain or network is rejected (*permitted subtree violation*). Current Chrome, Edge, Firefox and Safari document the same behaviour for locally trusted roots; test it in your environment if you rely on it.
+* The constraint is enforced by the client. We've confirmed with OpenSSL that a certificate this CA signs for another domain or network is rejected (*permitted subtree violation*). Current Chrome, Edge, Firefox and Safari document the same behavior for locally trusted roots; test it in your environment if you rely on it.
 
 Set `HTTPS_TLS` as above, restart the front end, then [verify and import](#verify-then-import) the CA certificate on each browser machine.
 

@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS servers (
   status text, power_state text,
   ip_internal text, ip_external text,
   os_name text, os_type text, platform text, platform_version text,
-  os_product text, os_cycle text, os_version_full text,  -- normalised for lifecycle lookups
+  os_product text, os_cycle text, os_version_full text,  -- normalized for lifecycle lookups
   agent_installed bool, agent_version text, agent_last_update timestamptz,
   max_cores int, max_memory bigint, max_storage bigint,
   date_created timestamptz,
@@ -244,7 +244,7 @@ LEFT JOIN clouds   cd ON cd.id = s.cloud_id
 LEFT JOIN os_lifecycle l ON l.product = s.os_product AND lower(l.cycle) = lower(s.os_cycle)
 WHERE s.present;
 -- @@
--- One name per (entity_type, entity_id), so any metric row can be labelled without knowing its table.
+-- One name per (entity_type, entity_id), so any metric row can be labeled without knowing its table.
 CREATE OR REPLACE VIEW entity_names AS
 SELECT kind AS entity_type, id AS entity_id, name, present FROM servers
 UNION ALL SELECT 'cluster', id, name, present FROM clusters

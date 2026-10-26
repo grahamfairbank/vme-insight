@@ -26,7 +26,7 @@ This "narrow" layout means new metrics need no schema change. It's a hypertable 
 
 `metrics_hourly` is a continuous aggregate with columns `bucket`, `entity_type`, `entity_id`, `metric`, `avg`, `min`, `max` and `samples`. It refreshes every 30 minutes and is kept for `retention.hourly` days. Use it for ranges longer than the raw retention.
 
-### Metric catalogue
+### Metric catalog
 
 **host** and **vm** (from `/api/servers`, every minute):
 

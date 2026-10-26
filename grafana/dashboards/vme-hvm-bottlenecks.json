@@ -1202,7 +1202,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Top 10 VMs by IOPS (noisy neighbours)",
+      "title": "Top 10 VMs by IOPS (noisy neighbors)",
       "description": "",
       "targets": [
         {

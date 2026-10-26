@@ -126,7 +126,7 @@
     {
       "type": "timeseries",
       "title": "CPU usage",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -212,7 +212,7 @@
     {
       "type": "timeseries",
       "title": "Memory usage",
-      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {

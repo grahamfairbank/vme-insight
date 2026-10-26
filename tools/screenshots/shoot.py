@@ -201,6 +201,8 @@ def main():
         if not r.ok:
             raise SystemExit(f"Grafana login failed: HTTP {r.status}")
         page = ctx.new_page()
+        # the first load in a fresh browser is slow and can be captured before panels draw: warm up once
+        open_dashboard(page, FULL[0][1], FULL[0][2])
 
         for name, uid, extra in FULL:
             n, height = open_dashboard(page, uid, extra)

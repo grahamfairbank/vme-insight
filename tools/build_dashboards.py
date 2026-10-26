@@ -136,7 +136,7 @@ When the two disagree, trust vCPU wait."""
 
 PCT_STEPS = [{"color": "green", "value": None}, {"color": "#EAB839", "value": 75}, {"color": "red", "value": 90}]
 
-# HPE's documentation (authoritative for VME behaviour), branch matching the supported release
+# HPE's documentation (authoritative for VME behavior), branch matching the supported release
 HPE_DOCS = "https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/"
 HPE_ALARMS = HPE_DOCS + "infrastructure/clusters/hvm/alarms.rst"
 HPE_CAPACITY = HPE_DOCS + "infrastructure/clusters/hvm/capacity_planning.rst"
@@ -155,12 +155,12 @@ def bands_of(steps):
     return [{"color": "transparent", "value": None}] + steps[1:]
 
 
-# Colours match VME's built-in HVM alarm defaults, so red here means VME raises an alarm too.
+# Colors match VME's built-in HVM alarm defaults, so red here means VME raises an alarm too.
 CPU_STEPS = _steps(85, 95)   # Host/VM CPU Usage Warning / Critical
 MEM_STEPS = _steps(90, 95)   # Host/VM Memory Usage Warning / Critical
 DS_STEPS = _steps(80, 90)    # Datastore Usage Warning / Critical
 CAP_STEPS = _steps(70, 85)   # capacity planning: >70% cluster-wide puts N+1 at risk; >85% on one host
-ALARM_NOTE = f"\n\nColours match VME's default HVM alarm thresholds ([HVM alarms]({HPE_ALARMS}))."
+ALARM_NOTE = f"\n\nColors match VME's default HVM alarm thresholds ([HVM alarms]({HPE_ALARMS}))."
 CPU_DESC = "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal." + ALARM_NOTE
 MEM_DESC = "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms." + ALARM_NOTE
 DS_DESC = ("Amber at 80%, red at 90% used, as VME's Datastore Usage alarms. HPE's monitoring guide treats "
@@ -224,7 +224,7 @@ def gauge_cell(field, steps, maxv=100):
 
 
 def treemap(title, sql, scheme, desc=""):
-    """Rectangles sized by the "share" column, labelled by "VM" (Treemap panel by Grafana Labs)."""
+    """Rectangles sized by the "share" column, labeled by "VM" (Treemap panel by Grafana Labs)."""
     return {
         "type": "marcusolsson-treemap-panel", "title": title, "description": desc,
         "targets": [target(sql, "table")],
@@ -330,7 +330,7 @@ from the VME QCOW2 image with a sizing profile: **Small = 12 GB RAM, 2 vCPUs**; 
 HPE publishes no per-manager object limits and asks for a workload-specific sizing review before large deployments
 ([maximums]({HPE_MAXIMUMS})).
 
-**Morpheus Enterprise** (for reference, e.g. before moving to an Enterprise licence): the appliance requirements are
+**Morpheus Enterprise** (for reference, e.g. before moving to an Enterprise license): the appliance requirements are
 **16 GB RAM, 4 cores, 200 GB disk** ([requirements]({HPE_REQUIREMENTS})).
 
 Memory allows 1 GB for what the OS doesn't report. Sustained CPU pressure, high JVM memory or swap use on this
@@ -410,7 +410,7 @@ WEIGHT_DISK_SQL = f"""
            100.0 * (v.raw->'stats'->>'usedStorage')::float / NULLIF(cap.total, 0) AS share
     FROM servers v, cap WHERE {WEIGHT_VMS} AND (v.raw->'stats'->>'usedStorage')::float > 0
     ORDER BY 2 DESC"""
-WEIGHT_DESC = ("Each rectangle is a VM, sized and coloured by its share of the cluster's {what}. "
+WEIGHT_DESC = ("Each rectangle is a VM, sized and colored by its share of the cluster's {what}. "
                "Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. {detail} "
                "Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.")
 
@@ -777,7 +777,7 @@ def lifecycle_board():
         WHERE s.present AND s.os_product IS NOT NULL
         GROUP BY 1, 2, 4, 5, 6, 7, 8 ORDER BY 6 NULLS LAST""",
         desc="Lifecycle data from endoflife.date, refreshed daily."), 12, 8)
-    b.add(table("Unrecognised OS strings", """
+    b.add(table("Unrecognized OS strings", """
         SELECT COALESCE(os_name, '') AS "OS name", COALESCE(platform, '') AS "Platform",
                COALESCE(platform_version, '') AS "Platform version", count(*) AS "Servers"
         FROM servers WHERE present AND (os_product IS NULL OR os_cycle IS NULL) GROUP BY 1, 2, 3 ORDER BY 4 DESC""",
@@ -1000,7 +1000,7 @@ FS_GUIDE = """Filesystems on the HVM host itself, from node_exporter (install it
 
 * **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.
 * Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.
-* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.
+* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labeled with their VME datastore name.
 
 Amber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.
 **Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away."""
@@ -1135,7 +1135,7 @@ def hvm_bottlenecks():
     b.add(ptime("Top 10 VMs by write latency", pq(
         f'topk(10, {vm_rate("libvirt_domain_block_stats_write_time_seconds_total")} / {vm_rate("libvirt_domain_block_stats_write_requests_total")})',
         "{{domain}}"), "s", minv=0), 12, 8)
-    b.add(ptime("Top 10 VMs by IOPS (noisy neighbours)", pq(
+    b.add(ptime("Top 10 VMs by IOPS (noisy neighbors)", pq(
         f'topk(10, {vm_rate("libvirt_domain_block_stats_read_requests_total")} + {vm_rate("libvirt_domain_block_stats_write_requests_total")})',
         "{{domain}} on {{nodename}}"), "iops", minv=0), 12, 8)
     b.row("Network")

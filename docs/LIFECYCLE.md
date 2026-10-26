@@ -25,7 +25,7 @@ The collector turns the OS text into an endoflife.date product and release cycle
 | windows server | `windows-server` | `2022`, `2012-r2` |
 | windows | `windows` | `11` |
 
-Anything else lands in the **Unrecognised OS strings** panel. Add a rule for it in `lifecycle.os_rules` ([CONFIGURATION](CONFIGURATION.md#lifecycle)).
+Anything else lands in the **Unrecognized OS strings** panel. Add a rule for it in `lifecycle.os_rules` ([CONFIGURATION](CONFIGURATION.md#lifecycle)).
 
 ## OS status
 
@@ -52,7 +52,7 @@ The **target version** is `lifecycle.expected_agent_version` from config, or if 
 
 ## QEMU guest agent
 
-VME reports `guestAgentStatus` per VM: `connected`, `disconnected` or `unknown`. Since 9.1.0, VME uses the QEMU Guest Agent to gather the guest's IP addresses, OS version and hostname without network access ([9.1.0 release notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/release_notes/9_1_0.rst)). A running VM without a connected guest agent therefore can't report its OS, which is the usual reason for `unknown os`. It also can't be shut down gracefully or customised (Sysprep on Windows), so the dashboard counts these separately, and VME raises a *VM Guest Agent Not Responding* alarm. For Windows, the agent comes with `virtio-win-guest-tools` ([guest OS notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/guest_os_notes.rst)). On Linux, install and enable the distribution's `qemu-guest-agent` package.
+VME reports `guestAgentStatus` per VM: `connected`, `disconnected` or `unknown`. Since 9.1.0, VME uses the QEMU Guest Agent to gather the guest's IP addresses, OS version and hostname without network access ([9.1.0 release notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/release_notes/9_1_0.rst)). A running VM without a connected guest agent therefore can't report its OS, which is the usual reason for `unknown os`. It also can't be shut down gracefully or customized (Sysprep on Windows), so the dashboard counts these separately, and VME raises a *VM Guest Agent Not Responding* alarm. For Windows, the agent comes with `virtio-win-guest-tools` ([guest OS notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/guest_os_notes.rst)). On Linux, install and enable the distribution's `qemu-guest-agent` package.
 
 ## VME itself
 

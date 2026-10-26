@@ -180,7 +180,7 @@ and the plugin holds no passwords or data. Tabs match the right object because v
   <div style="font-size:11.5px; color:var(--muted); margin:-4px 0 6px 0;">Administration → Integrations → Plugins → vme-insight (pencil icon)</div>
   <table>
     <tr><td>vme-insight Grafana URL</td><td>The https address users browse to, e.g. <span class="mono">https://vme-insight.example.com:3443</span>. Unset = no tabs.</td></tr>
-    <tr><td>Grafana organisation, theme</td><td>Optional: organisation id; light or dark</td></tr>
+    <tr><td>Grafana organization, theme</td><td>Optional: organization id; light or dark</td></tr>
     <tr><td>Tab height</td><td>Pixels, default 1400</td></tr>
     <tr><td>Home dashboard panel IDs</td><td>Tiles from <span class="mono">vme-widget</span>, default 1,2,3,4,7,8,9,12</td></tr>
     <tr><td>Treat as hosts / VMs</td><td>Server type codes, for unusual estates</td></tr>
@@ -228,7 +228,7 @@ function anchor(spec) {
            t: [r.left + r.width * f, r.top], b: [r.left + r.width * f, r.bottom] }[side];
 }
 const svg = document.getElementById('flows'), NS = 'http://www.w3.org/2000/svg';
-const COL = { vme: ['#334155', 'url(#ah)'], plug: ['#7c3aed', 'url(#ahp)'], core: ['#2563eb', 'url(#ahc)'], grey: ['#94a3b8', 'url(#ahg)'] };
+const COL = { vme: ['#334155', 'url(#ah)'], plug: ['#7c3aed', 'url(#ahp)'], core: ['#2563eb', 'url(#ahc)'], gray: ['#94a3b8', 'url(#ahg)'] };
 function flow(points, n, col, badgeAt, label, dashed) {
   const pts = points.map(p => typeof p === 'function' ? p() : anchor(p));
   const [stroke, marker] = COL[col];
@@ -264,7 +264,7 @@ flow(['front:r:0.5', 'grafana:l:0.5'], 4, 'core', 0);
 // 5 Grafana -> data
 flow(['grafana:r:0.3', () => [anchor('data:l:0.6')[0], anchor('grafana:r:0.3')[1]]], 5, 'core', 0);
 // collector reads the VME API: around the outside, into the VME manager (not the plugin)
-flow(['collector:r:0.5', () => [1566, anchor('collector:r:0.5')[1]], () => [1566, 411], () => [960, 411], () => [960, anchor('mgrzone:b:0.5')[1] + 1]], null, 'grey', 0, null, true);
+flow(['collector:r:0.5', () => [1566, anchor('collector:r:0.5')[1]], () => [1566, 411], () => [960, 411], () => [960, anchor('mgrzone:b:0.5')[1] + 1]], null, 'gray', 0, null, true);
 (function () {
   const t = document.createElementNS(NS, 'text'); t.setAttribute('x', 1090); t.setAttribute('y', 405);
   t.setAttribute('class', 'lbl'); t.textContent = 'collector reads the VME API (read-only account), separately from the plugin'; svg.appendChild(t);

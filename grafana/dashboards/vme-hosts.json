@@ -316,7 +316,7 @@
     {
       "type": "timeseries",
       "title": "CPU usage",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -402,7 +402,7 @@
     {
       "type": "timeseries",
       "title": "Memory usage",
-      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -1079,7 +1079,7 @@
     {
       "type": "table",
       "title": "Host filesystems (node_exporter)",
-      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labeled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
       "targets": [
         {
           "datasource": {
@@ -1430,7 +1430,7 @@
     {
       "type": "timeseries",
       "title": "Filesystem used % (amber 80, red 90)",
-      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labeled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
       "targets": [
         {
           "datasource": {
@@ -1519,7 +1519,7 @@
     {
       "type": "timeseries",
       "title": "Filesystem free space",
-      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labelled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
+      "description": "Filesystems on the HVM host itself, from node_exporter (install it with tools/install-exporters.sh).\n\n* **Root (/)** and **/var** hold the OS, logs and libvirt state. A full root filesystem can stop VMs from starting or migrating.\n* Local datastores (Directory datastores) live on these filesystems, so they fill up as VM disks grow.\n* Shared datastores mounted on the host (NFS, GFS2) appear too, once per host, labeled with their VME datastore name.\n\nAmber at 80%, red at 90%. **Days to full** projects the last 24 hours forward and is blank when usage isn't growing.\n**Read-only** usually means the kernel remounted the filesystem after a disk error: investigate straight away.",
       "targets": [
         {
           "datasource": {

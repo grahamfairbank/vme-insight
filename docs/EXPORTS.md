@@ -18,7 +18,7 @@ Open **VME Data Export** from the **VME dashboards** menu. Choose what to export
 |---|---|
 | **Kind** | `host`, `vm`, `cluster`, `datastore`, `appliance` (the VME manager) or `summary` (estate totals) |
 | **Entity** | One or more objects of that kind, or All |
-| **Metric** | One or more metrics (only those collected for that kind in the last 2 days are listed), or All. See the [metric catalogue](DATA-MODEL.md#metric-catalogue). |
+| **Metric** | One or more metrics (only those collected for that kind in the last 2 days are listed), or All. See the [metric catalog](DATA-MODEL.md#metric-catalog). |
 | **Resolution** | Bucket size for metric samples: 1 minute to 1 day. Each bucket gives avg, min, max and the number of samples. |
 
 Panels:

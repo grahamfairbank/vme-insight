@@ -3,6 +3,8 @@
 ## 0.4.6 (unreleased)
 
 * **Manager sizing against both HPE guides.** The "Manager size: Essentials and Enterprise" panel (was "Manager size vs HPE recommendation") gives a result for each guide. **VM Essentials:** which VME manager profile the manager matches (Small is 12 GB RAM and 2 vCPUs; HPE doesn't publish Medium and Large values or a disk size). **Morpheus Enterprise:** whether it meets the appliance requirements (4 cores, 16 GB, 200 GB). Previously only the Enterprise figures were used, so a correctly sized VME manager showed as "below". The manager disk guidance drops the 200 GB figure, which applies to Enterprise only.
+* Docs, dashboards and diagrams in US English ("color", "organization", "center"); screenshots and architecture PDFs regenerated. Compatibility row for plugin 0.1.4.
+* Screenshot tool: a warm-up load before the first capture, which could be taken before its panels had drawn.
 
 ## 0.4.5 (2026-10-23)
 
@@ -25,7 +27,7 @@
 
 ## 0.4.2 (2026-10-22)
 
-* **Fixed:** browsing to the https front end by IP (`https://<ip>:3443`) failed with `ERR_SSL_PROTOCOL_ERROR`: browsers send no server name for an IP, and behind Docker the front end couldn't tell which address was used. New `HTTPS_DEFAULT_SNI`: set it to that IP (and list the IP in `HTTPS_HOSTNAME` and the certificate). Unset, behaviour is unchanged.
+* **Fixed:** browsing to the https front end by IP (`https://<ip>:3443`) failed with `ERR_SSL_PROTOCOL_ERROR`: browsers send no server name for an IP, and behind Docker the front end couldn't tell which address was used. New `HTTPS_DEFAULT_SNI`: set it to that IP (and list the IP in `HTTPS_HOSTNAME` and the certificate). Unset, behavior is unchanged.
 * Troubleshooting: an https front end section (protocol error, untrusted certificate, name mismatch, 403).
 
 ## 0.4.1 (2026-10-22)
@@ -34,9 +36,9 @@
 
 ## 0.4.0 (2026-10-21)
 
-* **VM resource weight treemaps** on the Overview: CPU, allocated memory and storage share per VM, labelled with the share. Uses the Treemap panel by Grafana Labs (`marcusolsson-treemap-panel` 2.1.1, signed, pinned), installed by Grafana on first start; `GRAFANA_PLUGINS` and [offline installs](docs/INSTALL.md#offline-installs) documented.
+* **VM resource weight treemaps** on the Overview: CPU, allocated memory and storage share per VM, labeled with the share. Uses the Treemap panel by Grafana Labs (`marcusolsson-treemap-panel` 2.1.1, signed, pinned), installed by Grafana on first start; `GRAFANA_PLUGINS` and [offline installs](docs/INSTALL.md#offline-installs) documented.
 * Screenshot tool blurs only the sensitive part of a label (names inside longer text stay hidden while the rest stays readable), including SVG labels.
-* **Safer certificates for the https front end.** New `tools/make-cert.sh`: a self-signed certificate for this host only (`CA:FALSE`), or a private CA limited by name constraints to your domain and network, with every `openssl` command printed (`--dry-run` to only print). The certificate docs now rank the options from least to most new trust (your organisation's CA, a public certificate, `make-cert.sh host`, `make-cert.sh ca`, the built-in CA as a lab shortcut), explain the built-in CA's risks, and add a fingerprint check before importing, per-account import as the default, and how to remove trust.
+* **Safer certificates for the https front end.** New `tools/make-cert.sh`: a self-signed certificate for this host only (`CA:FALSE`), or a private CA limited by name constraints to your domain and network, with every `openssl` command printed (`--dry-run` to only print). The certificate docs now rank the options from least to most new trust (your organization's CA, a public certificate, `make-cert.sh host`, `make-cert.sh ca`, the built-in CA as a lab shortcut), explain the built-in CA's risks, and add a fingerprint check before importing, per-account import as the default, and how to remove trust.
 
 ## 0.3.0 (2026-10-21)
 

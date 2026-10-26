@@ -629,7 +629,7 @@
     {
       "type": "gauge",
       "title": "Cluster CPU",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -833,7 +833,7 @@
     {
       "type": "timeseries",
       "title": "Cluster CPU usage",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -1090,7 +1090,7 @@
     {
       "type": "timeseries",
       "title": "Host CPU usage",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -1176,7 +1176,7 @@
     {
       "type": "timeseries",
       "title": "Host memory usage",
-      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -1468,7 +1468,7 @@
     {
       "type": "bargauge",
       "title": "Datastore usage (amber 80%, red 90%)",
-      "description": "Amber at 80%, red at 90% used, as VME's Datastore Usage alarms. HPE's monitoring guide treats under 15% free as a risk of provisioning failures ([HVM monitoring](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/monitoring.rst)).\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 80%, red at 90% used, as VME's Datastore Usage alarms. HPE's monitoring guide treats under 15% free as a risk of provisioning failures ([HVM monitoring](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/monitoring.rst)).\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -2572,7 +2572,7 @@
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME CPU weight",
-      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's CPU. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's CPU usage \u00d7 its vCPUs, divided by the cores of all hosts. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's CPU. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's CPU usage \u00d7 its vCPUs, divided by the cores of all hosts. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2618,7 +2618,7 @@
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME memory weight (allocated)",
-      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's memory. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a VM's full allocation (no memory overcommit by default), so allocation is what it takes from the cluster; VME's in-guest usage figure is unreliable without a guest agent. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's memory. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a VM's full allocation (no memory overcommit by default), so allocation is what it takes from the cluster; VME's in-guest usage figure is unreliable without a guest agent. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2664,7 +2664,7 @@
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME disk weight",
-      "description": "Each rectangle is a VM, sized and coloured by its share of the cluster's storage. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's disk space in use divided by the capacity of the datastores its disks are on. Includes stopped VMs, which still occupy storage. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's storage. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's disk space in use divided by the capacity of the datastores its disks are on. Includes stopped VMs, which still occupy storage. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2723,7 +2723,7 @@
     {
       "type": "bargauge",
       "title": "Top VMs by CPU",
-      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage alarms. Short peaks are normal.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {
@@ -2795,7 +2795,7 @@
     {
       "type": "bargauge",
       "title": "Top VMs by memory",
-      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColours match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
+      "description": "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms.\n\nColors match VME's default HVM alarm thresholds ([HVM alarms](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/alarms.rst)).",
       "targets": [
         {
           "datasource": {

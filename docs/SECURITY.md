@@ -29,7 +29,7 @@ vme-insight only reads from VME. It holds a credential for your virtualization m
 
 Browsers that show the plugin tabs must trust the front end's certificate. Adding trust is the riskiest step in the whole setup, so the options are ordered from least to most new trust in [VME-PLUGIN](VME-PLUGIN.md#3-make-browsers-trust-the-certificate):
 
-1. A certificate from your organisation's CA, or a public one: nothing new to trust.
+1. A certificate from your organization's CA, or a public one: nothing new to trust.
 2. `tools/make-cert.sh host`: a self-signed certificate for this host only (`CA:FALSE`), so it can't vouch for any other site.
 3. `tools/make-cert.sh ca`: your own CA, restricted by name constraints to your domain and network, with its key kept off the host.
 4. The built-in CA (`HTTPS_TLS=internal`): it can sign for **any** site and its key lives in a Docker volume. Lab use only.
