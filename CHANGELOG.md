@@ -2,6 +2,7 @@
 
 ## 0.4.6 (unreleased)
 
+* **Virtual appliance.** A ready-to-import QCOW2 image for HPE Morpheus VM Essentials: Debian 13 with Docker, vme-insight and all its container images inside, so it runs without internet access. Settings arrive through cloud-init user data or the `sudo vme-insight-setup` wizard. Passwords are generated on each VM at first boot, and nothing secret is baked into the image. Build it with `appliance/build.sh`; see [APPLIANCE](docs/APPLIANCE.md).
 * **Manager sizing against both HPE guides.** The "Manager size: Essentials and Enterprise" panel (was "Manager size vs HPE recommendation") gives a result for each guide. **VM Essentials:** which VME manager profile the manager matches (Small is 12 GB RAM and 2 vCPUs; HPE doesn't publish Medium and Large values or a disk size). **Morpheus Enterprise:** whether it meets the appliance requirements (4 cores, 16 GB, 200 GB). Previously only the Enterprise figures were used, so a correctly sized VME manager showed as "below". The manager disk guidance drops the 200 GB figure, which applies to Enterprise only.
 * Docs, dashboards and diagrams in US English ("color", "organization", "center"); screenshots and architecture PDFs regenerated. Compatibility rows for plugins 0.1.4 and 0.1.5.
 * Screenshot tool: a warm-up load before the first capture, which could be taken before its panels had drawn.

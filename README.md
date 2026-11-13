@@ -162,12 +162,15 @@ Open `http://<docker-host>:3000` (or `GRAFANA_PORT`) and sign in with `GRAFANA_A
 
 Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
+**Or as a virtual appliance:** import the QCOW2 image into Morpheus, provision a VM on an HVM cluster, and give it the Morpheus URL and a read-only token. Docker and every container image are already inside. See **[docs/APPLIANCE.md](docs/APPLIANCE.md)**.
+
 ## Documentation
 
 | | |
 |---|---|
 | [ARCHITECTURE](docs/architecture/vme-insight-architecture.pdf) | One-page diagram: components, ports, data flows, core vs optional, security |
 | [INSTALL](docs/INSTALL.md) | Step by step install, reader account, verification, upgrades, backup |
+| [APPLIANCE](docs/APPLIANCE.md) | The ready-to-import QCOW2 virtual appliance: import, first boot, settings, building it |
 | [CONFIGURATION](docs/CONFIGURATION.md) | Every setting in `config.yaml` and `.env`, TLS options |
 | [DASHBOARDS](docs/DASHBOARDS.md) | Every panel, what it means, and how it maps to the vSphere dashboard |
 | [EXPORTERS](docs/EXPORTERS.md) | Optional node and libvirt exporters on HVM hosts |

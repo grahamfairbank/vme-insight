@@ -1,0 +1,22 @@
+# vme-insight appliance settings. Copy to /etc/vme-insight/appliance.yaml (mode 600), or let
+# cloud-init / sudo vme-insight-setup write it. Applied at boot and by vme-insight-apply.
+morpheus:
+  url: https://morpheus.example.com
+  api_token: ''                 # a read-only account's API token (recommended), or:
+  # username: ''
+  # password: ''                # in single quotes
+  tls_fingerprint: ''           # SHA-256 of the Morpheus certificate, AA:BB:..., to pin a self-signed one
+  # ca_pem: |                   # or: the PEM of your own CA that signed the Morpheus certificate
+  #   -----BEGIN CERTIFICATE-----
+  # insecure: false             # true skips certificate checks entirely: lab use only
+timezone: UTC
+grafana:
+  port: 3000
+  # admin_password: ''          # first start only; otherwise one is generated (sudo vme-insight-setup --show-password)
+  # vme_plugin: false           # true allows embedding and anonymous Viewer access, for vme-insight-plugin
+https:
+  enabled: false                # true adds Caddy https on port 3443 in front of Grafana
+  # hostname: vme-insight.example.com 10.0.0.25   # names and IPs people type
+  # allow: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+  # cert_pem: |                 # your own certificate and key; otherwise Caddy's internal CA is used
+  # key_pem: |

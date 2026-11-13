@@ -1,0 +1,143 @@
+#!/usr/bin/python3
+"""Interactive setup for the vme-insight appliance.
+
+  sudo vme-insight-setup                  ask for the Morpheus connection and start vme-insight
+  sudo vme-insight-setup --show-password  print the Grafana admin password
+  sudo vme-insight-setup --status         show whether vme-insight is configured and running
+
+Writes /etc/vme-insight/appliance.yaml (the same file cloud-init can write) and runs vme-insight-apply.
+"""
+import getpass
+import hashlib
+import os
+import socket
+import ssl
+import subprocess
+import sys
+from urllib.parse import urlsplit
+
+import yaml
+
+SETTINGS = "/etc/vme-insight/appliance.yaml"
+ENV = "/opt/vme-insight/.env"
+
+
+def ask(prompt, default=""):
+    shown = f" [{default}]" if default else ""
+    value = input(f"{prompt}{shown}: ").strip()
+    return value or default
+
+
+def yes(prompt, default=False):
+    d = "Y/n" if default else "y/N"
+    v = input(f"{prompt} ({d}): ").strip().lower()
+    return default if not v else v.startswith("y")
+
+
+def fingerprint(url):
+    parts = urlsplit(url if "://" in url else "https://" + url)
+    host, port = parts.hostname, parts.port or 443
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    with socket.create_connection((host, port), timeout=10) as sock:
+        with ctx.wrap_socket(sock, server_hostname=host) as tls:
+            der = tls.getpeercert(binary_form=True)
+    fp = hashlib.sha256(der).hexdigest().upper()
+    return ":".join(fp[i:i + 2] for i in range(0, len(fp), 2))
+
+
+def show_password():
+    for line in open(ENV):
+        if line.startswith("GRAFANA_ADMIN_PASSWORD="):
+            print(line.split("=", 1)[1].strip().strip('"'))
+            print("(This is the password Grafana started with. If you changed it in Grafana, use that one.)",
+                  file=sys.stderr)
+            return 0
+    print("No Grafana admin password yet: vme-insight hasn't finished its first start.", file=sys.stderr)
+    return 1
+
+
+def main(argv):
+    if os.geteuid() != 0:
+        print("Run with sudo: sudo vme-insight-setup", file=sys.stderr)
+        return 1
+    if "--show-password" in argv:
+        return show_password()
+    if "--status" in argv:
+        print(open("/run/vme-insight-status").read().strip() if os.path.exists("/run/vme-insight-status")
+              else "unknown (first boot not finished?)")
+        subprocess.run(["docker", "compose", "ps"], cwd="/opt/vme-insight")
+        return 0
+
+    old = yaml.safe_load(open(SETTINGS)) if os.path.exists(SETTINGS) else {}
+    om = old.get("morpheus") or {}
+    print("vme-insight setup. Press Enter to keep the value in [brackets].\n")
+    print("1. The Morpheus appliance (the manager of your HVM clusters)")
+    url = ask("   Morpheus URL, e.g. https://morpheus.example.com", om.get("url", ""))
+    if not url:
+        print("A URL is required.", file=sys.stderr)
+        return 1
+    if "://" not in url:
+        url = "https://" + url
+
+    print("\n2. A read-only Morpheus account (see docs/APPLIANCE.md: never use an admin account)")
+    m = {"url": url}
+    if yes("   Use an API token (recommended)?", default=not om.get("username")):
+        tok = getpass.getpass("   API token (input hidden; Enter keeps the current one): ").strip()
+        m["api_token"] = tok or om.get("api_token", "")
+    else:
+        m["username"] = ask("   Username", om.get("username", ""))
+        pw = getpass.getpass("   Password (input hidden; Enter keeps the current one): ")
+        m["password"] = pw or om.get("password", "")
+    if not (m.get("api_token") or (m.get("username") and m.get("password"))):
+        print("Credentials are required.", file=sys.stderr)
+        return 1
+
+    if url.startswith("https://"):
+        print("\n3. The Morpheus certificate")
+        try:
+            fp = fingerprint(url)
+        except OSError as e:
+            print(f"   Could not reach {url}: {e}", file=sys.stderr)
+            return 1
+        print(f"   SHA-256 fingerprint of the certificate it presents:\n   {fp}")
+        print("   Compare it with the certificate in your browser (padlock > certificate details) before trusting it.")
+        if yes("   Pin this certificate? (choose No if it is signed by a CA this VM already trusts)", default=True):
+            m["tls_fingerprint"] = fp
+    else:
+        m["allow_http"] = yes("\n3. The URL is plain http. Allow it anyway (credentials travel unencrypted)?")
+        if not m["allow_http"]:
+            return 1
+
+    print("\n4. How people reach the dashboards")
+    h = old.get("https") or {}
+    https_on = yes("   Serve Grafana over https on port 3443 too (needed to show the dashboards inside the Morpheus UI)?",
+                   default=bool(h.get("enabled")))
+    settings = {"morpheus": m, "timezone": ask("   Time zone for the dashboards", old.get("timezone", "UTC"))}
+    if https_on:
+        settings["https"] = {
+            "enabled": True,
+            "hostname": ask("   Names and IPs people type for this VM, space-separated", h.get("hostname", "")),
+            "allow": ask("   Networks allowed in, space-separated CIDRs",
+                         h.get("allow", "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16")),
+        }
+        settings["grafana"] = {"vme_plugin": yes("   Allow vme-insight-plugin to embed the dashboards in the Morpheus UI?",
+                                                 default=bool((old.get("grafana") or {}).get("vme_plugin")))}
+
+    os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
+    fd = os.open(SETTINGS, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        yaml.safe_dump(settings, f, sort_keys=False)
+    print(f"\nSaved {SETTINGS}. Starting vme-insight...")
+    subprocess.run(["/usr/local/sbin/vme-insight-apply"], check=True)
+    print("\nDone. Open Grafana as user admin; get the password with: sudo vme-insight-setup --show-password")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled; nothing changed.", file=sys.stderr)
+        sys.exit(1)

@@ -1,0 +1,210 @@
+#!/usr/bin/python3
+"""Configure and start vme-insight on the appliance.
+
+Runs at every boot (vme-insight-firstboot.service) and from vme-insight-setup. Each step is safe to repeat:
+
+1. Load the bundled container images once, so the appliance works without internet access.
+2. Create /opt/vme-insight/.env once, with passwords generated on this VM (nothing is baked into the image).
+3. If /etc/vme-insight/appliance.yaml exists (written by cloud-init or vme-insight-setup), write
+   config/config.yaml and the .env settings from it, then start the stack.
+
+Usage: vme-insight-apply [--boot]
+"""
+import glob
+import os
+import secrets
+import subprocess
+import sys
+
+import yaml
+
+APP = "/opt/vme-insight"
+SETTINGS = "/etc/vme-insight/appliance.yaml"
+STATE = "/var/lib/vme-insight"
+ENV = f"{APP}/.env"
+STATUS = "/run/vme-insight-status"
+
+
+def log(msg):
+    print(f"vme-insight: {msg}", flush=True)
+
+
+def status(text):
+    with open(STATUS, "w") as f:
+        f.write(text + "\n")
+
+
+def run(cmd, **kw):
+    return subprocess.run(cmd, check=True, cwd=APP, **kw)
+
+
+def load_images():
+    marker = f"{STATE}/images-loaded"
+    if os.path.exists(marker):
+        return
+    tars = sorted(glob.glob(f"{APP}/appliance/images/*.tar.zst"))
+    if not tars:
+        log("no bundled images found; Docker will pull them when the stack starts")
+    for t in tars:
+        log(f"loading {os.path.basename(t)}")
+        subprocess.run(f"zstd -dc '{t}' | docker load -q", shell=True, check=True)
+    os.makedirs(STATE, exist_ok=True)
+    open(marker, "w").close()
+
+
+def read_env():
+    lines = open(ENV).read().splitlines() if os.path.exists(ENV) else []
+    return lines
+
+
+def set_env(lines, key, value):
+    """Set KEY=value in .env lines, quoting values with spaces. Returns the new list."""
+    value = str(value)
+    if any(c in value for c in " #\"'$") and not (value.startswith('"') and value.endswith('"')):
+        value = '"' + value.replace('"', '\\"') + '"'
+    entry = f"{key}={value}"
+    for i, line in enumerate(lines):
+        if line.split("=", 1)[0].strip() == key and not line.lstrip().startswith("#"):
+            lines[i] = entry
+            return lines
+    lines.append(entry)
+    return lines
+
+
+def get_env(lines, key):
+    for line in lines:
+        if line.split("=", 1)[0].strip() == key and not line.lstrip().startswith("#"):
+            return line.split("=", 1)[1].strip().strip('"')
+    return None
+
+
+def write_private(path, text):
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(text)
+    os.chmod(path, 0o600)
+
+
+def ensure_env():
+    """Create .env from .env.example with fresh passwords, once."""
+    if os.path.exists(ENV):
+        return
+    lines = open(f"{APP}/.env.example").read().splitlines()
+    for key in ("DB_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD"):
+        lines = set_env(lines, key, secrets.token_urlsafe(24))
+    mem_gb = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2**30
+    lines = set_env(lines, "DB_MEMORY", f"{max(1, int(mem_gb / 4))}GB")   # a quarter of the VM's memory
+    lines = set_env(lines, "COMPOSE_FILE", "docker-compose.yml:appliance/docker-compose.appliance.yml")
+    lines = set_env(lines, "GRAFANA_PLUGINS", "")   # the treemap plugin is bundled; nothing to download
+    write_private(ENV, "\n".join(lines) + "\n")
+    log("created .env with passwords generated on this VM")
+
+
+def as_bool(v):
+    return v is True or str(v).strip().lower() in ("true", "yes", "1", "on")
+
+
+def apply_settings(s):
+    m = s.get("morpheus") or {}
+    url = str(m.get("url") or "").strip()
+    if not url:
+        raise SystemExit(f"{SETTINGS}: morpheus.url is required")
+    if not (m.get("api_token") or (m.get("username") and m.get("password"))):
+        raise SystemExit(f"{SETTINGS}: set morpheus.api_token, or morpheus.username and morpheus.password")
+    for key in ("username", "password", "api_token"):
+        v = m.get(key)
+        if v is not None and not isinstance(v, str):
+            raise SystemExit(f"{SETTINGS}: morpheus.{key} must be text; put it in single quotes")
+
+    # config/config.yaml: the example with the morpheus section filled in
+    cfg = yaml.safe_load(open(f"{APP}/config/config.example.yaml"))
+    mc = cfg["morpheus"]
+    mc["url"] = url
+    for key in ("username", "password", "api_token", "tls_fingerprint"):
+        mc[key] = str(m.get(key) or "")
+    mc["insecure"] = as_bool(m.get("insecure"))
+    mc["allow_http"] = as_bool(m.get("allow_http"))
+    ca = (m.get("ca_pem") or "").strip()
+    if ca:
+        write_private(f"{APP}/config/vme-ca.pem", ca + "\n")
+        mc["ca_bundle"] = "/config/vme-ca.pem"
+    else:
+        mc["ca_bundle"] = ""
+    if not (mc["tls_fingerprint"] or mc["ca_bundle"] or mc["insecure"] or url.startswith("http://")):
+        log("note: no tls_fingerprint or ca_pem set, so the manager's certificate must be publicly trusted")
+    write_private(f"{APP}/config/config.yaml",
+                  "# Written by vme-insight-apply from /etc/vme-insight/appliance.yaml; edit that file instead.\n"
+                  + yaml.safe_dump(cfg, sort_keys=False))
+
+    # .env: Grafana and https front end
+    lines = read_env()
+    g = s.get("grafana") or {}
+    h = s.get("https") or {}
+    https_on = as_bool(h.get("enabled"))
+    lines = set_env(lines, "TZ", s.get("timezone") or "UTC")
+    lines = set_env(lines, "GRAFANA_PORT", g.get("port") or 3000)
+    lines = set_env(lines, "GRAFANA_BIND", g.get("bind") or ("127.0.0.1" if https_on and h.get("only") else "0.0.0.0"))
+    lines = set_env(lines, "GRAFANA_ROOT_URL", g.get("root_url") or "")
+    embed = as_bool(g.get("vme_plugin"))
+    lines = set_env(lines, "GRAFANA_ALLOW_EMBEDDING", "true" if embed else "false")
+    lines = set_env(lines, "GRAFANA_ANONYMOUS", "true" if embed else "false")
+    lines = set_env(lines, "GRAFANA_COOKIE_SECURE", "true" if https_on else "false")
+    if g.get("admin_password") and not os.path.exists(f"{STATE}/grafana-started"):
+        lines = set_env(lines, "GRAFANA_ADMIN_PASSWORD", str(g["admin_password"]))
+    if https_on:
+        names = h.get("hostname") or "localhost"
+        lines = set_env(lines, "HTTPS_HOSTNAME", names)
+        ips = [n for n in str(names).split() if n.replace(".", "").isdigit()]
+        lines = set_env(lines, "HTTPS_DEFAULT_SNI", h.get("default_sni") or (ips[0] if ips else "localhost"))
+        lines = set_env(lines, "HTTPS_ALLOW", h.get("allow") or "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16")
+        lines = set_env(lines, "HTTPS_PORT", h.get("port") or 3443)
+        cert, key = (h.get("cert_pem") or "").strip(), (h.get("key_pem") or "").strip()
+        if cert and key:
+            write_private(f"{APP}/https/certs/appliance.pem", cert + "\n")
+            write_private(f"{APP}/https/certs/appliance-key.pem", key + "\n")
+            lines = set_env(lines, "HTTPS_TLS", "/certs/appliance.pem /certs/appliance-key.pem")
+        else:
+            lines = set_env(lines, "HTTPS_TLS", "internal")
+        lines = set_env(lines, "COMPOSE_PROFILES", "https")
+    else:
+        lines = set_env(lines, "COMPOSE_PROFILES", "")
+    write_private(ENV, "\n".join(lines) + "\n")
+
+
+def main():
+    os.makedirs(STATE, exist_ok=True)
+    status("starting")
+    if "--boot" in sys.argv:
+        # Morpheus delivers user data on a NoCloud ISO and may run it late (runcmd), so wait for
+        # cloud-init to finish before deciding whether settings were provided.
+        subprocess.run(["cloud-init", "status", "--wait"], stdout=subprocess.DEVNULL, check=False)
+    load_images()
+    ensure_env()
+    if not os.path.exists(SETTINGS):
+        status("not configured: run  sudo vme-insight-setup")
+        log(f"{SETTINGS} not found; the stack is not started. Run: sudo vme-insight-setup")
+        return 0
+    settings = yaml.safe_load(open(SETTINGS)) or {}
+    os.chmod(SETTINGS, 0o600)
+    apply_settings(settings)
+    log("starting the stack")
+    run(["docker", "compose", "up", "-d", "--remove-orphans"])
+    open(f"{STATE}/grafana-started", "w").close()
+    lines = read_env()
+    port = get_env(lines, "HTTPS_PORT") if get_env(lines, "COMPOSE_PROFILES") == "https" else get_env(lines, "GRAFANA_PORT")
+    scheme = "https" if get_env(lines, "COMPOSE_PROFILES") == "https" else "http"
+    status(f"running: {scheme}://<this VM's address>:{port}  (Grafana user admin; password: sudo vme-insight-setup --show-password)")
+    log("running")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except subprocess.CalledProcessError as e:
+        status(f"failed: {e}. See: journalctl -u vme-insight-firstboot")
+        raise
+    except SystemExit as e:
+        if e.code not in (0, None):
+            status(f"failed: {e.code}")
+        raise

@@ -1,0 +1,14 @@
+[Unit]
+Description=vme-insight appliance: load images, configure and start the stack
+Requires=docker.service
+After=docker.service network-online.target cloud-init.service
+Wants=network-online.target
+
+[Service]
+# simple, not oneshot: the script waits for cloud-init to finish, and must not hold up boot meanwhile
+Type=simple
+ExecStart=/usr/local/sbin/vme-insight-apply --boot
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

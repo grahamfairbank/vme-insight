@@ -8,3 +8,4 @@ installer/dist/
 https/certs/*
 !https/certs/README.md
 .env.bak*
+appliance/build/

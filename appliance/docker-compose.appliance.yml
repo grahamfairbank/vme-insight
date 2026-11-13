@@ -1,0 +1,10 @@
+# Appliance overrides, added through COMPOSE_FILE in .env. The treemap panel plugin ships in the
+# image, so Grafana needs no internet access on first start.
+services:
+  grafana:
+    environment:
+      GF_PATHS_PLUGINS: /var/lib/grafana-plugins
+      # Grafana 11 otherwise tries to download bundled apps (Loki, Pyroscope) at every start
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      - ./appliance/grafana-plugins:/var/lib/grafana-plugins:ro

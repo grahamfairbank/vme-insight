@@ -1,0 +1,133 @@
+# vme-insight virtual appliance
+
+A ready-to-run virtual machine image of vme-insight for HPE Morpheus VM Essentials. Import it as a virtual image, provision a VM from it on an HVM (HPE Virtual Machine) cluster, give it the Morpheus URL and a read-only account, and the dashboards start. Nothing else to install: Docker, vme-insight and every container image it needs are inside, so it works without internet access.
+
+* **Image:** `vme-insight-appliance-<version>.qcow2` (QCOW2, compressed), with `SHA256SUMS`.
+* **Inside:** Debian GNU/Linux 13 cloud image, Docker and Docker Compose from Debian, the QEMU guest agent, cloud-init, vme-insight in `/opt/vme-insight`, and its container images (TimescaleDB, Grafana with the treemap panel, Prometheus, Caddy, the collector).
+* **No accounts or passwords in the image.** You sign in with the SSH key or user Morpheus injects through cloud-init. The database and Grafana passwords are generated on each VM at first boot.
+
+> **Community project.** Not affiliated with, endorsed, sponsored or supported by Hewlett Packard Enterprise, Morpheus Data, or the Debian Project. Third-party licenses: `/usr/share/doc/vme-insight-appliance/NOTICE` in the VM.
+
+## Sizing
+
+| | Minimum | Recommended |
+|---|---|---|
+| vCPU | 2 | 4 |
+| Memory | 4 GB | 8 GB |
+| Disk | 20 GB | 40 GB or more for larger estates |
+
+The root disk grows to the size you provision at first boot. For scale: in the test lab, 28 hosts and VMs filled about 1 GB of database in three weeks. Per-minute samples are kept 90 days (`retention.raw`) and compressed after 7, so the database levels off rather than growing forever.
+
+## 1. Create a read-only account in Morpheus
+
+The same as a regular install: see [INSTALL step 1](INSTALL.md#1-create-a-reader-account-in-vme). An API token for that account is easiest for the appliance.
+
+## 2. Import the image into Morpheus
+
+In Morpheus, go to **Library → Virtual Images → + Add → QCOW2** ([Virtual Images](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/library/virtual_images/virtual_images.rst)):
+
+| Field | Value |
+|---|---|
+| Name | `vme-insight-<version>` |
+| Operating System | Debian 13 64-bit (or the closest Debian entry) |
+| Minimum Memory | 4 GB |
+| Cloud Init Enabled | **On** |
+| Install Agent | Your choice. vme-insight doesn't need the Morpheus agent. |
+| Username / Password | Leave empty to use the global cloud-init user (Administration → Settings → Provisioning). Don't enter `root` or `debian`. |
+| VirtIO Drivers Loaded | **On** |
+| VM Tools Installed | **On** (the QEMU guest agent is installed) |
+| File / URL | Upload the `.qcow2`, or give a URL the Morpheus appliance can reach. With a file, wait for the upload to finish before saving. |
+
+Check the file against `SHA256SUMS` before uploading (`sha256sum -c SHA256SUMS`).
+
+## 3. Provision a VM and pass the settings
+
+Provision an instance from the image on an HVM cluster (Provisioning → Instances → + Add, type **HVM**), with a plan that has at least 4 GB of memory.
+
+The appliance reads its settings from `/etc/vme-insight/appliance.yaml`. Provide them in one of these ways:
+
+**a) With cloud-init user data (no login needed).** Morpheus delivers cloud-init to HVM VMs on a NoCloud ISO ([HVM guest notes](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/infrastructure/clusters/hvm/guest_os_notes.rst)). Put this in the image's **Cloud-Init User Data** field, or in a cloud-init script under Library → Templates → Scripts selected at provisioning:
+
+```bash
+mkdir -p /etc/vme-insight
+cat > /etc/vme-insight/appliance.yaml <<'EOF'
+morpheus:
+  url: https://morpheus.example.com
+  api_token: 'the-read-only-token'
+  tls_fingerprint: 'AA:BB:...'      # see below; or leave empty if the certificate is publicly trusted
+EOF
+chmod 600 /etc/vme-insight/appliance.yaml
+```
+
+The appliance waits for cloud-init to finish, then applies the settings and starts. The token ends up in the VM's cloud-init data, readable by root only. That's another reason to use a read-only account.
+
+**b) Interactively.** Without user data, the appliance boots, loads its images and waits. SSH in with the user Morpheus injected and run:
+
+```bash
+sudo vme-insight-setup
+```
+
+It asks for the Morpheus URL and the read-only token (or username and password). It shows the Morpheus certificate's SHA-256 fingerprint so you can pin it, then asks about https and starts vme-insight.
+
+Every setting, with comments: `/etc/vme-insight/appliance.yaml.example` in the VM, or [appliance/rootfs/etc/vme-insight/appliance.yaml.example](../appliance/rootfs/etc/vme-insight/appliance.yaml.example).
+
+### The Morpheus certificate
+
+A Morpheus appliance with a self-signed certificate needs `tls_fingerprint`: the SHA-256 fingerprint of that certificate. `vme-insight-setup` shows it. To get it on any machine first:
+
+```bash
+openssl s_client -connect morpheus.example.com:443 </dev/null 2>/dev/null | openssl x509 -noout -fingerprint -sha256
+```
+
+Compare it with what your browser shows for the Morpheus UI before trusting it. If your own CA signed the certificate, set `ca_pem` to that CA's PEM instead.
+
+## 4. Open the dashboards
+
+* `http://<vm-address>:3000`: Grafana. User `admin`, password from `sudo vme-insight-setup --show-password`.
+* With `https.enabled: true`: `https://<vm-address>:3443`, limited to the networks in `https.allow`. Use this, with `grafana.vme_plugin: true`, for [vme-insight-plugin](VME-PLUGIN.md).
+
+The first data appears after a minute or two. The login message shows the status, and so does `sudo vme-insight-setup --status`.
+
+## Changing settings
+
+Edit `/etc/vme-insight/appliance.yaml` (or run `sudo vme-insight-setup` again), then run:
+
+```bash
+sudo vme-insight-apply
+```
+
+The appliance writes `/opt/vme-insight/config/config.yaml` and `.env` from that file, so make changes there rather than in those two files. Anything the settings file doesn't cover (retention, intervals, lifecycle rules) can still be edited in `/opt/vme-insight/config/config.yaml` as in a regular install. It is kept unless you change `appliance.yaml` and run apply again.
+
+## Upgrading
+
+Two ways:
+
+* **New appliance (simplest).** Provision a VM from the new image with the same settings. History stays on the old VM, so use this when history doesn't matter, or move it with [backup and restore](INSTALL.md#backup-and-restore).
+* **In place.** Load the new release's container images and source into `/opt/vme-insight` as described in [INSTALL: Upgrading](INSTALL.md#upgrading). The appliance is a regular install underneath. Debian updates come with `sudo apt update && sudo apt upgrade`.
+
+## Building the image yourself
+
+From a checkout of this repository, on any Linux host with Docker and internet access (no KVM needed, but it is faster with it):
+
+```bash
+appliance/build.sh
+```
+
+The build:
+1. Downloads the Debian 13 cloud image and checks it against Debian's `SHA512SUMS`.
+2. Saves the container images that `docker-compose.yml` uses.
+3. Installs Docker and the appliance scripts with `virt-customize`.
+4. Writes `appliance/build/out/vme-insight-appliance-<version>.qcow2` and `SHA256SUMS`.
+
+Only files git tracks go into the image, so your `.env`, `config.yaml` and certificates stay out.
+
+To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud-init seed, the same way Morpheus does.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| Login message says "not configured" | No settings arrived. Run `sudo vme-insight-setup`, or check that the user data wrote `/etc/vme-insight/appliance.yaml`. |
+| "failed" in the status | `journalctl -u vme-insight-firstboot` |
+| Grafana up but no data | `cd /opt/vme-insight && sudo docker compose logs collector`. A wrong token, URL or fingerprint shows there. See [TROUBLESHOOTING](TROUBLESHOOTING.md). |
+| Can't sign in to the VM | The appliance has no password login. Use the SSH key or user from Morpheus's cloud-init settings. |

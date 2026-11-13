@@ -42,6 +42,13 @@ They're versioned and released independently: they install into different system
    gh release create v0.4.5 --title "vme-insight v0.4.5" --notes-file release-notes.md
    ```
    This needs a GitHub login: a deploy key can push the tag but can't create the release.
-5. **Plugin compatibility.** If the release changes anything in the contracts above, release a plugin version that works with it and update both compatibility tables.
+5. **Appliance image.** Build it from the release commit and test it, then attach it to the release:
+   ```bash
+   appliance/build.sh 0.4.6
+   appliance/test/boot-test.sh appliance/build/out/vme-insight-appliance-0.4.6.qcow2 ~/appliance-test.yaml ~/.ssh/id_ed25519.pub
+   gh release upload v0.4.6 appliance/build/out/vme-insight-appliance-0.4.6.qcow2 appliance/build/out/SHA256SUMS
+   ```
+   The test boots the image with cloud-init settings for a lab Morpheus (a read-only token). Check that `/run/vme-insight-status` says running, the collector logs item counts, and the dashboards have data. GitHub allows 2 GiB per release file. The image is about 1.5 GiB; if a release ever goes over, attach it in parts (`split -b 1900M`) with instructions to join them (`cat part* > image.qcow2`) and check `SHA256SUMS`. The release notes link [APPLIANCE](APPLIANCE.md) and repeat the Debian and third-party notice.
+6. **Plugin compatibility.** If the release changes anything in the contracts above, release a plugin version that works with it and update both compatibility tables.
 
 The plugin releases the same way, with its jar and SHA-256 attached to each GitHub release; see its [DEVELOPMENT](https://github.com/grahamfairbank/vme-insight-plugin/blob/main/docs/DEVELOPMENT.md#repositories-versions-and-releases).

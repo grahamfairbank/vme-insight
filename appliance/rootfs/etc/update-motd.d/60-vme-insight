@@ -1,0 +1,6 @@
+#!/bin/sh
+echo
+echo "vme-insight appliance: $(cat /run/vme-insight-status 2>/dev/null || echo 'first boot in progress (journalctl -fu vme-insight-firstboot)')"
+echo "  Setup or change settings: sudo vme-insight-setup     Status: sudo vme-insight-setup --status"
+echo "  Docs: /opt/vme-insight/docs/APPLIANCE.md"
+echo

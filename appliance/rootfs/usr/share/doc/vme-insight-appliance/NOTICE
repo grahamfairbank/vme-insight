@@ -1,0 +1,49 @@
+vme-insight appliance: third-party notices
+==========================================
+
+This virtual appliance contains vme-insight (MIT license, https://github.com/grahamfairbank/vme-insight)
+and the unmodified third-party software listed below. Each component remains under its own license.
+
+vme-insight is an independent community project. It is not affiliated with, endorsed, sponsored or
+supported by Hewlett Packard Enterprise, Morpheus Data, or any related organization.
+
+Operating system
+----------------
+Built on Debian GNU/Linux 13 (trixie), from the official Debian cloud image
+(https://cloud.debian.org/images/cloud/trixie/). This appliance is not affiliated with, or endorsed
+by, the Debian Project. "Debian" is a registered trademark of Software in the Public Interest, Inc.
+Debian packages are free software under the licenses in /usr/share/doc/*/copyright. Their source
+code is available from https://deb.debian.org/debian or with "apt source <package>".
+Added from Debian's main archive: docker.io, docker-compose, qemu-guest-agent, zstd.
+
+Container images (bundled unmodified, in /opt/vme-insight/appliance/images)
+---------------------------------------------------------------------------
+* TimescaleDB (timescale/timescaledb, @TIMESCALEDB@)
+  Apache License 2.0 for the core; the Timescale License (TSL) for the components under tsl/.
+  Distributed in unmodified form as permitted by TSL section 2.1. The TSL does not allow offering
+  TimescaleDB as a database service. License texts:
+  https://github.com/timescale/timescaledb/blob/main/LICENSE
+  https://github.com/timescale/timescaledb/blob/main/tsl/LICENSE-TIMESCALE
+  The image is built on PostgreSQL (PostgreSQL License) and Alpine Linux packages (various licenses).
+
+* Grafana OSS (grafana/grafana, @GRAFANA@)
+  GNU Affero General Public License v3.0 (AGPL-3.0-only), with some parts under Apache 2.0.
+  Unmodified. Source: https://github.com/grafana/grafana at tag v@GRAFANA_VERSION@.
+  Written offer: for at least three years from the date you received this appliance, the
+  corresponding source code of the Grafana version included here is available on request through
+  https://github.com/grafana/grafana or by opening an issue at
+  https://github.com/grahamfairbank/vme-insight/issues.
+
+* Treemap panel for Grafana (marcusolsson-treemap-panel @TREEMAP@), Apache License 2.0.
+  https://github.com/marcusolsson/grafana-treemap-panel
+
+* Prometheus (prom/prometheus, @PROMETHEUS@), Apache License 2.0. https://github.com/prometheus/prometheus
+
+* Caddy (caddy, @CADDY@), Apache License 2.0. https://github.com/caddyserver/caddy
+
+* vme-insight collector (built from /opt/vme-insight/collector), MIT. Based on the official Python
+  image (Python Software Foundation License; Debian packages under their own licenses) and the
+  Python packages listed in collector/requirements.txt, each under its own license.
+
+The full Apache License 2.0 text is at https://www.apache.org/licenses/LICENSE-2.0 and in
+/usr/share/common-licenses/Apache-2.0. The AGPL-3.0 text is at https://www.gnu.org/licenses/agpl-3.0.txt.
