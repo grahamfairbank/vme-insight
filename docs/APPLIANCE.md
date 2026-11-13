@@ -8,6 +8,35 @@ A ready-to-run virtual machine image of vme-insight for HPE Morpheus VM Essentia
 
 > **Community project.** Not affiliated with, endorsed, sponsored or supported by Hewlett Packard Enterprise, Morpheus Data, or the Debian Project. Third-party licenses: `/usr/share/doc/vme-insight-appliance/NOTICE` in the VM.
 
+## Requirements
+
+What the appliance needs from Morpheus and the network, and what it doesn't:
+
+| | Needed? | Details |
+|---|---|---|
+| **Cloud-init credentials in Morpheus** | **Yes, to sign in** | Administration → Settings → Provisioning → Cloud-Init Settings: a username and an SSH key pair (or password). Morpheus injects them through cloud-init. The image has no password or default login of its own, so without these you can't sign in. The dashboards still start if the settings arrive through user data. |
+| **Storage** | Any datastore | The VM sees an ordinary virtio disk, wherever the HVM cluster keeps it: a GFS2 datastore on external block storage, local storage or anything else. The appliance needs **no NFS**. It doesn't mount shared storage, and all its data (database, Grafana) is on its own disk. The NFS client isn't installed. |
+| **Network address** | DHCP or a Morpheus IP pool | Cloud-init applies the network settings Morpheus puts on the provisioning ISO, so static addresses from an IP pool should work as well as DHCP. Tested so far with DHCP only. |
+| **DNS** | If the Morpheus URL is a name | Cloud-init sets the DNS servers from the network settings. With `url: https://<ip>` the appliance needs no DNS for its core job. |
+| **Time (NTP)** | Yes | Accurate time matters for the charts and for TLS. The appliance uses `systemd-timesyncd`, which by default asks Debian's public pool (`*.debian.pool.ntp.org`, UDP 123). Without internet access, point it at your own time servers (below). |
+| **To Morpheus** | Yes | HTTPS (443) from the appliance to the Morpheus appliance, with a read-only account. |
+| **From users** | Yes | TCP 3000 (Grafana) or 3443 (https front end) from the people and the Morpheus UI that view the dashboards. Optionally SSH (22) for administration. |
+| **To HVM hosts** | Only with the exporters | TCP 9100 and 9177 to each HVM host, if you install the optional [exporters](EXPORTERS.md). |
+| **Internet** | Optional | Only `endoflife.date` (HTTPS, daily) for OS end-of-life data, plus Debian updates and NTP if you use the defaults. Container images and the Grafana plugin are already in the image, so nothing is downloaded from Docker Hub or grafana.com. Without internet, everything works except end-of-life dates on the Lifecycle dashboard. |
+| **Morpheus agent** | No | Choose either way when importing. vme-insight reads everything through the Morpheus API. |
+
+### Your own time servers
+
+Add this to the same Cloud-Init User Data as the settings, with your servers:
+
+```bash
+mkdir -p /etc/systemd/timesyncd.conf.d
+printf '[Time]\nNTP=ntp1.example.com ntp2.example.com\n' > /etc/systemd/timesyncd.conf.d/local.conf
+systemctl restart systemd-timesyncd
+```
+
+Check with `timedatectl timesync-status`.
+
 ## Sizing
 
 | | Minimum | Recommended |
