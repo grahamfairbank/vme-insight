@@ -122,6 +122,7 @@ def main(argv):
             "hostname": ask("   Names and IPs people type for this VM, space-separated", h.get("hostname", "")),
             "allow": ask("   Networks allowed in, space-separated CIDRs",
                          h.get("allow", "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16")),
+            "only": yes("   Close plain http on port 3000, so https is the only way in?", default=bool(h.get("only"))),
         }
         settings["grafana"] = {"vme_plugin": yes("   Allow vme-insight-plugin to embed the dashboards in the Morpheus UI?",
                                                  default=bool((old.get("grafana") or {}).get("vme_plugin")))}

@@ -146,12 +146,15 @@ def apply_settings(s):
     https_on = as_bool(h.get("enabled"))
     lines = set_env(lines, "TZ", s.get("timezone") or "UTC")
     lines = set_env(lines, "GRAFANA_PORT", g.get("port") or 3000)
-    lines = set_env(lines, "GRAFANA_BIND", g.get("bind") or ("127.0.0.1" if https_on and h.get("only") else "0.0.0.0"))
+    lines = set_env(lines, "GRAFANA_BIND", g.get("bind") or ("127.0.0.1" if https_on and as_bool(h.get("only")) else "0.0.0.0"))
     lines = set_env(lines, "GRAFANA_ROOT_URL", g.get("root_url") or "")
     embed = as_bool(g.get("vme_plugin"))
     lines = set_env(lines, "GRAFANA_ALLOW_EMBEDDING", "true" if embed else "false")
     lines = set_env(lines, "GRAFANA_ANONYMOUS", "true" if embed else "false")
-    lines = set_env(lines, "GRAFANA_COOKIE_SECURE", "true" if https_on else "false")
+    # A Secure cookie is never stored by a browser on plain http, so sign-in on port 3000 would loop
+    # back to the login page. Mark it Secure only when https is the only way in.
+    https_only = https_on and as_bool(h.get("only"))
+    lines = set_env(lines, "GRAFANA_COOKIE_SECURE", "true" if https_only else "false")
     if g.get("admin_password") and not os.path.exists(f"{STATE}/grafana-started"):
         lines = set_env(lines, "GRAFANA_ADMIN_PASSWORD", str(g["admin_password"]))
     if https_on:

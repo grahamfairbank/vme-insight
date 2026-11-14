@@ -142,7 +142,7 @@ Compare it with what your browser shows for the Morpheus UI before trusting it. 
 ## 4. Open the dashboards
 
 * `http://<vm-address>:3000`: Grafana. User `admin`, password from `sudo vme-insight-setup --show-password`.
-* With `https.enabled: true`: `https://<vm-address>:3443`, limited to the networks in `https.allow`. Use this, with `grafana.vme_plugin: true`, for [vme-insight-plugin](VME-PLUGIN.md).
+* With `https.enabled: true`: `https://<vm-address>:3443`, limited to the networks in `https.allow`. Add `https.only: true` to close plain http on 3000. Use this, with `grafana.vme_plugin: true`, for [vme-insight-plugin](VME-PLUGIN.md).
 
 The first data appears after a minute or two. The login message shows the status, and so does `sudo vme-insight-setup --status`.
 
@@ -204,4 +204,5 @@ To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud
 | "failed" in the status | `journalctl -u vme-insight-firstboot` |
 | Grafana up but no data | `cd /opt/vme-insight && sudo docker compose logs collector`. A wrong token, URL or fingerprint shows there. See [TROUBLESHOOTING](TROUBLESHOOTING.md). |
 | Provisioning fails with "Image is not in qcow2 format" | The HVM host downloads the image from Morpheus's **Appliance URL** (Administration → Settings → Appliance). The hosts must reach that URL directly: if it is a name behind a login proxy such as Cloudflare Access, they save the login page instead of the image. Use an address the hosts can reach, or set the **Internal Appliance URL**. Then delete the image and import it again, because each host keeps its bad copy. |
+| Grafana's login page comes back after you sign in, as if the password were wrong | Images before 0.5.0 marked the sign-in cookie Secure whenever https was on, and browsers don't keep a Secure cookie on plain `http://…:3000`. Use `https://…:3443`, or run `sudo vme-insight-apply` after updating. The cookie is now Secure only with `https.only: true`, which also closes port 3000. |
 | Can't sign in to the VM | The appliance has no password login. Use the SSH key or user from Morpheus's cloud-init settings. |

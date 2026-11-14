@@ -25,6 +25,15 @@ n=$(sudo docker compose exec -T timescaledb psql -U vme -d vme -tAc "select coun
 P=$(sudo grep ^GRAFANA_ADMIN_PASSWORD= .env | cut -d= -f2-)
 v=$(curl -s -u "admin:$P" http://127.0.0.1:3000/api/plugins/marcusolsson-treemap-panel/settings | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("info",{}).get("version",""), d.get("signature",""))')
 [ "$v" = "2.1.1 valid" ] && ok "treemap plugin $v" || bad "treemap plugin: $v"
+# sign in the way a browser does: form login, then reuse the session cookie. A cookie marked Secure
+# isn't kept by a browser on plain http, which looks like a wrong password (a login loop).
+H=$(curl -s -D - -o /dev/null -c /tmp/cj -H 'Content-Type: application/json' -d "{\"user\":\"admin\",\"password\":\"$P\"}" http://127.0.0.1:3000/login)
+if sudo grep -q '^GRAFANA_BIND=0.0.0.0' .env && grep -qi '^set-cookie: grafana_session=.*; Secure' <<<"$H"; then
+  bad "sign-in cookie is Secure while Grafana is on plain http: browsers loop back to the login page"
+else
+  [ "$(curl -s -b /tmp/cj -o /dev/null -w %{http_code} http://127.0.0.1:3000/api/user)" = 200 ] && ok "browser-style sign-in works" || bad "browser-style sign-in failed"
+fi
+rm -f /tmp/cj
 d=$(curl -s -u "admin:$P" "http://127.0.0.1:3000/api/search?type=dash-db" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))')
 [ "$d" -ge 9 ] && ok "$d dashboards" || bad "$d dashboards"
 sudo docker compose logs grafana </dev/null 2>&1 | grep -q "Installing plugin" && bad "Grafana tried to download plugins" || ok "Grafana downloaded nothing"

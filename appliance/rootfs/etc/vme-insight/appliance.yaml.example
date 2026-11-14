@@ -18,6 +18,7 @@ https:
   enabled: false                # true adds Caddy https on port 3443 in front of Grafana
   # hostname: vme-insight.example.com 10.0.0.25   # names and IPs people type
   # allow: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+  # only: false                 # true closes plain http on 3000 and marks the sign-in cookie Secure
   # cert_pem: |                 # your own certificate and key; otherwise Caddy's internal CA is used
   # key_pem: |
 proxy:                          # only if this VM reaches the internet through an HTTP(S) proxy
