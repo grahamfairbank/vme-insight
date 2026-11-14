@@ -34,19 +34,19 @@ They're versioned and released independently: they install into different system
 2. **Check.** `python3 tools/build_dashboards.py` leaves no diff, `python3 tools/check_dashboards.py` reports no errors, and the stack starts cleanly after `docker compose build` and `docker compose up -d` (`docker compose logs collector` shows each task's item count). If the release changes what dashboards look like, refresh the screenshots with `tools/screenshots.py` and look at every image before committing ([DEVELOPMENT](DEVELOPMENT.md)).
 3. **Annotated tag** on the release commit, named `v<version>`, with a one-line summary, then push both:
    ```bash
-   git tag -a v0.4.5 -m "vme-insight 0.4.5: <summary>"
-   git push origin main v0.4.5
+   git tag -a v0.5.0 -m "vme-insight 0.5.0: <summary>"
+   git push origin main v0.5.0
    ```
 4. **GitHub release** for the tag, titled `vme-insight v<version>`. The notes say what changed, how to upgrade (usually `git pull`, `docker compose build`, `docker compose up -d`, as in [INSTALL](INSTALL.md#upgrading)), compatibility (VME and the optional plugin), and the community-project disclaimer:
    ```bash
-   gh release create v0.4.5 --title "vme-insight v0.4.5" --notes-file release-notes.md
+   gh release create v0.5.0 --title "vme-insight v0.5.0" --notes-file release-notes.md
    ```
    This needs a GitHub login: a deploy key can push the tag but can't create the release.
 5. **Appliance image.** Every release gets a new image, so new appliances start with that day's Debian updates and the release's container images. Publish the GitHub release as **Latest** (not a pre-release): appliances already running check `releases/latest` daily and show "update available" at login, and `sudo vme-insight-update` installs from it. Build the image from the release commit and test it, then attach it to the release:
    ```bash
-   appliance/build.sh 0.4.6
-   appliance/test/boot-test.sh appliance/build/out/vme-insight-appliance-0.4.6.qcow2 ~/appliance-test.yaml ~/.ssh/id_ed25519.pub
-   gh release upload v0.4.6 appliance/build/out/vme-insight-appliance-0.4.6.qcow2 appliance/build/out/SHA256SUMS
+   appliance/build.sh 0.5.0
+   appliance/test/boot-test.sh appliance/build/out/vme-insight-appliance-0.5.0.qcow2 ~/appliance-test.yaml ~/.ssh/id_ed25519.pub
+   gh release upload v0.5.0 appliance/build/out/vme-insight-appliance-0.5.0.qcow2 appliance/build/out/SHA256SUMS
    ```
    The test boots the image with cloud-init settings for a lab Morpheus (a read-only token). Check that `/run/vme-insight-status` says running, the collector logs item counts, and the dashboards have data. GitHub allows 2 GiB per release file. The image is about 1.5 GiB; if a release ever goes over, attach it in parts (`split -b 1900M`) with instructions to join them (`cat part* > image.qcow2`) and check `SHA256SUMS`. The release notes link [APPLIANCE](APPLIANCE.md) and repeat the Debian and third-party notice.
 6. **Plugin compatibility.** If the release changes anything in the contracts above, release a plugin version that works with it and update both compatibility tables.
