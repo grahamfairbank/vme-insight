@@ -104,7 +104,10 @@ def pg_major(compose_text):
 
 
 def treemap_version(root):
-    m = re.search(r"^TREEMAP=(\S+)", open(f"{root}/appliance/build.sh").read(), re.M)
+    try:
+        m = re.search(r"^TREEMAP=(\S+)", open(f"{root}/appliance/build.sh").read(), re.M)
+    except OSError:
+        return None
     return m.group(1) if m else None
 
 
@@ -134,6 +137,7 @@ def update(tag):
         if old_pg and new_pg and old_pg != new_pg:
             raise SystemExit(f"{tag} moves the database from PostgreSQL {old_pg} to {new_pg}, which needs a dump "
                              f"and restore. Follow the release notes instead of this command.")
+        want = treemap_version(new)   # read everything from the release before changing anything
 
         new_files = {f for f in files_under(new) if not KEEP.match(f)}
         old_files = set(open(MANIFEST).read().split("\n")) - {""} if os.path.exists(MANIFEST) else set()
@@ -147,7 +151,6 @@ def update(tag):
         with open(MANIFEST, "w") as m:
             m.write("\n".join(sorted(new_files)) + "\n")
 
-        want = treemap_version(new)
         if want and want != installed_treemap():
             log(f"Grafana treemap plugin {want}...")
             z = f"{work}/treemap.zip"

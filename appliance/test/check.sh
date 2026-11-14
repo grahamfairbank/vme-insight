@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# Check a booted test appliance (see boot-test.sh). Runs over SSH from inside the test container.
+# Check a booted appliance.
 #
-#   appliance/test/check.sh <ssh-private-key>
+#   appliance/test/check.sh <ssh-private-key>               the QEMU test VM (boot-test.sh), from inside its container
+#   appliance/test/check.sh <ssh-private-key> <user@host>   an appliance provisioned in Morpheus (user with sudo)
 set -euo pipefail
-NAME=vme-insight-appliance-test
-docker cp "$1" "$NAME:/root/id_test" && docker exec "$NAME" chmod 600 /root/id_test
-docker exec -i "$NAME" ssh -i /root/id_test -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-  -o ConnectTimeout=120 -o LogLevel=ERROR debian@127.0.0.1 bash -s <<'EOF'
+SSHOPT=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=120 -o LogLevel=ERROR)
+if [ -n "${2:-}" ]; then
+  RUN=(ssh -i "$1" "${SSHOPT[@]}" "$2" bash -s)
+else
+  NAME=vme-insight-appliance-test
+  docker cp "$1" "$NAME:/root/id_test" && docker exec "$NAME" chmod 600 /root/id_test
+  RUN=(docker exec -i "$NAME" ssh -i /root/id_test -p 2222 "${SSHOPT[@]}" debian@127.0.0.1 bash -s)
+fi
+"${RUN[@]}" <<'EOF'
 set -u
 ok() { echo "PASS  $*"; }; bad() { echo "FAIL  $*"; FAILED=1; }; FAILED=0
 cd /opt/vme-insight
@@ -26,6 +32,6 @@ sudo docker compose logs grafana </dev/null 2>&1 | grep -q "Installing plugin" &
 w=$(sudo find /etc /usr /opt/vme-insight -xdev ! -type l \( ! -user root -o -perm -o+w \) ! -path "/usr/share/zoneinfo/*" ! -path "/opt/vme-insight/probe*" | head -3)  # probe/: the collector's own output
 [ -z "$w" ] && ok "system files root-owned, none world-writable" || bad "ownership: $w"
 sudo /usr/local/sbin/vme-insight-apply >/dev/null 2>&1 && ok "vme-insight-apply runs again cleanly" || bad "re-apply failed"
-for u in qemu-guest-agent docker vme-insight-firstboot; do systemctl is-enabled -q "$u" && ok "$u enabled" || bad "$u not enabled"; done
+for u in qemu-guest-agent docker vme-insight-firstboot vme-insight-update-check.timer; do systemctl is-enabled -q "$u" && ok "$u enabled" || bad "$u not enabled"; done
 exit $FAILED
 EOF
