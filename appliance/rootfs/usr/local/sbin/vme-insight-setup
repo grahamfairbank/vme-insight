@@ -141,8 +141,19 @@ def main(argv):
         settings["proxy"] = {"url": proxy,
                              "no_proxy": ask("   Other hosts or networks to reach directly, space-separated"
                                              " (Morpheus is always direct)", op.get("no_proxy", ""))}
-    if "updates" in old:
-        settings["updates"] = old["updates"]
+    # Keep every setting the wizard doesn't ask about (ca_pem, your own https certificate, the Grafana
+    # port, updates, time zone extras...), so running it again changes only what it asked.
+    for key in ("ca_pem", "insecure"):
+        if key in om:
+            m.setdefault(key, om[key])
+    if https_on:
+        settings["https"] = {**h, **settings["https"]}
+    g = {k: v for k, v in (old.get("grafana") or {}).items() if k != "vme_plugin"}
+    if g or "grafana" in settings:
+        settings["grafana"] = {**g, **settings.get("grafana", {})}
+    for key, value in old.items():
+        if key not in settings and key not in ("morpheus", "https", "grafana", "proxy"):
+            settings[key] = value
 
     os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
     fd = os.open(SETTINGS, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

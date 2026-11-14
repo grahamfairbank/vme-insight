@@ -119,9 +119,14 @@ def apply_settings(s):
         if v is not None and not isinstance(v, str):
             raise SystemExit(f"{SETTINGS}: morpheus.{key} must be text; put it in single quotes")
 
-    # config/config.yaml: the example with the morpheus section filled in
-    cfg = yaml.safe_load(open(f"{APP}/config/config.example.yaml"))
-    mc = cfg["morpheus"]
+    # config/config.yaml: the morpheus section comes from the settings file. Everything else
+    # (retention, intervals, lifecycle...) is kept from the current file, so hand edits survive
+    # reboots; the first time, it comes from the example.
+    path = f"{APP}/config/config.yaml"
+    cfg = yaml.safe_load(open(path)) if os.path.exists(path) else None
+    if not isinstance(cfg, dict):
+        cfg = yaml.safe_load(open(f"{APP}/config/config.example.yaml"))
+    mc = cfg.setdefault("morpheus", {})
     mc["url"] = url
     for key in ("username", "password", "api_token", "tls_fingerprint"):
         mc[key] = str(m.get(key) or "")
@@ -136,7 +141,8 @@ def apply_settings(s):
     if not (mc["tls_fingerprint"] or mc["ca_bundle"] or mc["insecure"] or url.startswith("http://")):
         log("note: no tls_fingerprint or ca_pem set, so the manager's certificate must be publicly trusted")
     write_private(f"{APP}/config/config.yaml",
-                  "# Written by vme-insight-apply from /etc/vme-insight/appliance.yaml; edit that file instead.\n"
+                  "# The morpheus section is written by vme-insight-apply from /etc/vme-insight/appliance.yaml:\n"
+                  "# change it there (sudo vme-insight-setup). The other sections are yours to edit.\n"
                   + yaml.safe_dump(cfg, sort_keys=False))
 
     # .env: Grafana and https front end

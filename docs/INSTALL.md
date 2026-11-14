@@ -194,6 +194,34 @@ docker compose up -d
 
 To show these dashboards on VME's own host, VM, instance and cluster pages, continue with **[VME-PLUGIN](VME-PLUGIN.md)**.
 
+## Changing passwords
+
+The three passwords in `.env` each take effect once, when their service first starts with an empty volume. Editing `.env` afterward doesn't change them, so change each one in the running service too, as below. Run the commands in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight`, with `sudo` in front of each `docker` and `sed` command.
+
+**Grafana's admin user (`GRAFANA_ADMIN_PASSWORD`).** Change it in Grafana (your avatar → **Profile** → **Change password**), or from the shell:
+
+```bash
+read -rsp 'New Grafana admin password: ' P; echo
+docker compose exec -T grafana grafana cli admin reset-admin-password "$P"
+sed -i "s|^GRAFANA_ADMIN_PASSWORD=.*|GRAFANA_ADMIN_PASSWORD=$P|" .env
+```
+
+`read -s` keeps the password off the screen and out of the shell history. The `sed` line records it in `.env` too, which Grafana uses only if its volume is ever recreated. On the appliance, `vme-insight-setup --show-password` reads it from there. Avoid `|` and `"` in the password, because the `sed` line can't handle them.
+
+**The database user `vme` (`DB_PASSWORD`)** and **Grafana's read-only database user `grafana_ro` (`GRAFANA_DB_PASSWORD`).** Nobody types these, so generate new ones:
+
+```bash
+P=$(openssl rand -hex 16)
+docker compose exec -T timescaledb psql -q -U vme -d vme -c "ALTER ROLE vme PASSWORD '$P'"
+sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$P|" .env
+sed -i "s|^GRAFANA_DB_PASSWORD=.*|GRAFANA_DB_PASSWORD=$(openssl rand -hex 16)|" .env
+docker compose up -d --force-recreate collector grafana
+```
+
+The collector sets `grafana_ro`'s password from `.env` each time it starts, and Grafana reads it from there too, so recreating both is all `GRAFANA_DB_PASSWORD` needs. To change only one of the two, leave out the lines for the other.
+
+**The Morpheus account.** After you change its password or token in Morpheus, put the new one in `config/config.yaml` (`morpheus.password` or `morpheus.api_token`) and run `docker compose restart collector`. On the appliance, run `sudo vme-insight-setup` instead.
+
 ## Reinstalling or starting over
 
 The data lives in Docker volumes named after the project (`vme-insight_db-data` and so on), **not** in the checkout folder. Deleting the folder, cloning again or writing a new `.env` keeps them, together with the passwords they were created with: `DB_PASSWORD` and `GRAFANA_ADMIN_PASSWORD` only take effect when their volume is first created. A reinstall with new passwords then fails with *The database rejected DB_PASSWORD from .env*.
@@ -207,7 +235,7 @@ docker compose up -d
 docker compose logs -f collector
 ```
 
-To keep the data, reuse the old `.env`, or change the passwords inside the running services instead (see [TROUBLESHOOTING](TROUBLESHOOTING.md#collector-wont-start)).
+To keep the data, reuse the old `.env`, or change the passwords inside the running services instead (see [Changing passwords](#changing-passwords)).
 
 ## Removing
 
