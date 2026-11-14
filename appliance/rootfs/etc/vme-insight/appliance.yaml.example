@@ -20,3 +20,5 @@ https:
   # allow: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
   # cert_pem: |                 # your own certificate and key; otherwise Caddy's internal CA is used
   # key_pem: |
+updates:
+  check: true                   # daily read-only check of GitHub for a newer release, shown at login

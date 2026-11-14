@@ -1,0 +1,8 @@
+[Unit]
+Description=Check GitHub for a newer vme-insight release (read only; installs nothing)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vme-insight-update --check --quiet

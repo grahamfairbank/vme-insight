@@ -31,7 +31,7 @@ virt-customize -a "$WORK" --network --memsize 2048 --smp 2 \
   --run-command 'chown -R root:root /opt/vme-insight && chmod -R u+rwX,go+rX,go-w /opt/vme-insight' \
   --run-command 'chmod 755 /usr/local/sbin/vme-insight-* /etc/update-motd.d/60-vme-insight' \
   --run-command 'bad=$(find /etc /usr /opt/vme-insight -xdev ! -type l \( ! -user root -o -perm -o+w \) ! -path "/usr/share/zoneinfo/*" | head -5); if [ -n "$bad" ]; then echo "not root-owned or world-writable: $bad"; exit 1; fi' \
-  --run-command 'systemctl enable docker.service qemu-guest-agent.service vme-insight-firstboot.service' \
+  --run-command 'systemctl enable docker.service qemu-guest-agent.service vme-insight-firstboot.service vme-insight-update-check.timer' \
   --run-command 'apt-get clean && rm -rf /var/lib/apt/lists/*' \
   --run-command 'cloud-init clean --logs --machine-id || true' \
   --run-command 'rm -f /etc/ssh/ssh_host_* && truncate -s 0 /etc/machine-id' \

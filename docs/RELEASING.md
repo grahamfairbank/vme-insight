@@ -42,7 +42,7 @@ They're versioned and released independently: they install into different system
    gh release create v0.4.5 --title "vme-insight v0.4.5" --notes-file release-notes.md
    ```
    This needs a GitHub login: a deploy key can push the tag but can't create the release.
-5. **Appliance image.** Build it from the release commit and test it, then attach it to the release:
+5. **Appliance image.** Every release gets a new image, so new appliances start with that day's Debian updates and the release's container images. Publish the GitHub release as **Latest** (not a pre-release): appliances already running check `releases/latest` daily and show "update available" at login, and `sudo vme-insight-update` installs from it. Build the image from the release commit and test it, then attach it to the release:
    ```bash
    appliance/build.sh 0.4.6
    appliance/test/boot-test.sh appliance/build/out/vme-insight-appliance-0.4.6.qcow2 ~/appliance-test.yaml ~/.ssh/id_ed25519.pub

@@ -22,7 +22,7 @@ What the appliance needs from Morpheus and the network, and what it doesn't:
 | **To Morpheus** | Yes | HTTPS (443) from the appliance to the Morpheus appliance, with a read-only account. |
 | **From users** | Yes | TCP 3000 (Grafana) or 3443 (https front end) from the people and the Morpheus UI that view the dashboards. Optionally SSH (22) for administration. |
 | **To HVM hosts** | Only with the exporters | TCP 9100 and 9177 to each HVM host, if you install the optional [exporters](EXPORTERS.md). |
-| **Internet** | Optional | Only `endoflife.date` (HTTPS, daily) for OS end-of-life data, plus Debian updates and NTP if you use the defaults. Container images and the Grafana plugin are already in the image, so nothing is downloaded from Docker Hub or grafana.com. Without internet, everything works except end-of-life dates on the Lifecycle dashboard. |
+| **Internet** | Optional | Only `endoflife.date` (HTTPS, daily) for OS end-of-life data, `api.github.com` (HTTPS, daily) for the update notice, `vme-insight-update` when you run it, plus Debian updates and NTP if you use the defaults. Container images and the Grafana plugin are already in the image, so nothing is downloaded from Docker Hub or grafana.com. Without internet, everything works except end-of-life dates on the Lifecycle dashboard. |
 | **Morpheus agent** | No | Choose either way when importing. vme-insight reads everything through the Morpheus API. |
 
 ### Your own time servers
@@ -127,12 +127,27 @@ sudo vme-insight-apply
 
 The appliance writes `/opt/vme-insight/config/config.yaml` and `.env` from that file, so make changes there rather than in those two files. Anything the settings file doesn't cover (retention, intervals, lifecycle rules) can still be edited in `/opt/vme-insight/config/config.yaml` as in a regular install. It is kept unless you change `appliance.yaml` and run apply again.
 
-## Upgrading
+## Keeping it up to date
 
-Two ways:
+The appliance has two parts that update separately:
 
-* **New appliance (simplest).** Provision a VM from the new image with the same settings. History stays on the old VM, so use this when history doesn't matter, or move it with [backup and restore](INSTALL.md#backup-and-restore).
-* **In place.** Load the new release's container images and source into `/opt/vme-insight` as described in [INSTALL: Upgrading](INSTALL.md#upgrading). The appliance is a regular install underneath. Debian updates come with `sudo apt update && sudo apt upgrade`.
+* **Debian (the operating system, Docker and the other packages).** Patch it the way you patch any Debian 13 server: your own tooling, `unattended-upgrades`, or `sudo apt update && sudo apt upgrade` and a reboot when the kernel changes. vme-insight doesn't manage this, and an apt upgrade doesn't change vme-insight or its container images.
+* **vme-insight and its container images (TimescaleDB, Grafana, Prometheus, Caddy, the collector).** apt never touches these. Update them with:
+
+  ```bash
+  sudo vme-insight-update
+  ```
+
+  It checks GitHub for a newer release and, after you confirm, replaces the vme-insight files, pulls the new container images, rebuilds the collector, updates the Grafana treemap plugin if the release changes it, and restarts. Your settings, passwords and data stay. **Take a snapshot of the VM in Morpheus first**: that's your rollback. It needs internet access to github.com, grafana.com and the container registries (Docker Hub). A release that changes the PostgreSQL major version stops with a message instead, because that needs a dump and restore (see the release notes).
+
+Once a day the appliance checks GitHub for a new release (read only; it installs nothing). When there is one, the login message says so. To turn the check off, add this to `/etc/vme-insight/appliance.yaml`:
+
+```yaml
+updates:
+  check: false
+```
+
+Without internet access, or to start fresh, provision a VM from the new release's image instead and move the history with [backup and restore](INSTALL.md#backup-and-restore). Each release ships a new image, built with the Debian updates available at release time.
 
 ## Building the image yourself
 
@@ -159,4 +174,5 @@ To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud
 | Login message says "not configured" | No settings arrived. Run `sudo vme-insight-setup`, or check that the user data wrote `/etc/vme-insight/appliance.yaml`. |
 | "failed" in the status | `journalctl -u vme-insight-firstboot` |
 | Grafana up but no data | `cd /opt/vme-insight && sudo docker compose logs collector`. A wrong token, URL or fingerprint shows there. See [TROUBLESHOOTING](TROUBLESHOOTING.md). |
+| Provisioning fails with "Image is not in qcow2 format" | The HVM host downloads the image from Morpheus's **Appliance URL** (Administration → Settings → Appliance). The hosts must reach that URL directly: if it is a name behind a login proxy such as Cloudflare Access, they save the login page instead of the image. Use an address the hosts can reach, or set the **Internal Appliance URL**. Then delete the image and import it again, because each host keeps its bad copy. |
 | Can't sign in to the VM | The appliance has no password login. Use the SSH key or user from Morpheus's cloud-init settings. |

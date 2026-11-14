@@ -1,0 +1,207 @@
+#!/usr/bin/python3
+"""Update vme-insight on the appliance to the latest GitHub release (needs internet access).
+
+  sudo vme-insight-update            check, ask, then update vme-insight and its container images
+  sudo vme-insight-update --yes      the same without asking (take a VM snapshot first anyway)
+  sudo vme-insight-update --check    only check; record the result for the login message (run daily by a timer)
+
+What it updates: the vme-insight files in /opt/vme-insight, the container images (pulled from their
+registries, the collector rebuilt) and the Grafana treemap plugin. What it keeps: your settings
+(/etc/vme-insight/appliance.yaml, .env, config/config.yaml, certificates) and all data volumes.
+It does not touch Debian packages: update those the way you update any Debian server.
+
+Turn the daily check off with  updates: {check: false}  in /etc/vme-insight/appliance.yaml.
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import urllib.request
+import zipfile
+
+import yaml
+
+REPO = "grahamfairbank/vme-insight"
+APP = "/opt/vme-insight"
+SETTINGS = "/etc/vme-insight/appliance.yaml"
+STATE = "/var/lib/vme-insight"
+VERSION_FILE = f"{STATE}/version"            # the vme-insight version now in /opt/vme-insight
+IMAGE_VERSION = "/etc/vme-insight/appliance-version"   # the version the image was built with
+MANIFEST = f"{APP}/appliance/MANIFEST"       # files that came from the release, so removed ones go
+NOTICE = f"{STATE}/update-available"         # read by the login message
+PLUGINS = f"{APP}/appliance/grafana-plugins"
+UA = {"User-Agent": "vme-insight-appliance-update"}
+# never replaced by an update: local settings, generated secrets and certificates, collector output
+KEEP = re.compile(r"^(\.env|config/(?!config\.example\.yaml$).*|https/certs/(?!README\.md$).*|probe/.*"
+                  r"|appliance/(grafana-plugins|images)/.*)$")
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+def current():
+    for f in (VERSION_FILE, IMAGE_VERSION):
+        if os.path.exists(f):
+            return open(f).read().strip()
+    return "0"
+
+
+def vkey(v):
+    """'v0.4.10' -> (0, 4, 10, 1); a -dev or -rc build sorts before its release."""
+    v = v.lstrip("v")
+    nums = [int(x) for x in re.findall(r"\d+", v.split("-")[0])[:3]]
+    return tuple(nums + [0] * (3 - len(nums))) + ((0,) if "-" in v else (1,))
+
+
+def latest():
+    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
+                                 headers={**UA, "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        d = json.load(r)
+    return d["tag_name"], d.get("html_url", f"https://github.com/{REPO}/releases")
+
+
+def check(quiet):
+    try:
+        s = (yaml.safe_load(open(SETTINGS)) or {}) if os.path.exists(SETTINGS) else {}
+    except (OSError, yaml.YAMLError):
+        s = {}
+    if quiet and (s.get("updates") or {}).get("check") is False:
+        if os.path.exists(NOTICE):
+            os.remove(NOTICE)
+        return None
+    tag, url = latest()
+    os.makedirs(STATE, exist_ok=True)
+    if vkey(tag) > vkey(current()):
+        with open(NOTICE, "w") as f:
+            f.write(f"vme-insight {tag.lstrip('v')} is available (this VM has {current()}): sudo vme-insight-update\n")
+        if not quiet:
+            log(f"vme-insight {tag.lstrip('v')} is available; this VM has {current()}. Release notes: {url}")
+        return tag
+    if os.path.exists(NOTICE):
+        os.remove(NOTICE)
+    if not quiet:
+        log(f"vme-insight {current()} is the latest release.")
+    return None
+
+
+def files_under(root):
+    out = set()
+    for d, _, names in os.walk(root):
+        for n in names:
+            out.add(os.path.relpath(os.path.join(d, n), root))
+    return out
+
+
+def pg_major(compose_text):
+    m = re.search(r"timescale/timescaledb:\S*-pg(\d+)", compose_text)
+    return m.group(1) if m else None
+
+
+def treemap_version(root):
+    m = re.search(r"^TREEMAP=(\S+)", open(f"{root}/appliance/build.sh").read(), re.M)
+    return m.group(1) if m else None
+
+
+def installed_treemap():
+    try:
+        return json.load(open(f"{PLUGINS}/marcusolsson-treemap-panel/plugin.json"))["info"]["version"]
+    except (OSError, KeyError, ValueError):
+        return None
+
+
+def update(tag):
+    work = tempfile.mkdtemp(prefix="vme-insight-update-")
+    try:
+        log(f"Downloading vme-insight {tag}...")
+        tgz = f"{work}/src.tar.gz"
+        req = urllib.request.Request(f"https://github.com/{REPO}/archive/refs/tags/{tag}.tar.gz", headers=UA)
+        with urllib.request.urlopen(req, timeout=120) as r, open(tgz, "wb") as f:
+            shutil.copyfileobj(r, f)
+        with tarfile.open(tgz) as t:
+            t.extractall(f"{work}/x", filter="data")
+        (top,) = os.listdir(f"{work}/x")
+        new = f"{work}/x/{top}"
+        shutil.rmtree(f"{new}/probe", ignore_errors=True)
+
+        old_pg = pg_major(open(f"{APP}/docker-compose.yml").read())
+        new_pg = pg_major(open(f"{new}/docker-compose.yml").read())
+        if old_pg and new_pg and old_pg != new_pg:
+            raise SystemExit(f"{tag} moves the database from PostgreSQL {old_pg} to {new_pg}, which needs a dump "
+                             f"and restore. Follow the release notes instead of this command.")
+
+        new_files = {f for f in files_under(new) if not KEEP.match(f)}
+        old_files = set(open(MANIFEST).read().split("\n")) - {""} if os.path.exists(MANIFEST) else set()
+        for f in sorted(old_files - new_files):
+            if not KEEP.match(f) and os.path.isfile(f"{APP}/{f}"):
+                os.remove(f"{APP}/{f}")
+        for f in sorted(new_files):
+            os.makedirs(os.path.dirname(f"{APP}/{f}"), exist_ok=True)
+            shutil.copy2(f"{new}/{f}", f"{APP}/{f}")
+            os.chown(f"{APP}/{f}", 0, 0)
+        with open(MANIFEST, "w") as m:
+            m.write("\n".join(sorted(new_files)) + "\n")
+
+        want = treemap_version(new)
+        if want and want != installed_treemap():
+            log(f"Grafana treemap plugin {want}...")
+            z = f"{work}/treemap.zip"
+            req = urllib.request.Request(
+                f"https://grafana.com/api/plugins/marcusolsson-treemap-panel/versions/{want}/download", headers=UA)
+            with urllib.request.urlopen(req, timeout=120) as r, open(z, "wb") as f:
+                shutil.copyfileobj(r, f)
+            shutil.rmtree(f"{PLUGINS}/marcusolsson-treemap-panel", ignore_errors=True)
+            zipfile.ZipFile(z).extractall(PLUGINS)
+            subprocess.run(["chmod", "-R", "u+rwX,go+rX,go-w", PLUGINS], check=True)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+    log("Pulling container images and rebuilding the collector...")
+    subprocess.run(["docker", "compose", "pull", "--ignore-buildable", "-q"], cwd=APP, check=True)
+    subprocess.run(["docker", "compose", "build", "-q", "collector"], cwd=APP, check=True)
+    log("Restarting vme-insight...")
+    subprocess.run(["/usr/local/sbin/vme-insight-apply"], check=True)
+    subprocess.run(["docker", "image", "prune", "-f"], stdout=subprocess.DEVNULL, check=False)
+    # the bundled image archives are the old versions now; free the space
+    for f in os.listdir(f"{APP}/appliance/images") if os.path.isdir(f"{APP}/appliance/images") else []:
+        os.remove(f"{APP}/appliance/images/{f}")
+    with open(VERSION_FILE, "w") as f:
+        f.write(tag.lstrip("v") + "\n")
+    if os.path.exists(NOTICE):
+        os.remove(NOTICE)
+    log(f"Done: vme-insight {tag.lstrip('v')}. The collector applies any database changes as it starts.")
+
+
+def main(argv):
+    if os.geteuid() != 0:
+        print("Run with sudo: sudo vme-insight-update", file=sys.stderr)
+        return 1
+    if "--check" in argv:
+        check(quiet="--quiet" in argv)
+        return 0
+    tag = check(quiet=False)
+    if not tag:
+        return 0
+    if "--yes" not in argv:
+        log("\nBefore updating, take a snapshot of this VM in Morpheus (Actions > Create Snapshot) so you can roll back.")
+        if input("Update now? (y/N): ").strip().lower()[:1] != "y":
+            log("Nothing changed.")
+            return 0
+    update(tag)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled.", file=sys.stderr)
+        sys.exit(1)
+    except OSError as e:
+        print(f"vme-insight-update: {e}", file=sys.stderr)
+        sys.exit(1)

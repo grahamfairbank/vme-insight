@@ -21,6 +21,8 @@ git ls-files -z --cached --others --exclude-standard \
   | grep -zv '^appliance/build/' \
   | tar --null -T - -cf - | tar -xf - -C "$STAGE/vme-insight"
 rm -rf "$STAGE/vme-insight/probe"
+# the release files, so vme-insight-update can remove ones a later release drops
+(cd "$STAGE/vme-insight" && find . -type f ! -path "./appliance/images/*" ! -path "./appliance/grafana-plugins/*" | sed "s|^\./||" | sort > appliance/MANIFEST)
 
 echo "== container images"
 # compose refuses to parse without these; the real ones are generated on each VM at first boot
