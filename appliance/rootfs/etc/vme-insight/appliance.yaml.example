@@ -15,7 +15,9 @@ grafana:
   # admin_password: ''          # first start only; otherwise one is generated (sudo vme-insight-setup --show-password)
   # vme_plugin: false           # true allows embedding and anonymous Viewer access, for vme-insight-plugin
 https:
-  enabled: false                # true adds Caddy https on port 3443 in front of Grafana
+  enabled: false                # true adds Caddy https in front of Grafana
+  # port: 443                   # default 3443; 443 lets people type the address without a port.
+  #                             # Changing it? Update the vme-insight plugin's Grafana URL to match.
   # hostname: vme-insight.example.com 10.0.0.25   # names and IPs people type
   # allow: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
   # only: false                 # true closes plain http on 3000 and marks the sign-in cookie Secure

@@ -59,6 +59,18 @@ def show_password():
     return 1
 
 
+def https_port(h):
+    """Ask for the https port. New setups default to 443; an appliance already on https keeps its port
+    (3443 if none was set), because the plugin's Grafana URL and bookmarks include it."""
+    default = str(h.get("port") or (3443 if h.get("enabled") else 443))
+    while True:
+        v = ask("   https port (443 needs no port number in the address; if you change it, update the"
+                " vme-insight plugin's Grafana URL too)", default)
+        if v.isdigit() and 0 < int(v) < 65536 and int(v) not in (22, 3000):
+            return int(v)
+        print("   Enter a port number (not 22 or 3000).")
+
+
 def main(argv):
     if os.geteuid() != 0:
         print("Run with sudo: sudo vme-insight-setup", file=sys.stderr)
@@ -113,12 +125,13 @@ def main(argv):
 
     print("\n4. How people reach the dashboards")
     h = old.get("https") or {}
-    https_on = yes("   Serve Grafana over https on port 3443 too (needed to show the dashboards inside the Morpheus UI)?",
+    https_on = yes("   Serve Grafana over https too (needed to show the dashboards inside the Morpheus UI)?",
                    default=bool(h.get("enabled")))
     settings = {"morpheus": m, "timezone": ask("   Time zone for the dashboards", old.get("timezone", "UTC"))}
     if https_on:
         settings["https"] = {
             "enabled": True,
+            "port": https_port(h),
             "hostname": ask("   Names and IPs people type for this VM, space-separated", h.get("hostname", "")),
             "allow": ask("   Networks allowed in, space-separated CIDRs",
                          h.get("allow", "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16")),

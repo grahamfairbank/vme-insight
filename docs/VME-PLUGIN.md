@@ -37,7 +37,9 @@ vme-insight works without the plugin. The plugin does nothing without vme-insigh
 
 ## 2. Turn on https and anonymous viewing
 
-Add to `.env`:
+**On the [appliance](APPLIANCE.md)** there's nothing to edit here: run `sudo vme-insight-setup`, turn https on, and allow the plugin to embed the dashboards. It sets all of the below. Choose port 443 to use `https://vme-insight.example.com` without a port number. Then continue with step 3 for the certificate; on the appliance, a certificate you make there goes in `https.cert_pem` and `https.key_pem` in `/etc/vme-insight/appliance.yaml`, followed by `sudo vme-insight-apply`.
+
+For a regular install, add to `.env`:
 
 ```bash
 GRAFANA_BIND=127.0.0.1                       # Grafana's own port only on the Docker host
@@ -225,7 +227,11 @@ Open `https://vme-insight.example.com:3443/d/vme-overview` in a new browser tab.
 
 1. Download `vme-insight-plugin-<version>.jar` from the plugin's [releases](https://github.com/grahamfairbank/vme-insight-plugin/releases), or build it from source ([plugin INSTALL](https://github.com/grahamfairbank/vme-insight-plugin/blob/main/docs/INSTALL.md)).
 2. In VME, go to **Administration → Integrations → Plugins** and click **Add**. Upload the jar. It appears as **vme-insight**, status **loaded** ([HPE: Plugins](https://github.com/HewlettPackard/morpheus-docs/blob/dev-9.1/administration/integrations/plugins.rst)).
-3. Click the pencil icon on the **vme-insight** row. Set **vme-insight Grafana URL** to `https://vme-insight.example.com:3443`, and save. Leave the other settings at their defaults; they're described in the plugin's [CONFIGURATION](https://github.com/grahamfairbank/vme-insight-plugin/blob/main/docs/CONFIGURATION.md).
+3. Click the pencil icon on the **vme-insight** row. Set **vme-insight Grafana URL** to the address users type, with its port: `https://vme-insight.example.com:3443`, or `https://vme-insight.example.com` if vme-insight uses port 443. Save. Leave the other settings at their defaults; they're described in the plugin's [CONFIGURATION](https://github.com/grahamfairbank/vme-insight-plugin/blob/main/docs/CONFIGURATION.md).
+
+### Changing the https port
+
+The plugin never connects to Grafana itself. It builds links from **vme-insight Grafana URL**, and the browser loads them in a frame that Morpheus allows only from that address. So when vme-insight's https port changes (for example from 3443 to 443 on the appliance), change the URL here at the same time: **Administration → Integrations → Plugins → vme-insight** (pencil icon), with the new port, or no port for 443. It takes effect on the next page load; there's nothing to restart. Until then, the tabs show an empty or blocked frame. If one vme-insight serves several Morpheus appliances, update the plugin on each. Change `GRAFANA_ROOT_URL` (`grafana.root_url` on the appliance) to the same address.
 
 ## 6. Check in VME
 

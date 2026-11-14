@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 (2026-11-14)
+
+* **Appliance: https on port 443.** `vme-insight-setup` now asks which port https uses. A new appliance defaults to 443, so people type `https://vme-insight.example.com` with no port number. An appliance that already has https keeps its port (3443) when you run the wizard again, and user data with `https.enabled: true` but no `https.port` still means 3443. **If you change the port, change the vme-insight plugin's Grafana URL in Morpheus at the same time**, or its tabs show an empty frame. See [APPLIANCE: The https port](docs/APPLIANCE.md#the-https-port).
+* **Fixed (appliance):** running `vme-insight-setup` again dropped settings it doesn't ask about, such as your own https certificate, your own CA for Morpheus or the Grafana port. It now keeps them.
+* **Fixed (appliance):** every boot reset `/opt/vme-insight/config/config.yaml` to the example, losing hand edits to retention, intervals and lifecycle rules. Only its `morpheus` section is now written from the appliance settings; the rest is kept.
+* **Appliance guide** reworked: why Debian, what the owner of the appliance looks after, an internet-access table, the cloud-init user and network address requirements, time servers, and a sizing section with measured figures and a disk formula (4 GB of memory is the minimum); growing the disk later through Morpheus is tested on an HVM cluster. Settings changes go through `sudo vme-insight-setup`. New troubleshooting entry for browsers that send the appliance's address to a corporate proxy.
+* **Changing passwords:** new section in [INSTALL](docs/INSTALL.md#changing-passwords) for Grafana's admin user, the two database users and the Morpheus account. It applies to the appliance too.
+* Appliance test tools: `MEM` and `CPUS` set the size of the test VM.
+
 ## 0.5.0 (2026-11-14)
 
 * **Virtual appliance.** A ready-to-import QCOW2 image for HPE Morpheus VM Essentials, attached to this release: Debian 13 with Docker, vme-insight and all its container images inside, so it runs without internet access. Settings arrive through the image's cloud-init user data or the `sudo vme-insight-setup` wizard, including an optional HTTP(S) proxy (the connection to Morpheus always stays direct). Passwords are generated on each VM at first boot, and nothing secret is baked into the image. Tested in a lab Morpheus on an HVM cluster with a GFS2 datastore (no NFS needed), with DHCP and with a static address. See [APPLIANCE](docs/APPLIANCE.md).

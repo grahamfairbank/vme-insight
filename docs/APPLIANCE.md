@@ -17,7 +17,7 @@ Once it's provisioned, the VM is yours to run like any other Linux server you ma
 * **Debian updates** (security fixes, the kernel, Docker): your usual method. See [Keeping it up to date](#keeping-it-up-to-date).
 * **vme-insight updates:** run `sudo vme-insight-update` when the login message says a new release is out.
 * **Backups:** VM snapshots or backups in Morpheus, or vme-insight's own [backup and restore](INSTALL.md#backup-and-restore).
-* **Access:** who can SSH in, who can reach ports 3000 and 3443, and the [passwords](#changing-passwords).
+* **Access:** who can SSH in, who can reach port 3000 and the https port, and the [passwords](#changing-passwords).
 * **Disk space:** the database grows with the number of hosts and VMs (see [Sizing](#sizing)).
 * **The Morpheus account:** if its token expires or its password changes, run `sudo vme-insight-setup` again.
 
@@ -36,7 +36,7 @@ What the appliance needs from Morpheus and the network, and what it doesn't:
 | **Time (NTP)** | Yes | Accurate time matters for the charts and for TLS. By default the VM sets its clock from Debian's public time servers on the internet. Without internet access, give it your own (see [Your own time servers](#your-own-time-servers)). |
 | **To Morpheus** | Yes | HTTPS (443) from the appliance to the Morpheus appliance, with a read-only account. |
 | **Morpheus Appliance URL** | Reachable from the HVM hosts | Not specific to vme-insight: to provision from a new image, each HVM host downloads it from Morpheus's Appliance URL (Administration → Settings → Appliance). See Troubleshooting if provisioning fails with "Image is not in qcow2 format". |
-| **From users** | Yes | TCP 3000 (Grafana) or 3443 (https front end) from the people and the Morpheus UI that view the dashboards. Optionally SSH (22) for administration. |
+| **From users** | Yes | TCP 3000 (Grafana) or the https port (443 or 3443, see [The https port](#the-https-port)) from the browsers of the people who view the dashboards, including inside the Morpheus UI. Optionally SSH (22) for administration. |
 | **To HVM hosts** | Only with the exporters | TCP 9100 and 9177 to each HVM host, if you install the optional [exporters](EXPORTERS.md). |
 | **Internet** | No | Only for a few optional extras. See [Internet access](#internet-access). |
 | **Morpheus agent** | No | Choose either way when importing. vme-insight reads everything through the Morpheus API. |
@@ -105,7 +105,7 @@ The connection to Morpheus never uses the proxy: the appliance adds the Morpheus
 
 ## Sizing
 
-Size the VM generously when you provision it: adding resources later is possible but more work (see [Changing the size later](#changing-the-size-later)).
+Size the VM generously when you provision it. Growing the disk later is easy, but more memory isn't fully used by the database (see [Changing the size later](#changing-the-size-later)).
 
 | | Minimum | Recommended |
 |---|---|---|
@@ -115,12 +115,11 @@ Size the VM generously when you provision it: adding resources later is possible
 
 ### Memory
 
-4 GB is a real minimum, not a cautious guess:
+4 GB is the minimum, and it runs well from 4 GB up:
 
 * In normal running, the containers use about 0.5 GB (measured in the test lab: TimescaleDB 290 MB, Grafana 95 MB, Prometheus 70 MB, collector 30 MB, Caddy 15 MB), and Debian and Docker about 0.3 GB more.
 * The peaks are much higher: the first boot unpacks and loads about 4 GB of container images, `vme-insight-update` pulls new images and builds the collector, and dashboards over 90 days of data make the database work hard.
 * At first boot, TimescaleDB tunes itself for a quarter of the VM's memory (at least 1 GB).
-* **Tested with 2 GB:** the stack eventually started, but the VM stopped answering SSH. 2 GB doesn't work.
 
 The database's memory use doesn't grow much with the number of VMs; the number of people viewing dashboards at the same time matters more. 8 GB is a sensible choice above about 300 VMs, but estates that large haven't been tested.
 
@@ -151,7 +150,7 @@ Longer retention needs more: double `retention.hourly` and the 0.08 and 0.2 figu
 ### Changing the size later
 
 * **Memory and vCPUs:** change the plan in Morpheus (reconfigure the instance) and restart the VM. The extra memory goes to Grafana and the file cache, but TimescaleDB keeps the tuning from its first boot.
-* **Disk:** enlarge the disk in Morpheus where your cluster allows it. At boot, cloud-init grows the root partition to fill the disk, the same way it does on first boot. This hasn't been tested on an HVM cluster, so take a VM snapshot first.
+* **Disk:** enlarge the disk in Morpheus (reconfigure the instance), then restart the VM. At boot, cloud-init grows the root partition and file system to fill the disk, the same way it does on first boot. Tested on an HVM cluster. Take a VM snapshot first anyway, as for any disk change.
 * **Starting again bigger:** provision a new, larger VM from the image and move the data with [backup and restore](INSTALL.md#backup-and-restore).
 
 ## 1. Create a read-only account in Morpheus
@@ -244,7 +243,16 @@ Compare it with what your browser shows for the Morpheus UI before trusting it. 
 ## 4. Open the dashboards
 
 * `http://<vm-address>:3000`: Grafana. User `admin`, password from `sudo vme-insight-setup --show-password`.
-* With https on (`vme-insight-setup` asks; or `https.enabled: true` in the settings): `https://<vm-address>:3443`, limited to the networks you allowed. The wizard also asks whether to close plain http on 3000, and whether to allow [vme-insight-plugin](VME-PLUGIN.md) to embed the dashboards in the Morpheus UI.
+* With https on (`vme-insight-setup` asks; or `https.enabled: true` in the settings): `https://<vm-address>` on port 443, or `https://<vm-address>:3443`, limited to the networks you allowed. The wizard also asks whether to close plain http on 3000, and whether to allow [vme-insight-plugin](VME-PLUGIN.md) to embed the dashboards in the Morpheus UI.
+
+### The https port
+
+The wizard asks which port https uses:
+
+* **443**, the standard https port, is the wizard's default for a new appliance. People type `https://vme-insight.example.com` with no port number, and firewalls and proxies usually allow it already.
+* **3443** is what earlier releases used. An appliance that already has https keeps its port when you run the wizard again, and `https.enabled: true` in user data without `https.port` still means 3443. To get 443 through user data, add `port: 443` under `https:`.
+
+**Changing the port on an appliance that's in use:** in the same sitting, change it on the appliance (`sudo vme-insight-setup`), then in the Morpheus UI set the plugin's **vme-insight Grafana URL** to match (see [VME-PLUGIN: the https port](VME-PLUGIN.md#changing-the-https-port)). Also update `grafana.root_url` if you set it, firewall or security group rules for the new port, proxy exceptions that include the port, and bookmarks. Until the plugin setting matches, the vme-insight tabs in Morpheus show an empty or blocked frame. Nothing else in Morpheus is affected.
 
 The first data appears after a minute or two. The login message shows the status, and so does `sudo vme-insight-setup --status`.
 
@@ -319,4 +327,5 @@ To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud
 | Grafana up but no data | `cd /opt/vme-insight && sudo docker compose logs collector`. A wrong token, URL or fingerprint shows there. See [TROUBLESHOOTING](TROUBLESHOOTING.md). |
 | Provisioning fails with "Image is not in qcow2 format" | The HVM host downloads the image from Morpheus's **Appliance URL** (Administration → Settings → Appliance). The hosts must reach that URL directly: if it is a name behind a login proxy such as Cloudflare Access, they save the login page instead of the image. Use an address the hosts can reach, or set the **Internal Appliance URL**. Then delete the image and import it again, because each host keeps its bad copy. |
 | Grafana's login page comes back after you sign in, as if the password were wrong | Images before 0.5.0 marked the sign-in cookie Secure whenever https was on, and browsers don't keep a Secure cookie on plain `http://…:3000`. Use `https://…:3443`, or run `sudo vme-insight-apply` after updating. The cookie is now Secure only with `https.only: true`, which also closes port 3000. |
+| The browser can't open the dashboards, but `Test-NetConnection <vm-address> -Port <https port>` (PowerShell) says `TcpTestSucceeded : True` | The browser is probably sending the request through your organization's web proxy, which can't reach the appliance. To confirm, run `curl.exe -k --noproxy "*" -s -o NUL -w "%{http_code}" https://<vm-address>:<https port>/login` in PowerShell: `200` means the appliance is fine. Add the appliance's **exact address** (for example `10.0.0.25`) to the browser's or system's proxy exceptions. A subnet or wildcard exception such as `10.0.*` may not be enough, because some proxy setups ignore those for plain IP addresses. |
 | Can't sign in to the VM | The appliance has no password login. Use the SSH key or user from Morpheus's cloud-init settings. |
