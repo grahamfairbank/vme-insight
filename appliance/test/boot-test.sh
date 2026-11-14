@@ -5,6 +5,11 @@
 #   appliance/test/boot-test.sh <image.qcow2> <appliance.yaml> <ssh-public-key>   start
 #   appliance/test/boot-test.sh stop                                               stop and clean up
 #
+# ISOLATED=1 cuts the VM off from every network except two forwards, to test proxy settings:
+#   10.0.2.100:3128 -> test/proxy.py in the container (logs each destination: docker logs <name>)
+#   10.0.2.101:443  -> $MORPHEUS ("host port" of the Morpheus appliance; use url: https://10.0.2.101)
+# Set proxy.url: http://10.0.2.100:3128 in appliance.yaml.
+#
 # Check it with appliance/test/check.sh <ssh-private-key>. Ports are also published on 127.0.0.1:
 # 2222 (SSH, user debian), 13000 (Grafana) and 13443 (https), where Docker publishing allows it.
 # appliance.yaml holds credentials: keep it mode 600 and outside the repo.
@@ -28,15 +33,21 @@ for line in settings.splitlines():
 EOF
 printf 'instance-id: %s-%s\nlocal-hostname: vme-insight-test\n' "$NAME" "$(date +%s)" > "$T/meta-data"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
-docker run -d --name "$NAME" -v "$IMG:/img/base.qcow2:ro" -v "$T:/seed" \
+NET="user,id=n0"
+if [ "${ISOLATED:-}" = 1 ]; then
+  NET="user,id=n0,restrict=on,guestfwd=tcp:10.0.2.100:3128-cmd:python3 /test/relay.py 127.0.0.1 3128,guestfwd=tcp:10.0.2.101:443-cmd:python3 /test/relay.py ${MORPHEUS:?set MORPHEUS=\"host port\"}"
+  # cmd: starts a relay per connection (a tcp: target would carry only the first one)
+fi
+docker run -d --name "$NAME" -v "$IMG:/img/base.qcow2:ro" -v "$T:/seed" -v "$(dirname "$(realpath "$0")"):/test:ro" -e ISOLATED="${ISOLATED:-}" -e NET="$NET" \
   -p 127.0.0.1:2222:2222 -p 127.0.0.1:13000:13000 -p 127.0.0.1:13443:13443 \
   vme-insight-appliance-builder bash -c '
     set -e
+    [ "$ISOLATED" = 1 ] && { python3 -u /test/proxy.py 3128 & sleep 1; }
     genisoimage -quiet -output /seed/seed.iso -volid cidata -joliet -rock /seed/user-data /seed/meta-data
     qemu-img create -q -f qcow2 -b /img/base.qcow2 -F qcow2 /tmp/disk.qcow2 30G
     exec qemu-system-x86_64 -accel tcg,thread=multi -cpu max -m 4096 -smp 4 -nographic \
       -drive file=/tmp/disk.qcow2,if=virtio -drive file=/seed/seed.iso,media=cdrom \
-      -netdev user,id=n0,hostfwd=tcp::2222-:22,hostfwd=tcp::13000-:3000,hostfwd=tcp::13443-:3443 \
+      -netdev "$NET,hostfwd=tcp::2222-:22,hostfwd=tcp::13000-:3000,hostfwd=tcp::13443-:3443" \
       -device virtio-net-pci,netdev=n0' >/dev/null
 # the seed holds credentials: remove our copy once QEMU has built the ISO
 ( sleep 60; rm -rf "$T" ) &

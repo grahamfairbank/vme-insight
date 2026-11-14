@@ -23,7 +23,7 @@ What the appliance needs from Morpheus and the network, and what it doesn't:
 | **Morpheus Appliance URL** | Reachable from the HVM hosts | Not specific to vme-insight: to provision from a new image, each HVM host downloads it from Morpheus's Appliance URL (Administration → Settings → Appliance). See Troubleshooting if provisioning fails with "Image is not in qcow2 format". |
 | **From users** | Yes | TCP 3000 (Grafana) or 3443 (https front end) from the people and the Morpheus UI that view the dashboards. Optionally SSH (22) for administration. |
 | **To HVM hosts** | Only with the exporters | TCP 9100 and 9177 to each HVM host, if you install the optional [exporters](EXPORTERS.md). |
-| **Internet** | Optional | Only `endoflife.date` (HTTPS, daily) for OS end-of-life data, `api.github.com` (HTTPS, daily) for the update notice, `vme-insight-update` when you run it, plus Debian updates and NTP if you use the defaults. Container images and the Grafana plugin are already in the image, so nothing is downloaded from Docker Hub or grafana.com. Without internet, everything works except end-of-life dates on the Lifecycle dashboard. |
+| **Internet** | Optional | Only `endoflife.date` (HTTPS, daily) for OS end-of-life data, `api.github.com` (HTTPS, daily) for the update notice, `vme-insight-update` when you run it, plus Debian updates and NTP if you use the defaults. Container images and the Grafana plugin are already in the image, so nothing is downloaded from Docker Hub or grafana.com. Without internet, everything works except end-of-life dates on the Lifecycle dashboard. Through a proxy if you have one: see [Proxy](#proxy). |
 | **Morpheus agent** | No | Choose either way when importing. vme-insight reads everything through the Morpheus API. |
 
 ### Your own time servers
@@ -37,6 +37,32 @@ systemctl restart systemd-timesyncd
 ```
 
 Check with `timedatectl timesync-status`.
+
+### Proxy
+
+If the appliance reaches the internet through an HTTP(S) proxy, add it to the settings, in the user data or with `sudo vme-insight-setup`:
+
+```yaml
+proxy:
+  url: http://proxy.example.com:3128
+  no_proxy: .example.com 10.0.0.0/8     # optional: more hosts, domains or networks to reach directly
+```
+
+`vme-insight-apply` then points everything that goes to the internet at the proxy:
+
+| What | How |
+|---|---|
+| The collector (end-of-life dates from endoflife.date) | `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` in the containers, through Docker's client settings (`/root/.docker/config.json`) |
+| `vme-insight-update` (GitHub, grafana.com) and the daily update check | `/etc/vme-insight/proxy.env` |
+| Container image pulls and the collector build (Docker Hub, PyPI) | A Docker service drop-in (`/etc/systemd/system/docker.service.d/vme-insight-proxy.conf`) and the client settings above |
+| apt, for your Debian updates | `/etc/apt/apt.conf.d/80vme-insight-proxy` |
+
+The connection to Morpheus never uses the proxy: the appliance adds the Morpheus host to `no_proxy` itself, because certificate pinning (`tls_fingerprint`) needs a direct connection. The containers' traffic to each other is direct too. Remove `proxy:` and run `sudo vme-insight-apply` to take the proxy out again.
+
+* A password in the URL (`http://user:password@proxy:3128`) works. It is stored in those files readable by root only, like the Morpheus token.
+* NTP doesn't go through an HTTP proxy. Behind one, use your own time servers (above).
+* The appliance doesn't read Morpheus's own proxy settings (Administration → Settings → Provisioning). Put the proxy in `appliance.yaml`.
+* A proxy that inspects TLS with its own certificate authority: let the appliance's destinations bypass inspection. Otherwise apt and `vme-insight-update` need that CA added to the VM (`/usr/local/share/ca-certificates/`, then `sudo update-ca-certificates`), and the collector, which uses its own CA bundle, can't fetch end-of-life dates. Everything else keeps working.
 
 ## Sizing
 
@@ -85,6 +111,8 @@ morpheus:
   url: https://morpheus.example.com
   api_token: 'the-read-only-token'
   tls_fingerprint: 'AA:BB:...'      # see below; or leave empty if the certificate is publicly trusted
+# proxy:                            # only behind an HTTP(S) proxy; see Proxy above
+#   url: http://proxy.example.com:3128
 EOF
 chmod 600 /etc/vme-insight/appliance.yaml
 ```
@@ -139,7 +167,7 @@ The appliance has two parts that update separately:
   sudo vme-insight-update
   ```
 
-  It checks GitHub for a newer release and, after you confirm, replaces the vme-insight files, pulls the new container images, rebuilds the collector, updates the Grafana treemap plugin if the release changes it, and restarts. Your settings, passwords and data stay. **Take a snapshot of the VM in Morpheus first**: that's your rollback. It needs internet access to github.com, grafana.com and the container registries (Docker Hub). A release that changes the PostgreSQL major version stops with a message instead, because that needs a dump and restore (see the release notes).
+  It checks GitHub for a newer release and, after you confirm, replaces the vme-insight files, pulls the new container images, rebuilds the collector, updates the Grafana treemap plugin if the release changes it, and restarts. Your settings, passwords and data stay. **Take a snapshot of the VM in Morpheus first**: that's your rollback. It needs internet access to github.com, grafana.com and the container registries (Docker Hub). A release that changes the PostgreSQL major version stops with a message instead, because that needs a dump and restore (see the release notes). `sudo vme-insight-update --force` reinstalls the current release, to repair changed or deleted files.
 
 Once a day the appliance checks GitHub for a new release (read only; it installs nothing). When there is one, the login message says so. To turn the check off, add this to `/etc/vme-insight/appliance.yaml`:
 
@@ -166,7 +194,7 @@ The build:
 
 Only files git tracks go into the image, so your `.env`, `config.yaml` and certificates stay out.
 
-To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud-init seed, the same way Morpheus does.
+To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud-init seed, the same way Morpheus does. `appliance/test/check.sh` checks it. With `ISOLATED=1`, the VM's only way out is a logging test proxy (plus a direct path to Morpheus), and `appliance/test/check-proxy.sh` shows that every download goes through the proxy.
 
 ## Troubleshooting
 

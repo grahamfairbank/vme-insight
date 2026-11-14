@@ -20,5 +20,9 @@ https:
   # allow: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
   # cert_pem: |                 # your own certificate and key; otherwise Caddy's internal CA is used
   # key_pem: |
+proxy:                          # only if this VM reaches the internet through an HTTP(S) proxy
+  # url: http://proxy.example.com:3128          # or http://user:password@proxy.example.com:3128
+  # no_proxy: .example.com 10.0.0.0/8           # more hosts, domains or networks to reach directly;
+  #                                             # Morpheus and the containers are always direct
 updates:
   check: true                   # daily read-only check of GitHub for a newer release, shown at login

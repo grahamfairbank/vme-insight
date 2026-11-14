@@ -10,6 +10,7 @@ Writes /etc/vme-insight/appliance.yaml (the same file cloud-init can write) and 
 import getpass
 import hashlib
 import os
+import re
 import socket
 import ssl
 import subprocess
@@ -124,6 +125,23 @@ def main(argv):
         }
         settings["grafana"] = {"vme_plugin": yes("   Allow vme-insight-plugin to embed the dashboards in the Morpheus UI?",
                                                  default=bool((old.get("grafana") or {}).get("vme_plugin")))}
+
+    print("\n5. Internet access (optional: end-of-life dates, update checks, vme-insight-update)")
+    op = old.get("proxy") or {}
+    cur = str(op.get("url") or "")
+    shown = re.sub(r"//[^/@]*@", "//***@", cur)   # don't echo a proxy password
+    proxy = ask("   Proxy URL if this VM reaches the internet through one, e.g. http://proxy.example.com:3128"
+                " (Enter keeps the current one; '-' for none)", shown) if cur else ask(
+                "   Proxy URL if this VM reaches the internet through one, e.g. http://proxy.example.com:3128"
+                " (Enter for none)")
+    if proxy == shown:
+        proxy = cur
+    if proxy and proxy != "-":
+        settings["proxy"] = {"url": proxy,
+                             "no_proxy": ask("   Other hosts or networks to reach directly, space-separated"
+                                             " (Morpheus is always direct)", op.get("no_proxy", ""))}
+    if "updates" in old:
+        settings["updates"] = old["updates"]
 
     os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
     fd = os.open(SETTINGS, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

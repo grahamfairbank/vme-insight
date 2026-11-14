@@ -11,10 +11,13 @@ Runs at every boot (vme-insight-firstboot.service) and from vme-insight-setup. E
 Usage: vme-insight-apply [--boot]
 """
 import glob
+import json
 import os
 import secrets
 import subprocess
 import sys
+
+from urllib.parse import urlsplit
 
 import yaml
 
@@ -171,6 +174,76 @@ def apply_settings(s):
     write_private(ENV, "\n".join(lines) + "\n")
 
 
+# container names that talk to each other over HTTP; they never go through a proxy
+INTERNAL = ["localhost", "127.0.0.1", "::1", "timescaledb", "collector", "prometheus", "grafana", "https"]
+DOCKER_CLIENT = "/root/.docker/config.json"
+DOCKER_DROPIN = "/etc/systemd/system/docker.service.d/vme-insight-proxy.conf"
+APT_PROXY = "/etc/apt/apt.conf.d/80vme-insight-proxy"
+PROXY_ENV = "/etc/vme-insight/proxy.env"
+
+
+def proxy_settings(s):
+    """(proxy url, no_proxy list) from the settings, or (None, None) without a proxy."""
+    p = s.get("proxy") or {}
+    url = str(p.get("url") or "").strip()
+    if not url:
+        return None, None
+    if "://" not in url:
+        url = "http://" + url
+    extra = str(p.get("no_proxy") or "").replace(",", " ").split()
+    # Morpheus is always reached directly: certificate pinning doesn't work through a proxy
+    morpheus = urlsplit(str((s.get("morpheus") or {}).get("url") or "")).hostname
+    no_proxy = list(dict.fromkeys(INTERNAL + ([morpheus] if morpheus else []) + extra))
+    return url, no_proxy
+
+
+def write_if_changed(path, text):
+    old = open(path).read() if os.path.exists(path) else None
+    if old == text:
+        return False
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    write_private(path, text)
+    return True
+
+
+def remove(path):
+    if os.path.exists(path):
+        os.remove(path)
+        return True
+    return False
+
+
+def apply_proxy(s):
+    """Point Docker (pulls, builds, containers), apt and vme-insight-update at the proxy, or remove it.
+    Returns True if containers must be recreated to pick up the change."""
+    url, no_proxy = proxy_settings(s)
+    changed = False
+    client = json.load(open(DOCKER_CLIENT)) if os.path.exists(DOCKER_CLIENT) else {}
+    if url:
+        np = ",".join(no_proxy)
+        # Docker's client config: compose passes these to every container and to image builds
+        client["proxies"] = {"default": {"httpProxy": url, "httpsProxy": url, "noProxy": np}}
+        changed |= write_if_changed(DOCKER_CLIENT, json.dumps(client, indent=2) + "\n")
+        daemon = (f'[Service]\nEnvironment="HTTP_PROXY={url}" "HTTPS_PROXY={url}" "NO_PROXY={np}"\n')
+        daemon_changed = write_if_changed(DOCKER_DROPIN, daemon)
+        write_if_changed(APT_PROXY, f'Acquire::http::Proxy "{url}";\nAcquire::https::Proxy "{url}";\n')
+        write_if_changed(PROXY_ENV, f"http_proxy={url}\nhttps_proxy={url}\nno_proxy={np}\n"
+                                    f"HTTP_PROXY={url}\nHTTPS_PROXY={url}\nNO_PROXY={np}\n")
+    else:
+        if client.pop("proxies", None) is not None:
+            changed = True
+            write_private(DOCKER_CLIENT, json.dumps(client, indent=2) + "\n")
+        daemon_changed = remove(DOCKER_DROPIN)
+        remove(APT_PROXY)
+        remove(PROXY_ENV)
+    if daemon_changed:
+        log("restarting Docker for the proxy setting")
+        subprocess.run(["systemctl", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "restart", "docker"], check=True)
+        changed = True
+    return changed
+
+
 def main():
     os.makedirs(STATE, exist_ok=True)
     status("starting")
@@ -187,8 +260,9 @@ def main():
     settings = yaml.safe_load(open(SETTINGS)) or {}
     os.chmod(SETTINGS, 0o600)
     apply_settings(settings)
+    recreate = apply_proxy(settings)
     log("starting the stack")
-    run(["docker", "compose", "up", "-d", "--remove-orphans"])
+    run(["docker", "compose", "up", "-d", "--remove-orphans"] + (["--force-recreate"] if recreate else []))
     open(f"{STATE}/grafana-started", "w").close()
     lines = read_env()
     port = get_env(lines, "HTTPS_PORT") if get_env(lines, "COMPOSE_PROFILES") == "https" else get_env(lines, "GRAFANA_PORT")
