@@ -176,6 +176,8 @@ def update(tag):
     for base in re.findall(r"^FROM\s+(\S+)", open(f"{APP}/collector/Dockerfile").read(), re.M):
         subprocess.run(["docker", "pull", "-q", base], stdout=subprocess.DEVNULL, check=True)
     subprocess.run(["docker", "compose", "build", "-q", "collector"], cwd=APP, check=True)
+    # the appliance's own scripts and services come with the release too (before 0.6.1 they weren't updated)
+    subprocess.run(["sh", f"{APP}/appliance/install-system-files.sh"], check=True)
     log("Restarting vme-insight...")
     subprocess.run(["/usr/local/sbin/vme-insight-apply"], check=True)
     subprocess.run(["docker", "image", "prune", "-f"], stdout=subprocess.DEVNULL, check=False)

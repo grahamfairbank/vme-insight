@@ -209,14 +209,16 @@ Replace the three values:
 | `api_token` | The API token of the read-only account from step 1. Or use `username:` and `password:` instead. |
 | `tls_fingerprint` | The SHA-256 fingerprint of the Morpheus certificate (see [The Morpheus certificate](#the-morpheus-certificate)). Leave it out if the certificate is publicly trusted. |
 
-Everything between the two `EOF` lines is the settings file, so any other setting can go there too. For example, to turn on https and use a proxy, add:
+Everything between the two `EOF` lines is the settings file, so any other setting can go there too. https is on by default (port 443, answering on this VM's own addresses). For example, to give the appliance a DNS name and use a proxy, add:
 
 ```yaml
 https:
-  enabled: true
+  hostname: vme-insight.example.com 10.0.0.25
 proxy:
   url: http://proxy.example.com:3128
 ```
+
+List every name and IP people will type (see [Names and addresses](#names-and-addresses)). To leave https off, use `enabled: false` under `https:` instead.
 
 All the settings, with comments, are in `/etc/vme-insight/appliance.yaml.example` in the VM, or [appliance/rootfs/etc/vme-insight/appliance.yaml.example](../appliance/rootfs/etc/vme-insight/appliance.yaml.example).
 
@@ -242,15 +244,19 @@ Compare it with what your browser shows for the Morpheus UI before trusting it. 
 
 ## 4. Open the dashboards
 
-* `http://<vm-address>:3000`: Grafana. User `admin`, password from `sudo vme-insight-setup --show-password`.
-* With https on (`vme-insight-setup` asks; or `https.enabled: true` in the settings): `https://<vm-address>` on port 443, or `https://<vm-address>:3443`, limited to the networks you allowed. The wizard also asks whether to close plain http on 3000, and whether to allow [vme-insight-plugin](VME-PLUGIN.md) to embed the dashboards in the Morpheus UI.
+* `https://<vm-address>`: Grafana over https on port 443, limited to the networks you allowed. User `admin`, password from `sudo vme-insight-setup --show-password`. https is on by default; the first time, the browser warns about the appliance's own certificate unless you gave it yours (`https.cert_pem` and `key_pem`). An appliance set up with https on 3443 keeps that port: `https://<vm-address>:3443`.
+* `http://<vm-address>:3000`: plain http, open unless you close it. The wizard also asks whether to close plain http on 3000, and whether to allow [vme-insight-plugin](VME-PLUGIN.md) to embed the dashboards in the Morpheus UI.
+
+### Names and addresses
+
+The https front end answers only for the names and IPs in its list, and shows an empty page for any other address. Leave the list empty (press Enter in the wizard) and the appliance uses its own IP addresses and host name, found again at each boot, so a new DHCP address works too. If people use a DNS name, list it together with the IP: `vme-insight.example.com 10.0.0.25`. Appliances before 0.6.1 used only `localhost` when the list was empty, which gave an empty page; 0.6.1 fixes that.
 
 ### The https port
 
 The wizard asks which port https uses:
 
 * **443**, the standard https port, is the wizard's default for a new appliance. People type `https://vme-insight.example.com` with no port number, and firewalls and proxies usually allow it already.
-* **3443** is what earlier releases used. An appliance that already has https keeps its port when you run the wizard again, and `https.enabled: true` in user data without `https.port` still means 3443. To get 443 through user data, add `port: 443` under `https:`.
+* **3443** is what earlier releases used. An appliance set up with https before 0.6.1 keeps 3443, both when you run the wizard again and in its settings file, unless `https.port` says otherwise.
 
 **Changing the port on an appliance that's in use:** in the same sitting, change it on the appliance (`sudo vme-insight-setup`), then in the Morpheus UI set the plugin's **vme-insight Grafana URL** to match (see [VME-PLUGIN: the https port](VME-PLUGIN.md#changing-the-https-port)). Also update `grafana.root_url` if you set it, firewall or security group rules for the new port, proxy exceptions that include the port, and bookmarks. Until the plugin setting matches, the vme-insight tabs in Morpheus show an empty or blocked frame. Nothing else in Morpheus is affected.
 
@@ -289,7 +295,15 @@ The appliance has two parts that update separately:
   sudo vme-insight-update
   ```
 
-  It checks GitHub for a newer release and, after you confirm, replaces the vme-insight files, pulls the new container images, rebuilds the collector, updates the Grafana treemap plugin if the release changes it, and restarts. Your settings, passwords and data stay. **Take a snapshot of the VM in Morpheus first**: that's your rollback. It needs internet access to github.com, grafana.com and the container registries (Docker Hub). A release that changes the PostgreSQL major version stops with a message instead, because that needs a dump and restore (see the release notes). `sudo vme-insight-update --force` reinstalls the current release, to repair changed or deleted files.
+  It checks GitHub for a newer release and, after you confirm, replaces the vme-insight files and the appliance's own scripts and services, pulls the new container images, rebuilds the collector, updates the Grafana treemap plugin if the release changes it, and restarts. Your settings, passwords and data stay. **Take a snapshot of the VM in Morpheus first**: that's your rollback. It needs internet access to github.com, grafana.com and the container registries (Docker Hub). A release that changes the PostgreSQL major version stops with a message instead, because that needs a dump and restore (see the release notes). `sudo vme-insight-update --force` reinstalls the current release, to repair changed or deleted files.
+
+**Updating from 0.6.0 or earlier:** those releases' `vme-insight-update` replaced the vme-insight files but not the appliance's own scripts (`vme-insight-setup`, `vme-insight-apply`, `vme-insight-update` and the services), so fixes to them never arrived. After updating, install them once:
+
+```bash
+sudo sh /opt/vme-insight/appliance/install-system-files.sh && sudo vme-insight-apply
+```
+
+From 0.6.1 on, `vme-insight-update` does this itself. Your https setting doesn't change: an appliance that ran without https keeps it off until you turn it on with `sudo vme-insight-setup`.
 
 Once a day the appliance checks GitHub for a new release (read only; it installs nothing). When there is one, the login message says so. To turn the check off, add this to `/etc/vme-insight/appliance.yaml`:
 
@@ -328,4 +342,5 @@ To test an image, `appliance/test/boot-test.sh` boots it under QEMU with a cloud
 | Provisioning fails with "Image is not in qcow2 format" | The HVM host downloads the image from Morpheus's **Appliance URL** (Administration → Settings → Appliance). The hosts must reach that URL directly: if it is a name behind a login proxy such as Cloudflare Access, they save the login page instead of the image. Use an address the hosts can reach, or set the **Internal Appliance URL**. Then delete the image and import it again, because each host keeps its bad copy. |
 | Grafana's login page comes back after you sign in, as if the password were wrong | Images before 0.5.0 marked the sign-in cookie Secure whenever https was on, and browsers don't keep a Secure cookie on plain `http://…:3000`. Use `https://…:3443`, or run `sudo vme-insight-apply` after updating. The cookie is now Secure only with `https.only: true`, which also closes port 3000. |
 | The browser can't open the dashboards, but `Test-NetConnection <vm-address> -Port <https port>` (PowerShell) says `TcpTestSucceeded : True` | The browser is probably sending the request through your organization's web proxy, which can't reach the appliance. To confirm, run `curl.exe -k --noproxy "*" -s -o NUL -w "%{http_code}" https://<vm-address>:<https port>/login` in PowerShell: `200` means the appliance is fine. Add the appliance's **exact address** (for example `10.0.0.25`) to the browser's or system's proxy exceptions. A subnet or wildcard exception such as `10.0.*` may not be enough, because some proxy setups ignore those for plain IP addresses. |
+| `https://<vm-address>` opens an empty white page (after any certificate warning) | The address you typed isn't in the appliance's names list ([Names and addresses](#names-and-addresses)). Check with `sudo grep ^HTTPS_HOSTNAME= /opt/vme-insight/.env`. Run `sudo vme-insight-setup` and press Enter at the names question to use the VM's own addresses, or list every name and IP people type. |
 | Can't sign in to the VM | The appliance has no password login. Use the SSH key or user from Morpheus's cloud-init settings. |

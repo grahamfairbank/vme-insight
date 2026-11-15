@@ -14,6 +14,7 @@ import glob
 import json
 import os
 import secrets
+import socket
 import subprocess
 import sys
 
@@ -30,6 +31,33 @@ STATUS = "/run/vme-insight-status"
 
 def log(msg):
     print(f"vme-insight: {msg}", flush=True)
+
+
+def vm_addresses():
+    """This VM's IPv4 addresses (not Docker's), then its host name: what people type to reach it."""
+    out = subprocess.run(["ip", "-4", "-o", "addr", "show", "scope", "global"],
+                         capture_output=True, text=True, check=False).stdout
+    ips = [line.split()[3].split("/")[0] for line in out.splitlines()
+           if not line.split()[1].startswith(("docker", "br-", "veth"))]
+    return ips + [socket.gethostname()]
+
+
+def https_settings(s):
+    """The https section, with the defaults for what the settings don't say.
+
+    An appliance set up with 0.6.1 or later has https on, on port 443. One that started before keeps its
+    old defaults (https off; port 3443 when on), so an update never opens or moves a port by itself.
+    """
+    h = dict(s.get("https") or {})
+    marker = f"{STATE}/new-defaults"   # this appliance was set up with 0.6.1 or later
+    if not os.path.exists(marker) and not os.path.exists(f"{STATE}/grafana-started"):
+        open(marker, "w").close()
+    new = os.path.exists(marker)
+    if "enabled" not in h:
+        h["enabled"] = new
+    if as_bool(h["enabled"]) and not h.get("port"):
+        h["port"] = 443 if new else 3443
+    return h
 
 
 def status(text):
@@ -148,7 +176,7 @@ def apply_settings(s):
     # .env: Grafana and https front end
     lines = read_env()
     g = s.get("grafana") or {}
-    h = s.get("https") or {}
+    h = https_settings(s)
     https_on = as_bool(h.get("enabled"))
     lines = set_env(lines, "TZ", s.get("timezone") or "UTC")
     lines = set_env(lines, "GRAFANA_PORT", g.get("port") or 3000)
@@ -164,7 +192,9 @@ def apply_settings(s):
     if g.get("admin_password") and not os.path.exists(f"{STATE}/grafana-started"):
         lines = set_env(lines, "GRAFANA_ADMIN_PASSWORD", str(g["admin_password"]))
     if https_on:
-        names = h.get("hostname") or "localhost"
+        # Caddy serves only the names and IPs in this list, and an empty page for any other: without
+        # one, use this VM's own addresses (found at each boot, so a new DHCP address works too).
+        names = str(h.get("hostname") or "").strip() or " ".join(vm_addresses()) or "localhost"
         lines = set_env(lines, "HTTPS_HOSTNAME", names)
         ips = [n for n in str(names).split() if n.replace(".", "").isdigit()]
         lines = set_env(lines, "HTTPS_DEFAULT_SNI", h.get("default_sni") or (ips[0] if ips else "localhost"))
@@ -276,7 +306,9 @@ def main():
     lines = read_env()
     port = get_env(lines, "HTTPS_PORT") if get_env(lines, "COMPOSE_PROFILES") == "https" else get_env(lines, "GRAFANA_PORT")
     scheme = "https" if get_env(lines, "COMPOSE_PROFILES") == "https" else "http"
-    status(f"running: {scheme}://<this VM's address>:{port}  (Grafana user admin; password: sudo vme-insight-setup --show-password)")
+    addr = (vm_addresses() + ["<this VM's address>"])[0]
+    addr = addr if addr != socket.gethostname() else "<this VM's address>"
+    status(f"running: {scheme}://{addr}:{port}  (Grafana user admin; password: sudo vme-insight-setup --show-password)")
     log("running")
     return 0
 

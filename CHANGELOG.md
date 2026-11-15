@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 (2026-11-15)
+
+* **Appliance: https is on by default.** A new appliance serves the dashboards at `https://<vm-address>` (port 443), which the Morpheus UI needs to show them. The wizard's https question now defaults to Yes, and user data without an `https` section turns it on. Plain http on port 3000 stays open unless you close it. Appliances set up before 0.6.1 keep their setting and port, so an update never opens or moves a port by itself.
+* **Fixed (appliance): `https://<vm-address>` showed an empty page** when the wizard's "Names and IPs people type" question was left empty: the https front end then answered only for `localhost`. An empty list now means this VM's own IP addresses and host name, found again at each boot. See [APPLIANCE: Names and addresses](docs/APPLIANCE.md#names-and-addresses).
+* **Fixed (appliance): `vme-insight-update` didn't update the appliance's own scripts and services** (`vme-insight-setup`, `vme-insight-apply`, `vme-insight-update`), so the 0.6.0 fixes never reached an appliance updated from 0.5.0. It now installs them with each update. **After updating from 0.6.0 or earlier, run once:** `sudo sh /opt/vme-insight/appliance/install-system-files.sh && sudo vme-insight-apply` ([APPLIANCE: Keeping it up to date](docs/APPLIANCE.md#keeping-it-up-to-date)).
+* The login message and `sudo vme-insight-setup --status` show the VM's address instead of `<this VM's address>`.
+
 ## 0.6.0 (2026-11-14)
 
 * **Appliance: https on port 443.** `vme-insight-setup` now asks which port https uses. A new appliance defaults to 443, so people type `https://vme-insight.example.com` with no port number. An appliance that already has https keeps its port (3443) when you run the wizard again, and user data with `https.enabled: true` but no `https.port` still means 3443. **If you change the port, change the vme-insight plugin's Grafana URL in Morpheus at the same time**, or its tabs show an empty frame. See [APPLIANCE: The https port](docs/APPLIANCE.md#the-https-port).

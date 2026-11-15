@@ -35,6 +35,26 @@ def yes(prompt, default=False):
     return default if not v else v.startswith("y")
 
 
+def vm_addresses():
+    """This VM's IPv4 addresses (not Docker's), then its host name (as vme-insight-apply finds them)."""
+    out = subprocess.run(["ip", "-4", "-o", "addr", "show", "scope", "global"],
+                         capture_output=True, text=True, check=False).stdout
+    ips = [line.split()[3].split("/")[0] for line in out.splitlines()
+           if not line.split()[1].startswith(("docker", "br-", "veth"))]
+    return ips + [socket.gethostname()]
+
+
+def new_appliance():
+    """Set up with 0.6.1 or later (or not set up yet): https on port 443 by default, as vme-insight-apply does."""
+    return (os.path.exists("/var/lib/vme-insight/new-defaults")
+            or not os.path.exists("/var/lib/vme-insight/grafana-started"))
+
+
+def https_default(h):
+    """The current choice; otherwise on for a new appliance, off for one set up before 0.6.1."""
+    return bool(h["enabled"]) if "enabled" in h else new_appliance()
+
+
 def fingerprint(url):
     parts = urlsplit(url if "://" in url else "https://" + url)
     host, port = parts.hostname, parts.port or 443
@@ -60,9 +80,9 @@ def show_password():
 
 
 def https_port(h):
-    """Ask for the https port. New setups default to 443; an appliance already on https keeps its port
-    (3443 if none was set), because the plugin's Grafana URL and bookmarks include it."""
-    default = str(h.get("port") or (3443 if h.get("enabled") else 443))
+    """Ask for the https port. New appliances default to 443; one set up with https before 0.6.1 keeps its
+    port (3443 if none was set), because the plugin's Grafana URL and bookmarks include it."""
+    default = str(h.get("port") or (3443 if h.get("enabled") and not new_appliance() else 443))
     while True:
         v = ask("   https port (443 needs no port number in the address; if you change it, update the"
                 " vme-insight plugin's Grafana URL too)", default)
@@ -126,13 +146,14 @@ def main(argv):
     print("\n4. How people reach the dashboards")
     h = old.get("https") or {}
     https_on = yes("   Serve Grafana over https too (needed to show the dashboards inside the Morpheus UI)?",
-                   default=bool(h.get("enabled")))
+                   default=https_default(h))
     settings = {"morpheus": m, "timezone": ask("   Time zone for the dashboards", old.get("timezone", "UTC"))}
     if https_on:
         settings["https"] = {
             "enabled": True,
             "port": https_port(h),
-            "hostname": ask("   Names and IPs people type for this VM, space-separated", h.get("hostname", "")),
+            "hostname": ask(f"   Names and IPs people type for this VM, space-separated (Enter for this VM's own"
+                            f" addresses, found at each boot: {' '.join(vm_addresses())})", h.get("hostname", "")),
             "allow": ask("   Networks allowed in, space-separated CIDRs",
                          h.get("allow", "10.0.0.0/8 172.16.0.0/12 192.168.0.0/16")),
             "only": yes("   Close plain http on port 3000, so https is the only way in?", default=bool(h.get("only"))),
@@ -159,8 +180,8 @@ def main(argv):
     for key in ("ca_pem", "insecure"):
         if key in om:
             m.setdefault(key, om[key])
-    if https_on:
-        settings["https"] = {**h, **settings["https"]}
+    # keep your own certificate and the other https settings, even when https is turned off
+    settings["https"] = {**h, **settings["https"]} if https_on else {**h, "enabled": False}
     g = {k: v for k, v in (old.get("grafana") or {}).items() if k != "vme_plugin"}
     if g or "grafana" in settings:
         settings["grafana"] = {**g, **settings.get("grafana", {})}
