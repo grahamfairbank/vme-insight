@@ -2,6 +2,8 @@
 
 Everything the collector gathers is in one PostgreSQL database (`vme`) with the TimescaleDB extension. Grafana reads it as the read-only user `grafana_ro`, so any panel you build can use plain SQL.
 
+> **Where to run the commands on this page:** in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight` (`cd /opt/vme-insight`), and each `docker` and `tools/` command needs `sudo` in front. For a Docker Compose install it's the folder you cloned into, such as `~/vme-insight`.
+
 To open a SQL shell:
 
 ```bash

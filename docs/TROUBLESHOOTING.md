@@ -1,5 +1,7 @@
 # Troubleshooting
 
+> **Where to run the commands on this page:** in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight` (`cd /opt/vme-insight`), and each `docker` and `tools/` command needs `sudo` in front. For a Docker Compose install it's the folder you cloned into, such as `~/vme-insight`.
+
 Start with the collector log and the **VME Manager & Collector** dashboard:
 
 ```bash
@@ -129,6 +131,14 @@ docker compose logs -f collector
 
 Press Ctrl+C to stop following the log; the collector keeps running.
 
+On the appliance, run the same from `/opt/vme-insight` with `sudo`, and start it again with `sudo vme-insight-apply` instead of `docker compose up -d`, so it keeps your appliance settings and passwords:
+
+```bash
+cd /opt/vme-insight
+sudo docker compose --profile https --profile installer down -v
+sudo vme-insight-apply
+```
+
 ### Full deinstallation
 
 1. **On the vme-insight host**: stop everything and delete the data, the collector image and the checkout:
@@ -140,6 +150,8 @@ Press Ctrl+C to stop following the log; the collector keeps running.
    ```
 
    This only affects vme-insight: its containers and network, its own volumes (`vme-insight_*`), and the image it built (`vme-insight-collector`). Other containers, volumes and projects on the machine are untouched. The public images it pulled (Grafana, Prometheus, TimescaleDB, Caddy) stay, because other projects may use them. If nothing else on this host does, use `--rmi all` instead to remove them too; Docker refuses to delete any image a running container still uses.
+
+   To remove the [appliance](APPLIANCE.md), delete the VM in Morpheus instead; nothing else needs cleaning up on it.
 
    Also delete `~/vme-insight-ca` if you created a CA with `tools/make-cert.sh ca`, and `docker image rm vme-insight-shots` if you ran `tools/screenshots.py`.
 

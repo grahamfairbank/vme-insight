@@ -2,6 +2,8 @@
 
 Two ways to get vme-insight data out for investigation, a spreadsheet, a ticket or another tool:
 
+> **Where to run the commands on this page:** in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight` (`cd /opt/vme-insight`), and each `docker` and `tools/` command needs `sudo` in front. For a Docker Compose install it's the folder you cloned into, such as `~/vme-insight`.
+
 | | Grafana: **VME Data Export** dashboard | Command line: `tools/export_csv.py` |
 |---|---|---|
 | Best for | Quick, interactive pulls while investigating | Large pulls: weeks of per-minute data, the whole estate |

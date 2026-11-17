@@ -158,6 +158,8 @@ docker compose run --rm collector python -m vmeinsight.tlsinfo   # copy the fing
 docker compose up -d
 ```
 
+Using the [appliance](docs/APPLIANCE.md)? It comes with vme-insight installed in `/opt/vme-insight`; where the docs say to run `docker compose` or a `tools/` command, run it there with `sudo`.
+
 Open `http://<docker-host>:3000` (or `GRAFANA_PORT`) and sign in with `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`. Dashboards are in the **VM Essentials** folder. Data appears within a minute.
 
 Full walkthrough, including a read-only VME account: **[docs/INSTALL.md](docs/INSTALL.md)**.

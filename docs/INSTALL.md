@@ -1,5 +1,7 @@
 # Install
 
+This page installs vme-insight with Docker Compose, in a folder you clone (such as `~/vme-insight`; the commands on this page run there). The [appliance](APPLIANCE.md) comes with it already installed in `/opt/vme-insight`; where this page applies to the appliance too, run the commands there with `sudo`.
+
 This takes about 15 minutes. Steps 1 to 6 give you every dashboard except the three exporter ones. Step 7 is optional.
 
 Tested with: VME 9.1.0.1, HVM 2.0 clusters on Ubuntu 26.04, Docker 29.1, Compose 2.40, TimescaleDB 2.17.2 (PostgreSQL 16), Grafana 11.5.2, Prometheus 3.5.5.
@@ -236,6 +238,8 @@ docker compose logs -f collector
 ```
 
 To keep the data, reuse the old `.env`, or change the passwords inside the running services instead (see [Changing passwords](#changing-passwords)).
+
+On the appliance, see [TROUBLESHOOTING: Clean reinstall](TROUBLESHOOTING.md#clean-reinstall) (in `/opt/vme-insight`, with `sudo vme-insight-apply` to start again).
 
 ## Removing
 

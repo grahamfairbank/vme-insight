@@ -24,7 +24,9 @@
 #
 # Then set in .env:  HTTPS_TLS="/certs/vme-insight.crt /certs/vme-insight.key"
 # and run:           docker compose --profile https up -d https
-# See docs/VME-PLUGIN.md, "Make browsers trust the certificate".
+# On the appliance, run it with sudo; it puts the certificate and key in /etc/vme-insight/appliance.yaml
+# (https.cert_pem, https.key_pem) instead, and you run: sudo vme-insight-apply
+# See docs/VME-PLUGIN.md, "Make browsers trust the certificate", and docs/APPLIANCE.md, "Your own certificate".
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -53,6 +55,14 @@ done
 [[ "$MODE" == host || "$MODE" == ca ]] || { sed -n '2,29p' "$0"; exit 2; }
 [[ ${#NAMES[@]} -gt 0 ]] || { echo "give at least one hostname or IP the browser will use" >&2; exit 2; }
 [[ "$MODE" == host || ${#PERMIT[@]} -gt 0 ]] || { echo "ca mode needs at least one --permit DOMAIN or CIDR" >&2; exit 2; }
+
+# The appliance keeps its settings in appliance.yaml, and /opt/vme-insight belongs to root.
+APPLIANCE_YAML=/etc/vme-insight/appliance.yaml
+APPLIANCE=0; [[ -f "$APPLIANCE_YAML" && "$OUT" == "$ROOT/https/certs" ]] && APPLIANCE=1
+if [[ $APPLIANCE -eq 1 && $DRY -eq 0 && $(id -u) -ne 0 ]]; then
+  echo "On the vme-insight appliance, run it with sudo: sudo $0 $MODE ${PERMIT[*]/#/--permit } ${NAMES[*]}" | tr -s ' ' >&2
+  exit 1
+fi
 
 is_ip() { [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; }
 SAN=""
@@ -133,6 +143,26 @@ echo "   $CRT"
 echo "   $KEY"
 [[ "$MODE" == ca ]] && echo "   CA key: $CA_KEY  <- move this off the vme-insight host"
 echo
+if [[ $APPLIANCE -eq 1 ]]; then
+  python3 - "$APPLIANCE_YAML" "$CRT" "$KEY" <<'PY'
+import sys, yaml
+path, crt, key = sys.argv[1:]
+s = yaml.safe_load(open(path)) or {}
+h = s.get("https") or {}
+h["cert_pem"], h["key_pem"] = open(crt).read(), open(key).read()
+s["https"] = h
+with open(path, "w") as f:      # keeps the file's mode (600)
+    yaml.safe_dump(s, f, sort_keys=False)
+PY
+  echo "== Saved the certificate and key in $APPLIANCE_YAML (https.cert_pem, https.key_pem)"
+  echo
+  echo "== Next"
+  echo "   1. sudo vme-insight-setup: at \"Names and IPs people type\", list ${NAMES[*]}"
+  echo "      (or, if they're already listed, just run: sudo vme-insight-apply)"
+  echo "   2. On each browser machine, check the fingerprint above, then import $(basename "$TRUST")"
+  echo "      (docs/VME-PLUGIN.md, \"Make browsers trust the certificate\")."
+  exit 0
+fi
 echo "== Next"
 echo "   1. In .env:  HTTPS_TLS=\"/certs/vme-insight.crt /certs/vme-insight.key\""
 echo "   2. docker compose --profile https up -d https"

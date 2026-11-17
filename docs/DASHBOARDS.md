@@ -43,7 +43,7 @@ They're set in `HPE_COLORS` at the top of [`tools/build_dashboards.py`](../tools
 **Backgrounds.** In the dark theme, the page and the panels are `#222222`. In the light theme, they're white. Thin borders separate the panels. Grafana has no setting for this either, so vme-insight adds a small stylesheet, [`grafana/theme/hpe.css`](../grafana/theme/hpe.css), to Grafana's page template ([`grafana/theme/index.html`](../grafana/theme/index.html)). Both are mounted into the Grafana container by `docker-compose.yml`.
 
 * The page template is Grafana's own file from the exact Grafana image in `docker-compose.yml`, plus one line that loads the stylesheet. **When the Grafana image changes, make it again:** `python3 tools/grafana_index.py`. `python3 tools/grafana_index.py --check` says whether it still matches.
-* After editing `hpe.css`, restart Grafana (`docker compose restart grafana`). Docker keeps showing the old file if the editor saved a new one in its place.
+* After editing `hpe.css` (`grafana/theme/hpe.css` in the vme-insight folder: `/opt/vme-insight` on the appliance, where the commands need `sudo`), restart Grafana (`docker compose restart grafana`). Docker keeps showing the old file if the editor saved a new one in its place.
 * The stylesheet also lightens the empty part of bar gauges in the dark theme (Grafana's `#22252b` track barely shows on `#222222`).
 * If a Grafana update changes the page structure the stylesheet relies on, the dashboards fall back to Grafana's own backgrounds. Nothing else is affected.
 

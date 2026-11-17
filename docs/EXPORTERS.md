@@ -2,6 +2,8 @@
 
 The VME API reports about one sample per minute of CPU, memory, storage, network, IOPS and CPU ready. Two small agents on each HVM host add much more:
 
+> **Where to run the commands on this page:** in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight` (`cd /opt/vme-insight`), and each `docker` and `tools/` command needs `sudo` in front. For a Docker Compose install it's the folder you cloned into, such as `~/vme-insight`.
+
 | Exporter | Port | Adds |
 |---|---|---|
 | [`node_exporter`](https://github.com/prometheus/node_exporter) (official release binary) | 9100 | Host CPU by mode, load, memory and swap detail, **pressure stall information (PSI)**, **per-mount filesystem space, inodes and read-only state**, per-disk IOPS, latency and busy time, per-NIC traffic, drops and errors, uptime |

@@ -4,6 +4,8 @@ vme-insight is a complete web site on its own. If you also want its dashboards *
 
 This page is the whole setup, end to end. The plugin's own repository has the reference detail: every setting, the authentication options compared, troubleshooting and development.
 
+> **Where to run the commands on this page:** in the vme-insight folder. On the [appliance](APPLIANCE.md) that's `/opt/vme-insight` (`cd /opt/vme-insight`), and each `docker` and `tools/` command needs `sudo` in front. For a Docker Compose install it's the folder you cloned into, such as `~/vme-insight`.
+
 > The plugin is part of the same community project and carries the same [disclaimer](../README.md#disclaimer): it is not affiliated with, endorsed or supported by HPE or Morpheus Data. Like any plugin, it runs inside your VME manager; check your HPE support terms before installing third-party plugins on a production manager.
 
 ## How it fits together
@@ -81,6 +83,8 @@ Adding trust to a browser is a security decision: whatever you trust can vouch f
 | **E. Built-in CA** (`HTTPS_TLS=internal`): lab shortcut | An unrestricted CA whose key sits in a Docker volume | **Any website**, for every machine that trusts it |
 
 ### A or B: a certificate from a CA you already trust
+
+**On the [appliance](APPLIANCE.md)**, the certificate goes in the appliance's settings instead of `.env`, for every option below: see [APPLIANCE: Your own certificate](APPLIANCE.md#your-own-certificate). Run `make-cert.sh` there as `sudo /opt/vme-insight/tools/make-cert.sh ...`.
 
 Request a server certificate whose Subject Alternative Names include every name in `HTTPS_HOSTNAME` (and any IP users type). Save the certificate (with its intermediate chain, leaf first) and its key in `https/certs/`, which is git-ignored, then:
 

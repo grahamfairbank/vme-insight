@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* **Appliance: `make-cert.sh` works on the appliance.** Run with `sudo`, it puts the certificate and key in `/etc/vme-insight/appliance.yaml` (`https.cert_pem`, `key_pem`) and says to run `sudo vme-insight-apply`. Before, it pointed at `.env`, which the appliance rewrites, and without `sudo` it failed with *Permission denied*. See [APPLIANCE: Your own certificate](docs/APPLIANCE.md#your-own-certificate).
+* **Docs:** every page that runs commands in the vme-insight folder now says where that is on the appliance (`/opt/vme-insight`, with `sudo`) and for a Docker Compose install (the folder you cloned into, such as `~/vme-insight`).
+
 ## 0.7.0 (2026-11-17)
 
 * **HPE colors.** The dashboards use colors from the HPE Design System: green `#009a71` for ok, orange `#d36d00` for warnings, red `#ec3331` for critical, blue `#0070f8` for counts and gray `#7d8a92` for off or unknown. Each one reads on both the dark and the light background. Lines that compare several hosts or VMs keep Grafana's own series colors, because Grafana can't be given a different set.

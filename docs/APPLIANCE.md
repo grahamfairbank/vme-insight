@@ -277,6 +277,37 @@ Compare it with what your browser shows for the Morpheus UI before trusting it. 
 
 The https front end answers only for the names and IPs in its list, and shows an empty page for any other address. Leave the list empty (press Enter in the wizard) and the appliance uses its own IP addresses and host name, found again at each boot, so a new DHCP address works too. If people use a DNS name, list it together with the IP: `vme-insight.example.com 10.0.0.25`. Appliances before 0.6.1 used only `localhost` when the list was empty, which gave an empty page; 0.6.1 fixes that.
 
+### Your own certificate
+
+Out of the box, the https front end uses a certificate from its own internal CA, so browsers warn the first time. To use a certificate browsers already trust, or one you can check and import, give the appliance your own. List every name and IP people type in the names list first ([Names and addresses](#names-and-addresses)), and put the same names in the certificate.
+
+* **A certificate from your organization's CA, or a public one.** Put it (leaf first, then any intermediates) and its key in `/etc/vme-insight/appliance.yaml`, then run `sudo vme-insight-apply`:
+
+  ```yaml
+  https:
+    cert_pem: |
+      -----BEGIN CERTIFICATE-----
+      ...
+    key_pem: |
+      -----BEGIN PRIVATE KEY-----
+      ...
+  ```
+
+* **A self-signed certificate for this VM only, or one from your own name-limited CA.** `make-cert.sh` makes it on the VM and puts it in `appliance.yaml` for you. Run it with `sudo`, because `/opt/vme-insight` belongs to root:
+
+  ```bash
+  sudo /opt/vme-insight/tools/make-cert.sh host vme-insight.example.com 10.0.0.25
+  sudo vme-insight-apply
+  ```
+
+  It prints the certificate's SHA-256 fingerprint, to check before you import `vme-insight.crt` on each browser machine. The options and the CA variant (`ca --permit ...`, which keeps its CA in `/root/vme-insight-ca`) are described in [VME-PLUGIN: Make browsers trust the certificate](VME-PLUGIN.md#3-make-browsers-trust-the-certificate). In 0.7.0 and earlier, `make-cert.sh` doesn't know about the appliance: it prints steps for `.env`, which the appliance rewrites. If you made the files that way, copy them into `appliance.yaml` like this, then run `sudo vme-insight-apply`:
+
+  ```bash
+  sudo python3 -c 'import yaml; p="/etc/vme-insight/appliance.yaml"; s=yaml.safe_load(open(p)) or {}; h=s.setdefault("https", {}); d="/opt/vme-insight/https/certs/"; h["cert_pem"]=open(d+"vme-insight.crt").read(); h["key_pem"]=open(d+"vme-insight.key").read(); yaml.safe_dump(s, open(p, "w"), sort_keys=False)'
+  ```
+
+Running the wizard again keeps your certificate. To go back to the internal CA, delete `cert_pem` and `key_pem` from `appliance.yaml` and run `sudo vme-insight-apply`. Don't set `HTTPS_TLS` in `/opt/vme-insight/.env`: the appliance writes that file from `appliance.yaml` at every boot and apply.
+
 ### The https port
 
 The wizard asks which port https uses:
@@ -298,7 +329,7 @@ sudo vme-insight-setup
 
 It shows the current value of each setting in [brackets], so press Enter for the ones you're keeping. It covers the Morpheus URL, account and certificate, the time zone, https, the proxy, the time and DNS servers, the daily update check and the database's memory, and it keeps any other settings in the file. When you finish, it applies the changes and restarts what needs it.
 
-For the few settings it doesn't ask about (your own https certificate, your own CA for Morpheus, the Grafana port), edit `/etc/vme-insight/appliance.yaml` (every setting is described in `/etc/vme-insight/appliance.yaml.example`), then run `sudo vme-insight-apply`.
+For the few settings it doesn't ask about (your own https certificate (see [Your own certificate](#your-own-certificate)), your own CA for Morpheus, the Grafana port), edit `/etc/vme-insight/appliance.yaml` (every setting is described in `/etc/vme-insight/appliance.yaml.example`), then run `sudo vme-insight-apply`.
 
 The appliance writes `.env` and the `morpheus` section of `/opt/vme-insight/config/config.yaml` from the settings file at every boot and every apply, so don't edit those by hand. The rest of `config.yaml` (retention, intervals, lifecycle rules) is yours to edit as in a regular install ([CONFIGURATION](CONFIGURATION.md)). Then run `sudo docker compose restart collector` in `/opt/vme-insight`.
 

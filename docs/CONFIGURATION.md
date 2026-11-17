@@ -7,6 +7,8 @@ There are two files:
 
 Both hold secrets. Keep them `chmod 600` and out of git (`.gitignore` already excludes them).
 
+**Where they are:** in the vme-insight folder. For a Docker Compose install that's the folder you cloned into, such as `~/vme-insight/.env` and `~/vme-insight/config/config.yaml`. On the [appliance](APPLIANCE.md) it's `/opt/vme-insight/.env` and `/opt/vme-insight/config/config.yaml`, readable by root only, so use `sudo` to edit them and in front of each `docker` command (run from `/opt/vme-insight`). The appliance writes `.env` and the `morpheus` section of `config.yaml` from `/etc/vme-insight/appliance.yaml` ([APPLIANCE: Changing settings](APPLIANCE.md#changing-settings)); the rest of `config.yaml` is yours to edit.
+
 ## .env
 
 | Variable | Default | Meaning |
