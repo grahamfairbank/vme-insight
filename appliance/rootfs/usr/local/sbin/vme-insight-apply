@@ -6,17 +6,22 @@ Runs at every boot (vme-insight-firstboot.service) and from vme-insight-setup. E
 1. Load the bundled container images once, so the appliance works without internet access.
 2. Create /opt/vme-insight/.env once, with passwords generated on this VM (nothing is baked into the image).
 3. If /etc/vme-insight/appliance.yaml exists (written by cloud-init or vme-insight-setup), write
-   config/config.yaml and the .env settings from it, then start the stack.
+   config/config.yaml and the .env settings from it, set the time servers, then start the stack.
+4. Re-tune the database when its memory setting changes (with database.memory: auto, when memory is
+   added to the VM), so PostgreSQL uses it.
 
 Usage: vme-insight-apply [--boot]
 """
 import glob
+import ipaddress
 import json
+import re
 import os
 import secrets
 import socket
 import subprocess
 import sys
+import time
 
 from urllib.parse import urlsplit
 
@@ -27,6 +32,11 @@ SETTINGS = "/etc/vme-insight/appliance.yaml"
 STATE = "/var/lib/vme-insight"
 ENV = f"{APP}/.env"
 STATUS = "/run/vme-insight-status"
+TIMESYNC = "/etc/systemd/timesyncd.conf.d/vme-insight.conf"
+DB_TUNED = f"{STATE}/db-memory"   # the memory the database was last tuned for
+NETPLAN_RUN = "/run/systemd/network"           # where netplan writes the networks cloud-init set up
+NETWORKD_ETC = "/etc/systemd/network"          # drop-ins here change those networks
+DNS_DROPIN = "vme-insight-dns.conf"
 
 
 def log(msg):
@@ -124,11 +134,61 @@ def ensure_env():
     for key in ("DB_PASSWORD", "GRAFANA_DB_PASSWORD", "GRAFANA_ADMIN_PASSWORD"):
         lines = set_env(lines, key, secrets.token_urlsafe(24))
     mem_gb = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2**30
-    lines = set_env(lines, "DB_MEMORY", f"{max(1, int(mem_gb / 4))}GB")   # a quarter of the VM's memory
+    lines = set_env(lines, "DB_MEMORY", f"{max(1, int(mem_gb / 4))}GB")   # a quarter of the VM's memory (see db_memory)
     lines = set_env(lines, "COMPOSE_FILE", "docker-compose.yml:appliance/docker-compose.appliance.yml")
     lines = set_env(lines, "GRAFANA_PLUGINS", "")   # the treemap plugin is bundled; nothing to download
     write_private(ENV, "\n".join(lines) + "\n")
     log("created .env with passwords generated on this VM")
+
+
+def vm_memory_gb():
+    return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2**30
+
+
+def db_memory(s):
+    """database.memory: 'auto' (default) is a quarter of the VM's memory, worked out at every boot;
+    or a fixed size such as 4GB or 512MB."""
+    v = str((s.get("database") or {}).get("memory") or "auto").strip().upper().replace(" ", "")
+    if v == "AUTO":
+        return f"{max(1, int(vm_memory_gb() / 4))}GB"
+    if not (v[:-2].isdigit() and v.endswith(("MB", "GB")) and int(v[:-2]) > 0):
+        raise SystemExit(f"{SETTINGS}: database.memory must be auto or a size such as 4GB")
+    return v
+
+
+def retune_db(was_running, before):
+    """timescaledb-tune runs only when the database is created, so a new memory size (memory added to the
+    VM, or a new database.memory) needs it run again by hand. Do that here, then restart the database."""
+    want = get_env(read_env(), "DB_MEMORY")
+    tuned = open(DB_TUNED).read().strip() if os.path.exists(DB_TUNED) else (before if was_running else want)
+    if was_running and tuned != want:
+        log(f"re-tuning the database for {want} of memory (was {tuned})")
+        run(["docker", "compose", "exec", "-T", "timescaledb", "timescaledb-tune", "--quiet", "--yes",
+             f"--memory={want}", "--conf-path=/var/lib/postgresql/data/postgresql.conf"],
+            stdout=subprocess.DEVNULL)
+        run(["docker", "compose", "restart", "timescaledb"])
+    open(DB_TUNED, "w").write(want + "\n")
+
+
+def apply_time(s):
+    """time_servers: NTP servers for this VM (space-separated). Empty: Debian's default pool, or servers
+    from DHCP. systemd-timesyncd reads the file as its own user, so it is world-readable."""
+    servers = str(s.get("time_servers") or "").split()
+    if servers:
+        text = "# Written by vme-insight-apply from time_servers in /etc/vme-insight/appliance.yaml\n" \
+               f"[Time]\nNTP={' '.join(servers)}\n"
+        old = open(TIMESYNC).read() if os.path.exists(TIMESYNC) else None
+        changed = old != text
+        if changed:
+            os.makedirs(os.path.dirname(TIMESYNC), exist_ok=True)
+            with open(TIMESYNC, "w") as f:
+                f.write(text)
+            os.chmod(TIMESYNC, 0o644)
+    else:
+        changed = remove(TIMESYNC)
+    if changed:
+        log(f"time servers: {' '.join(servers) or 'default'}")
+        subprocess.run(["systemctl", "restart", "systemd-timesyncd"], check=False)
 
 
 def as_bool(v):
@@ -179,6 +239,7 @@ def apply_settings(s):
     h = https_settings(s)
     https_on = as_bool(h.get("enabled"))
     lines = set_env(lines, "TZ", s.get("timezone") or "UTC")
+    lines = set_env(lines, "DB_MEMORY", db_memory(s))
     lines = set_env(lines, "GRAFANA_PORT", g.get("port") or 3000)
     lines = set_env(lines, "GRAFANA_BIND", g.get("bind") or ("127.0.0.1" if https_on and as_bool(h.get("only")) else "0.0.0.0"))
     lines = set_env(lines, "GRAFANA_ROOT_URL", g.get("root_url") or "")
@@ -283,6 +344,65 @@ def apply_proxy(s):
     return changed
 
 
+def dns_settings(s):
+    """(servers, search domains) from dns_servers and dns_search; servers must be IP addresses."""
+    servers = str(s.get("dns_servers") or "").replace(",", " ").split()
+    search = str(s.get("dns_search") or "").replace(",", " ").split()
+    for a in servers:
+        try:
+            ipaddress.ip_address(a)
+        except ValueError:
+            sys.exit(f"dns_servers: {a!r} is not an IP address (DNS servers are given by address)")
+    for d in search:
+        if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?", d):
+            sys.exit(f"dns_search: {d!r} is not a domain name")
+    return servers, search
+
+
+def apply_dns(s):
+    """dns_servers / dns_search: replace the DNS servers (and search domains) that came from Morpheus or
+    DHCP. Cloud-init's netplan file stays as it is: a systemd-networkd drop-in for each network netplan
+    generated first clears the servers (an empty DNS=) and then sets these, and DHCP's are ignored.
+    Returns True when something changed, so the containers are recreated with the new servers."""
+    servers, search = dns_settings(s)
+    wanted = {}
+    if servers:
+        text = "# Written by vme-insight-apply from dns_servers / dns_search in /etc/vme-insight/appliance.yaml\n" \
+               f"[Network]\nDNS=\nDNS={' '.join(servers)}\n"
+        if search:
+            text += f"Domains=\nDomains={' '.join(search)}\n"
+        dhcp = "UseDNS=no\n" + ("UseDomains=no\n" if search else "")
+        text += f"\n[DHCPv4]\n{dhcp}\n[DHCPv6]\n{dhcp}\n[IPv6AcceptRA]\n{dhcp}"
+        for f in sorted(glob.glob(f"{NETPLAN_RUN}/10-netplan-*.network")):
+            wanted[f"{NETWORKD_ETC}/{os.path.basename(f)}.d/{DNS_DROPIN}"] = text
+        if not wanted:
+            log("dns_servers: no netplan networks found; DNS servers not changed")
+    changed = False
+    for path in glob.glob(f"{NETWORKD_ETC}/*.network.d/{DNS_DROPIN}"):
+        if path not in wanted:
+            changed = remove(path) or changed
+            try:
+                os.rmdir(os.path.dirname(path))
+            except OSError:
+                pass
+    for path, text in wanted.items():
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if write_if_changed(path, text):
+            os.chmod(path, 0o644)   # systemd-networkd reads it as its own user
+            changed = True
+    if changed:
+        log(f"DNS servers: {' '.join(servers) or 'from Morpheus or DHCP'}"
+            + (f"; search {' '.join(search)}" if search else ""))
+        subprocess.run(["networkctl", "reload"], check=False)
+        # resolved picks the new servers up a moment later; the containers copy them when they start
+        for _ in range(20):
+            cur = subprocess.run(["resolvectl", "dns"], capture_output=True, text=True).stdout
+            if all(a in cur for a in servers):
+                break
+            time.sleep(0.5)
+    return changed
+
+
 def main():
     os.makedirs(STATE, exist_ok=True)
     status("starting")
@@ -298,11 +418,16 @@ def main():
         return 0
     settings = yaml.safe_load(open(SETTINGS)) or {}
     os.chmod(SETTINGS, 0o600)
+    was_running = os.path.exists(f"{STATE}/grafana-started")
+    db_before = get_env(read_env(), "DB_MEMORY")
     apply_settings(settings)
-    recreate = apply_proxy(settings)
+    apply_time(settings)
+    recreate = apply_dns(settings)
+    recreate = apply_proxy(settings) or recreate
     log("starting the stack")
     run(["docker", "compose", "up", "-d", "--remove-orphans"] + (["--force-recreate"] if recreate else []))
     open(f"{STATE}/grafana-started", "w").close()
+    retune_db(was_running, db_before)
     lines = read_env()
     port = get_env(lines, "HTTPS_PORT") if get_env(lines, "COMPOSE_PROFILES") == "https" else get_env(lines, "GRAFANA_PORT")
     scheme = "https" if get_env(lines, "COMPOSE_PROFILES") == "https" else "http"

@@ -154,19 +154,19 @@
                     "type": "value",
                     "options": {
                       "on": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "off": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 1
                       },
                       "unknown": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "suspended": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 3
                       }
                     }
@@ -195,11 +195,11 @@
                     "type": "value",
                     "options": {
                       "online": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "offline": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 1
                       }
                     }
@@ -228,7 +228,7 @@
                     "type": "value",
                     "options": {
                       "true": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 0
                       },
                       "false": {
@@ -257,15 +257,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 120
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 300
                     }
                   ]
@@ -357,11 +357,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 85
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -443,11 +443,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 90
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -596,11 +596,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 5
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 10
               }
             ]
@@ -862,8 +862,8 @@
     },
     {
       "type": "table",
-      "title": "Host local storage (reported by VME)",
-      "description": "VME reports one total per host for its local disks. Per-mount detail (below) needs node_exporter on the host.",
+      "title": "Host disks allocated (reported by Morpheus)",
+      "description": "Morpheus reports one total per host: the size of every disk attached to it (local disks and shared LUNs), and how much of that is allocated to volumes or datastores. It is not how full they are: see Datastores on VME Overview, or the per-mount detail below (needs node_exporter on the host).",
       "targets": [
         {
           "datasource": {
@@ -945,15 +945,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -991,7 +991,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Host local storage used % (reported by VME)",
+      "title": "Host disks allocated % (reported by Morpheus)",
       "description": "",
       "targets": [
         {
@@ -1033,11 +1033,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 80
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 90
               }
             ]
@@ -1277,15 +1277,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1324,15 +1324,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1361,11 +1361,11 @@
                     "options": {
                       "1": {
                         "text": "READ-ONLY",
-                        "color": "red"
+                        "color": "#ec3331"
                       },
                       "0": {
                         "text": "rw",
-                        "color": "green"
+                        "color": "#009a71"
                       }
                     }
                   }
@@ -1473,11 +1473,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 80
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 90
               }
             ]
@@ -1694,15 +1694,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 90
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 100
                     }
                   ]
@@ -1845,15 +1845,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 4
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 8
               }
             ]
@@ -1866,8 +1866,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": true,
           "calcs": [

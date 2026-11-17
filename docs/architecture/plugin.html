@@ -4,61 +4,69 @@
 <meta charset="utf-8">
 <title>How vme-insight-plugin works</title>
 <style>
+  /* HPE Design System colors, as in the dashboards (vme-insight 0.7.0). Text is ink or muted (4.5:1 or more);
+     the palette colors are used for borders, lines and fills (3:1 or more against their background). */
   :root {
-    --ink: #1f2933; --muted: #5f6b7a; --line: #c9d2dc; --zone: #f5f7fa;
-    --vme: #475569; --plug: #7c3aed; --plug-bg: #f5f0ff; --core: #2563eb; --core-bg: #eef4ff;
-    --opt: #7c8794; --ok: #15803d; --warn: #b45309; --flow: #334155;
+    --ink: #222222; --muted: #555f66; --line: #7d8a92; --zone: #f4f6f7; --hair: #e3e7e9;
+    --brand: #01a982; --core: #009a71; --core-bg: #eaf7f3; --info: #0070f8; --info-bg: #eaf2fe;
+    --warn: #d36d00; --crit: #ec3331; --off: #7d8a92; --mor: #222222; --dark: #222222;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
-  body { width: 1600px; height: 1210px; position: relative; overflow: hidden; background: #fff;
-         font-family: "Inter", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif; color: var(--ink); }
-  h1 { position: absolute; left: 32px; top: 18px; margin: 0; font-size: 28px; letter-spacing: -0.3px; }
-  .sub { position: absolute; left: 32px; top: 56px; width: 1530px; font-size: 14.5px; color: var(--muted); line-height: 1.4; }
+  body { width: 1600px; height: 1210px; position: relative; overflow: hidden; background: #ffffff;
+         font-family: "Inter", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif; color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .hbar { position: absolute; left: 0; top: 0; width: 1600px; height: 50px; background: var(--dark); border-bottom: 4px solid var(--brand); }
+  h1 { position: absolute; left: 32px; top: 9px; margin: 0; font-size: 26px; letter-spacing: -0.3px; color: #ffffff; }
+  .sub { position: absolute; left: 32px; top: 60px; width: 1536px; font-size: 14.5px; color: var(--muted); line-height: 1.4; }
   .zone { position: absolute; border: 1px solid var(--line); background: var(--zone); border-radius: 12px; }
-  .zt { position: absolute; left: 14px; top: -11px; background: #fff; padding: 0 7px; font-size: 12px; font-weight: 700;
-        letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
-  .box { position: absolute; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.38; background: #fff;
-         border: 1.6px solid var(--vme); }
+  .zt { position: absolute; left: 14px; top: -10px; background: #ffffff; padding: 0 7px; font-size: 12px; line-height: 18px; font-weight: 700;
+        letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); border-radius: 3px; }
+  .box { position: absolute; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.38; background: #ffffff;
+         border: 1.6px solid var(--mor); }
   .box b.t { display: block; font-size: 15px; margin-bottom: 4px; }
-  .plug { border-color: var(--plug); background: var(--plug-bg); }
+  .plug { border-color: var(--info); background: var(--info-bg); }
   .core { border-color: var(--core); background: var(--core-bg); }
+  .gray { border: 1.6px dashed var(--off); background: #ffffff; }
   .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px;
-         vertical-align: 2px; background: #e2e8f0; color: #334155; }
-  .tag.p { background: var(--plug); color: #fff; }
+         vertical-align: 2px; background: #e3e7e9; color: var(--ink); }
+  .tag.p { background: #ffffff; color: var(--ink); box-shadow: inset 0 0 0 1.4px var(--info); }
+  .tag.c { background: var(--brand); color: var(--ink); }
   .mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11.2px; }
   ul { margin: 3px 0 0 0; padding-left: 16px; } li { margin: 1px 0; }
   /* browser mock-up */
-  .browser { position: absolute; border: 1.6px solid #94a3b8; border-radius: 10px; background: #fff; overflow: hidden; }
-  .bar { height: 30px; background: #e2e8f0; display: flex; align-items: center; padding: 0 10px; gap: 6px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
-  .url { margin-left: 10px; flex: 1; height: 19px; border-radius: 5px; background: #fff; font-size: 11px; color: #475569;
+  .browser { position: absolute; border: 1.6px solid var(--line); border-radius: 10px; background: #ffffff; overflow: hidden; }
+  .bar { height: 30px; background: #e3e7e9; display: flex; align-items: center; padding: 0 10px; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #7d8a92; }
+  .url { margin-left: 10px; flex: 1; height: 19px; border-radius: 5px; background: #ffffff; font-size: 11px; color: var(--muted);
          padding: 2px 8px; font-family: "DejaVu Sans Mono", monospace; }
-  .vmehead { height: 34px; background: #1e293b; color: #e2e8f0; font-size: 12.5px; padding: 9px 12px; }
-  .crumb { padding: 9px 12px 0 12px; font-size: 12px; color: #64748b; }
-  .tabs { display: flex; gap: 2px; padding: 8px 12px 0 12px; border-bottom: 1px solid #e2e8f0; }
-  .tabs span { font-size: 11.5px; padding: 5px 10px; color: #64748b; border-radius: 6px 6px 0 0; }
-  .tabs span.on { background: var(--plug-bg); color: var(--plug); font-weight: 700; border: 1px solid #ddd0fb; border-bottom: none; }
-  .frame { position: absolute; left: 12px; right: 12px; border: 2px dashed var(--core); border-radius: 8px; background: #fbfdff; }
-  .frame .fl { position: absolute; left: 10px; top: 8px; font-size: 11.5px; color: var(--core); font-weight: 700; }
-  .open { position: absolute; right: 12px; font-size: 11.5px; color: var(--plug); font-weight: 700; }
+  .vmehead { height: 34px; background: var(--dark); color: #ffffff; font-size: 12.5px; padding: 9px 12px; border-bottom: 3px solid var(--brand); }
+  .crumb { padding: 9px 12px 0 12px; font-size: 12px; color: var(--muted); }
+  .tabs { display: flex; gap: 2px; padding: 8px 12px 0 12px; border-bottom: 1px solid var(--line); }
+  .tabs span { font-size: 11.5px; padding: 5px 10px; color: var(--muted); border-radius: 6px 6px 0 0; }
+  .tabs span.on { background: var(--info-bg); color: var(--ink); font-weight: 700; border: 1.4px solid var(--info); border-bottom: none; }
+  .frame { position: absolute; left: 12px; right: 12px; border: 2px dashed var(--core); border-radius: 8px; background: #ffffff; }
+  .frame .fl { position: absolute; left: 10px; top: 7px; font-size: 11.5px; color: var(--ink); font-weight: 700; }
+  .frame .fu { position: absolute; left: 10px; top: 23px; font-size: 10.5px; color: var(--muted); font-family: "DejaVu Sans Mono", monospace; }
+  .open { position: absolute; right: 12px; font-size: 11.5px; color: var(--ink); font-weight: 700;
+          text-decoration: underline; text-decoration-color: var(--info); text-decoration-thickness: 2px; text-underline-offset: 2px; }
   svg.chart { position: absolute; left: 10px; right: 10px; }
   table.map { border-collapse: collapse; width: 100%; font-size: 12px; }
-  table.map th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 700; padding: 3px 6px 4px 0; border-bottom: 1px solid #dfe5ec; }
-  table.map td { padding: 4px 6px 4px 0; border-bottom: 1px solid #eef2f6; vertical-align: top; }
-  .card { position: absolute; top: 822px; height: 340px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
-          font-size: 12.5px; line-height: 1.4; background: #fff; }
-  .card h3 { margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+  table.map th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 700; padding: 3px 6px 4px 0; border-bottom: 1px solid var(--line); }
+  table.map td { padding: 4px 6px 4px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  .card { position: absolute; top: 822px; height: 354px; border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
+          font-size: 12.3px; line-height: 1.36; background: #ffffff; }
+  .card h3 { margin: 0 0 7px 0; font-size: 13px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
   .card table { border-collapse: collapse; width: 100%; }
-  .card td { padding: 3px 8px 3px 0; vertical-align: top; border-bottom: 1px solid #eef2f6; }
+  .card td { padding: 2.5px 8px 2.5px 0; vertical-align: top; border-bottom: 1px solid var(--hair); }
   .card td:first-child { white-space: nowrap; font-weight: 600; }
-  .steps { position: absolute; left: 24px; top: 732px; width: 1550px; height: 72px; display: flex; gap: 10px; }
+  .steps { position: absolute; left: 24px; top: 732px; width: 1550px; height: 76px; display: flex; gap: 10px; }
   .step { flex: 1; border-radius: 10px; padding: 8px 10px 8px 42px; position: relative; font-size: 12.3px; line-height: 1.35;
-          background: #f8fafc; border: 1px solid #e2e8f0; }
-  .step .n { position: absolute; left: 10px; top: 9px; width: 24px; height: 24px; border-radius: 50%; color: #fff; font-weight: 700;
-             font-size: 13px; text-align: center; line-height: 24px; }
-  .badge { font-size: 12px; font-weight: 700; fill: #fff; }
-  .lbl { font-size: 12px; fill: var(--flow); }
+          background: #f4f6f7; border: 1px solid var(--line); }
+  .step .n { position: absolute; left: 9px; top: 8px; width: 26px; height: 26px; border-radius: 50%; color: var(--ink); font-weight: 700;
+             font-size: 13px; text-align: center; line-height: 21px; background: #ffffff; border: 2.4px solid var(--mor); }
+  .badge { font-size: 12px; font-weight: 700; fill: #222222; }
+  .lbl { font-size: 12px; fill: #222222; paint-order: stroke; stroke: #ffffff; stroke-width: 3px; stroke-linejoin: round; }
   .lbl.b { font-weight: 700; }
   svg#flows { position: absolute; left: 0; top: 0; width: 1600px; height: 1210px; pointer-events: none; overflow: visible; }
   footer { position: absolute; left: 32px; right: 32px; bottom: 12px; font-size: 11px; color: var(--muted);
@@ -66,60 +74,68 @@
 </style>
 </head>
 <body>
+<div class="hbar"></div>
 <h1>How vme-insight-plugin works</h1>
-<div class="sub">The plugin adds a <b>vme-insight</b> tab to VME's host, VM, instance and cluster pages, and an optional home-dashboard widget.
-VME only serves the tab: a frame and a link. The browser then loads the dashboard <b>directly from vme-insight</b>, so the VME manager never connects to vme-insight,
-and the plugin holds no passwords or data. Tabs match the right object because vme-insight's collector stores VME's own ids.</div>
+<div class="sub">The plugin adds a <b>vme-insight</b> tab to the host, VM, instance and cluster pages of HPE Morpheus, and an optional home-dashboard widget.
+Morpheus only serves the tab: a frame and a link. The browser then loads the dashboard <b>directly from vme-insight</b>, so the Morpheus appliance never connects to vme-insight,
+and the plugin holds no passwords or data. Tabs match the right object because vme-insight's collector stores Morpheus's own ids.</div>
 
 <!-- ============ zones -->
 <div class="zone" style="left:24px; top:116px; width:560px; height:600px;"><div class="zt">Admin's browser</div></div>
-<div class="zone" id="mgrzone" style="left:606px; top:116px; width:438px; height:282px;"><div class="zt">VME manager</div></div>
-<div class="zone" style="left:606px; top:424px; width:968px; height:292px;"><div class="zt">vme-insight host (Docker)</div></div>
-<div class="zone" style="left:1066px; top:116px; width:508px; height:282px; background:#fff;"><div class="zt">Which page shows which dashboard</div></div>
+<div class="zone" id="mgrzone" style="left:606px; top:116px; width:438px; height:282px;"><div class="zt">Morpheus appliance</div></div>
+<div class="zone" style="left:606px; top:424px; width:968px; height:292px;"><div class="zt">vme-insight host (Docker or the appliance)</div></div>
+<div class="zone" style="left:1066px; top:116px; width:508px; height:282px; background:#ffffff;"><div class="zt">Which page shows which dashboard</div></div>
 
 <!-- ============ browser mock-up -->
-<div class="browser" id="browser" style="left:40px; top:138px; width:528px; height:560px;">
-  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">https://vme-manager/infrastructure/servers/42</span></div>
-  <div class="vmehead">VM Essentials &nbsp;·&nbsp; Operations &nbsp; Provisioning &nbsp; Infrastructure &nbsp; Library</div>
+<div class="browser" id="browser" style="left:40px; top:138px; width:528px; height:404px;">
+  <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">https://morpheus.example.com/infrastructure/servers/42</span></div>
+  <div class="vmehead">HPE Morpheus &nbsp;·&nbsp; Operations &nbsp; Provisioning &nbsp; Infrastructure &nbsp; Library</div>
   <div class="crumb">Infrastructure › Hosts › <b>host-01</b></div>
   <div class="tabs"><span>Summary</span><span>VMs</span><span>Storage</span><span>Network</span><span class="on" id="tab">vme-insight</span></div>
   <span class="open" style="top:150px;">Open in vme-insight ↗</span>
-  <div class="frame" id="frame" style="top:172px; height:374px;">
+  <div class="frame" id="frame" style="top:172px; height:222px;">
     <span class="fl">iframe · VME Hosts dashboard (kiosk), filtered to host-01</span>
-    <svg class="chart" viewBox="0 0 480 330" style="top:30px; height:330px; width:480px;" xmlns="http://www.w3.org/2000/svg">
-      <g font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#64748b">
-        <rect x="0" y="0" width="230" height="140" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="16">CPU usage</text>
-        <polyline fill="none" stroke="#2563eb" stroke-width="2" points="10,120 40,96 70,104 100,76 130,88 160,58 190,70 220,52"/>
-        <rect x="246" y="0" width="230" height="140" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="254" y="16">Memory usage</text>
-        <polyline fill="none" stroke="#16a34a" stroke-width="2" points="256,96 286,94 316,92 346,90 376,91 406,88 436,87 466,86"/>
-        <rect x="0" y="152" width="476" height="70" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="168">CPU ready (healthy &lt; 5%, act &gt; 10%)</text>
-        <rect x="8" y="176" width="460" height="38" fill="#fef3c7" opacity="0.45"/>
-        <polyline fill="none" stroke="#7c3aed" stroke-width="1.6" points="10,206 70,204 130,207 190,200 250,205 310,203 370,206 466,204"/>
-        <rect x="0" y="234" width="476" height="90" rx="6" fill="#fff" stroke="#e2e8f0"/><text x="8" y="250">Host filesystems</text>
-        <rect x="8" y="260" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="260" width="118" height="10" rx="3" fill="#16a34a"/>
-        <rect x="8" y="280" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="280" width="24" height="10" rx="3" fill="#16a34a"/>
-        <rect x="8" y="300" width="300" height="10" rx="3" fill="#e2e8f0"/><rect x="8" y="300" width="42" height="10" rx="3" fill="#16a34a"/>
+    <span class="fu">…/d/vme-hosts?var-host=42&amp;kiosk&amp;theme=light</span>
+    <svg class="chart" viewBox="0 0 480 186" style="top:40px; height:172px; width:444px;" xmlns="http://www.w3.org/2000/svg">
+      <g font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#555f66">
+        <rect x="0" y="0" width="230" height="104" rx="6" fill="#fff" stroke="#c4cbcf"/><text x="8" y="16">CPU usage</text>
+        <polyline fill="none" stroke="#0070f8" stroke-width="2" points="10,92 40,74 70,80 100,58 130,66 160,42 190,52 220,38"/>
+        <rect x="246" y="0" width="230" height="104" rx="6" fill="#fff" stroke="#c4cbcf"/><text x="254" y="16">Memory usage</text>
+        <polyline fill="none" stroke="#009a71" stroke-width="2" points="256,74 286,72 316,70 346,69 376,70 406,67 436,66 466,65"/>
+        <rect x="0" y="114" width="476" height="70" rx="6" fill="#fff" stroke="#c4cbcf"/><text x="8" y="130">CPU ready (healthy &lt; 5%, act &gt; 10%)</text>
+        <rect x="8" y="138" width="460" height="16" fill="#d36d00" opacity="0.14"/>
+        <rect x="8" y="154" width="460" height="22" fill="#009a71" opacity="0.10"/>
+        <polyline fill="none" stroke="#009a71" stroke-width="1.8" points="10,170 70,168 130,171 190,163 250,169 310,166 370,170 466,168"/>
       </g>
     </svg>
   </div>
 </div>
 
-<!-- ============ VME manager -->
+<div class="box plug" id="theme" style="left:40px; top:564px; width:528px; height:140px;">
+  <b class="t">vme-insight-theme.js <span class="tag p">plugin 0.1.6</span></b>
+  Runs in the Morpheus page, loaded by the plugin only when <i>Grafana theme</i> is <b>Match each user's Morpheus theme</b> (the default).
+  When a vme-insight tab or the home dashboard widget appears, it checks how dark the Morpheus page is behind the frame and adds
+  <span class="mono">theme=dark</span> or <span class="mono">theme=light</span> to the frame and the <b>Open in vme-insight</b> link.
+  If it can't load, the frames show Grafana's default theme.
+</div>
+
+<!-- ============ Morpheus appliance -->
 <div class="box plug" id="plugin" style="left:622px; top:138px; width:406px; height:244px;">
-  <b class="t">vme-insight-plugin <span class="tag p">in VME</span></b>
+  <b class="t">vme-insight-plugin <span class="tag p">in Morpheus</span></b>
   <ul>
     <li><b>Tab providers</b> for servers (hosts and VMs), instances and clusters</li>
     <li><b>Home dashboard</b> "vme-insight", with a summary widget</li>
     <li><b>Launcher</b> (optional): a vme-insight link on every page</li>
+    <li><b>Theme loader</b> (global UI component): adds <span class="mono">vme-insight-theme.js</span> to every page, only with <i>Match each user's Morpheus theme</i></li>
     <li><b>show()</b>: tabs appear only when the Grafana URL is set, and, if enabled, for roles with the <i>vme-insight</i> permission</li>
-    <li><b>Returns</b>: tab HTML (iframe + link) and a page policy, <span class="mono">frame-src &lt;Grafana origin&gt;</span>, so VME lets the frame load</li>
+    <li><b>Returns</b>: tab HTML (iframe + link) and a page policy, <span class="mono">frame-src &lt;Grafana origin&gt;</span>, so Morpheus lets the frame load</li>
   </ul>
 </div>
 
 <!-- ============ page -> dashboard map -->
-<div class="box" style="left:1082px; top:138px; width:476px; height:244px; border:none; padding:6px 4px;">
+<div class="box" style="left:1082px; top:138px; width:476px; height:244px; border:none; padding:6px 4px; background:transparent;">
   <table class="map">
-    <tr><th>VME page</th><th>Tab / item</th><th>Opens (VME id passed)</th></tr>
+    <tr><th>Morpheus page</th><th>Tab / item</th><th>Opens (Morpheus id passed)</th></tr>
     <tr><td>Host</td><td>Server tab</td><td class="mono">/d/vme-hosts?var-host=&lt;id&gt;</td></tr>
     <tr><td>Virtual machine</td><td>Server tab</td><td class="mono">/d/vme-vms?var-vm=&lt;id&gt;</td></tr>
     <tr><td>Instance</td><td>Instance tab</td><td class="mono">/d/vme-vms?var-vm=&lt;each VM&gt;</td></tr>
@@ -127,13 +143,14 @@ and the plugin holds no passwords or data. Tabs match the right object because v
     <tr><td>Home dashboard</td><td>Summary widget</td><td class="mono">/d-solo/vme-widget?panelId=…</td></tr>
     <tr><td>Every page (opt.)</td><td>Launcher link</td><td>Grafana in a new tab, no frame</td></tr>
   </table>
-  <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">Tabs add <span class="mono">&amp;kiosk</span>; "Open in vme-insight ↗" opens the same view full size. Host or VM is decided from VME's server type, or the plugin's <i>Treat as hosts / VMs</i> settings.</div>
+  <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">Tabs add <span class="mono">&amp;kiosk</span>, plus <span class="mono">orgId</span> and <span class="mono">theme</span> when set; "Open in vme-insight ↗" opens the same view full size. Host or VM is decided from Morpheus's server type, or the plugin's <i>Treat as hosts / VMs</i> settings.</div>
 </div>
 
 <!-- ============ vme-insight host -->
 <div class="box core" id="front" style="left:622px; top:450px; width:286px; height:250px;">
-  <b class="t">https front end <span class="tag">Caddy · :3443</span></b>
+  <b class="t">https front end <span class="tag">Caddy · :443 or :3443</span></b>
   <ul>
+    <li><b>Port</b>: 443 on the appliance (https on by default), 3443 with Docker Compose</li>
     <li><b>TLS</b>: the browser must already trust the certificate. A frame can't show a warning, so an untrusted one leaves the tab blank.</li>
     <li><b>Allowlist</b> (<span class="mono">HTTPS_ALLOW</span>): only admin networks; others get 403</li>
     <li>Reverse proxy to Grafana</li>
@@ -145,42 +162,44 @@ and the plugin holds no passwords or data. Tabs match the right object because v
     <li><b>Anonymous Viewer</b> (<span class="mono">GRAFANA_ANONYMOUS</span>): read-only, no sign-in inside the frame</li>
     <li><b>Embedding allowed</b> (<span class="mono">GRAFANA_ALLOW_EMBEDDING</span>)</li>
     <li><span class="mono">GRAFANA_ROOT_URL</span> = the plugin's Grafana URL, so links stay on one address</li>
-    <li>Dashboards filtered by the VME id in the URL</li>
+    <li>Dashboards filtered by the Morpheus id in the URL</li>
+    <li><b>Theme</b> from the URL; HPE backgrounds: <span class="mono">#222222</span> dark, white light</li>
   </ul>
 </div>
 <div class="box core" id="data" style="left:1254px; top:450px; width:304px; height:136px;">
   <b class="t">TimescaleDB · Prometheus</b>
-  History, inventory and lifecycle (SQL); exporter metrics (PromQL). Stored with VME's own host, VM and cluster ids.
+  History, inventory and lifecycle (SQL); exporter metrics (PromQL). Stored with Morpheus's own host, VM and cluster ids.
 </div>
-<div class="box" id="collector" style="left:1254px; top:604px; width:304px; height:96px;">
+<div class="box gray" id="collector" style="left:1254px; top:604px; width:304px; height:96px;">
   <b class="t">collector</b>
-  Polls the VME API every minute with a read-only account. Separate from the plugin; doesn't involve the browser.
+  Polls the Morpheus API every minute with a read-only account. Separate from the plugin; doesn't involve the browser.
 </div>
 
 <svg id="flows" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
-    <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/></marker>
-    <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker>
-    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+    <marker id="ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#222222"/></marker>
+    <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0070f8"/></marker>
+    <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#009a71"/></marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a92"/></marker>
   </defs>
 </svg>
 
 <div class="steps">
-  <div class="step"><span class="n" style="background:#334155">1</span>An admin opens a host, VM, instance or cluster page in VME.</div>
-  <div class="step"><span class="n" style="background:#7c3aed">2</span>The plugin returns the tab (an iframe and a link) and a <span class="mono">frame-src</span> policy that lets VME's page show it.</div>
-  <div class="step"><span class="n" style="background:#2563eb">3</span>The browser loads the dashboard itself, from vme-insight over https, e.g. <span class="mono">/d/vme-hosts?var-host=42</span>.</div>
-  <div class="step"><span class="n" style="background:#2563eb">4</span>The front end checks the certificate is trusted and the network is allowed, then passes the request to Grafana.</div>
-  <div class="step"><span class="n" style="background:#2563eb">5</span>Grafana, as a read-only anonymous Viewer, queries the stored data for that VME id and draws the dashboard.</div>
+  <div class="step"><span class="n">1</span>An admin opens a host, VM, instance or cluster page in Morpheus.</div>
+  <div class="step"><span class="n" style="border-color:#0070f8">2</span>The plugin returns the tab (an iframe and a link) and a <span class="mono">frame-src</span> policy that lets the Morpheus page show it.</div>
+  <div class="step"><span class="n" style="border-color:#009a71">3</span>The browser loads the dashboard itself, from vme-insight over https, e.g. <span class="mono">/d/vme-hosts?var-host=42</span>, with the theme added.</div>
+  <div class="step"><span class="n" style="border-color:#009a71">4</span>The front end checks the certificate is trusted and the network is allowed, then passes the request to Grafana.</div>
+  <div class="step"><span class="n" style="border-color:#009a71">5</span>Grafana, as a read-only anonymous Viewer, queries the stored data for that Morpheus id and draws the dashboard.</div>
 </div>
 
 <!-- ============ bottom cards -->
 <div class="card" style="left:24px; width:500px;">
   <h3>Plugin settings</h3>
-  <div style="font-size:11.5px; color:var(--muted); margin:-4px 0 6px 0;">Administration → Integrations → Plugins → vme-insight (pencil icon)</div>
+  <div style="font-size:11.5px; color:var(--muted); margin:-3px 0 6px 0;">Administration → Integrations → Plugins → vme-insight (pencil icon)</div>
   <table>
-    <tr><td>vme-insight Grafana URL</td><td>The https address users browse to, e.g. <span class="mono">https://vme-insight.example.com:3443</span>. Unset = no tabs.</td></tr>
-    <tr><td>Grafana organization, theme</td><td>Optional: organization id; light or dark</td></tr>
+    <tr><td>vme-insight Grafana URL</td><td>The https address users browse to, e.g. <span class="mono">https://vme-insight.example.com</span> (add <span class="mono">:3443</span> if not 443). Unset = no tabs.</td></tr>
+    <tr><td>Grafana organization ID</td><td>Optional: adds <span class="mono">orgId</span></td></tr>
+    <tr><td>Grafana theme</td><td><b>Match each user's Morpheus theme</b> (default), <b>Light</b> or <b>Dark</b> (forced for everyone), <b>Grafana default</b> (adds nothing)</td></tr>
     <tr><td>Tab height</td><td>Pixels, default 1400</td></tr>
     <tr><td>Home dashboard panel IDs</td><td>Tiles from <span class="mono">vme-widget</span>, default 1,2,3,4,7,8,9,12</td></tr>
     <tr><td>Treat as hosts / VMs</td><td>Server type codes, for unusual estates</td></tr>
@@ -192,13 +211,13 @@ and the plugin holds no passwords or data. Tabs match the right object because v
 <div class="card" style="left:542px; width:504px;">
   <h3>Needed in vme-insight first</h3>
   <table>
-    <tr><td>https front end</td><td><span class="mono">docker compose --profile https up -d https</span>: VME pages are https, and browsers block http frames inside them</td></tr>
+    <tr><td>https front end</td><td>Appliance: on by default (port 443). Docker: <span class="mono">docker compose --profile https up -d https</span>. Morpheus pages are https, and browsers block http frames inside them.</td></tr>
     <tr><td>Certificate</td><td>From a CA your browsers already trust, or a <span class="mono">make-cert.sh host</span> certificate imported on each admin machine after checking its fingerprint</td></tr>
-    <tr><td>Who can reach it</td><td><span class="mono">HTTPS_ALLOW</span> = the networks your VME admins use</td></tr>
+    <tr><td>Who can reach it</td><td><span class="mono">HTTPS_ALLOW</span> = the networks your Morpheus admins use</td></tr>
     <tr><td>No sign-in</td><td><span class="mono">GRAFANA_ANONYMOUS=true</span> (read-only Viewer), <span class="mono">GRAFANA_ALLOW_EMBEDDING=true</span></td></tr>
     <tr><td>One address</td><td><span class="mono">GRAFANA_ROOT_URL</span> = the plugin's Grafana URL (by IP? also <span class="mono">HTTPS_DEFAULT_SNI</span>)</td></tr>
   </table>
-  <div style="font-size:11.5px; color:var(--muted); margin-top:8px;">Step by step: docs/VME-PLUGIN.md. vme-insight works without the plugin; the plugin needs vme-insight.</div>
+  <div style="font-size:11.5px; color:var(--muted); margin-top:7px;">On the appliance, <span class="mono">sudo vme-insight-setup</span> asks for these. Step by step: docs/VME-PLUGIN.md. vme-insight works without the plugin; the plugin needs vme-insight.</div>
 </div>
 
 <div class="card" style="left:1064px; width:510px;">
@@ -206,16 +225,17 @@ and the plugin holds no passwords or data. Tabs match the right object because v
   <table>
     <tr><td>No vme-insight tab</td><td>Grafana URL not set, or <i>Require permission</i> on and the role lacks it</td></tr>
     <tr><td>Blank tab, "might be having issues"</td><td>This browser doesn't trust the certificate (on Windows: imported by double-click, as an intermediate)</td></tr>
-    <tr><td>"This content is blocked"</td><td>Page policy: check the URL setting is saved, reload; plugin 0.1.1 or later</td></tr>
+    <tr><td>"This content is blocked"</td><td>Page policy: check the URL setting is saved (and its port), reload; plugin 0.1.1 or later</td></tr>
     <tr><td>Forbidden (403)</td><td>This network isn't in <span class="mono">HTTPS_ALLOW</span></td></tr>
     <tr><td>Grafana sign-in page</td><td>Anonymous viewing off, or Grafana not restarted</td></tr>
     <tr><td><span class="mono">ERR_SSL_PROTOCOL_ERROR</span></td><td>Browsing by IP: set <span class="mono">HTTPS_DEFAULT_SNI</span>, or use the name</td></tr>
     <tr><td>Links jump to another address</td><td>Plugin URL and <span class="mono">GRAFANA_ROOT_URL</span> differ</td></tr>
+    <tr><td>Theme doesn't match Morpheus</td><td><i>Grafana theme</i> isn't set to match, or the theme script didn't load (reload the page)</td></tr>
   </table>
 </div>
 
 <footer>
-  <span>vme-insight 0.4.5 · vme-insight-plugin 0.1.3 · VME 9.1+ (Plugin API 1.5.0)</span>
+  <span>vme-insight 0.7.0 · vme-insight-plugin 0.1.6 · HPE Morpheus 9.1+ (Plugin API 1.5.0)</span>
   <span>Community project, not affiliated with HPE · github.com/grahamfairbank/vme-insight · github.com/grahamfairbank/vme-insight-plugin</span>
 </footer>
 
@@ -228,7 +248,7 @@ function anchor(spec) {
            t: [r.left + r.width * f, r.top], b: [r.left + r.width * f, r.bottom] }[side];
 }
 const svg = document.getElementById('flows'), NS = 'http://www.w3.org/2000/svg';
-const COL = { vme: ['#334155', 'url(#ah)'], plug: ['#7c3aed', 'url(#ahp)'], core: ['#2563eb', 'url(#ahc)'], gray: ['#94a3b8', 'url(#ahg)'] };
+const COL = { mor: ['#222222', 'url(#ahk)'], plug: ['#0070f8', 'url(#ahp)'], core: ['#009a71', 'url(#ahc)'], gray: ['#7d8a92', 'url(#ahg)'] };
 function flow(points, n, col, badgeAt, label, dashed) {
   const pts = points.map(p => typeof p === 'function' ? p() : anchor(p));
   const [stroke, marker] = COL[col];
@@ -237,15 +257,16 @@ function flow(points, n, col, badgeAt, label, dashed) {
   path.setAttribute('fill', 'none'); path.setAttribute('stroke', stroke); path.setAttribute('stroke-width', '2.4');
   if (dashed) path.setAttribute('stroke-dasharray', '6 4');
   path.setAttribute('marker-end', marker); svg.appendChild(path);
-  if (!n) return;
   const i = Math.min(badgeAt || 0, pts.length - 2), a = pts[i], b = pts[i + 1];
   const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2;
-  const c = document.createElementNS(NS, 'circle');
-  c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 11); c.setAttribute('fill', stroke);
-  c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2'); svg.appendChild(c);
-  const t = document.createElementNS(NS, 'text');
-  t.setAttribute('x', x); t.setAttribute('y', y + 4); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'badge');
-  t.textContent = n; svg.appendChild(t);
+  if (n) {   // white disc, colored ring, dark number
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 11); c.setAttribute('fill', '#ffffff');
+    c.setAttribute('stroke', stroke); c.setAttribute('stroke-width', '2.4'); svg.appendChild(c);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y + 4); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'badge');
+    t.textContent = n; svg.appendChild(t);
+  }
   if (label) for (const [k, line] of label[0].split('\n').entries()) {
     const l = document.createElementNS(NS, 'text');
     l.setAttribute('x', x + label[1]); l.setAttribute('y', y + label[2] + k * 14);
@@ -253,23 +274,24 @@ function flow(points, n, col, badgeAt, label, dashed) {
     l.textContent = line; svg.appendChild(l);
   }
 }
-// 1 browser opens a VME page -> manager
-flow(['browser:r:0.12', () => [anchor('plugin:l:0.18')[0], anchor('browser:r:0.12')[1]]], 1, 'vme', 0);
-// 2 manager returns the tab HTML + page policy
-flow([() => [anchor('plugin:l:0.62')[0], anchor('plugin:l:0.62')[1]], () => [anchor('browser:r:0.33')[0], anchor('plugin:l:0.62')[1]]], 2, 'plug', 0);
+// 1 browser opens a Morpheus page -> Morpheus appliance
+flow(['browser:r:0.12', () => [anchor('plugin:l:0.18')[0], anchor('browser:r:0.12')[1]]], 1, 'mor', 0);
+// 2 Morpheus returns the tab HTML + page policy
+flow([() => [anchor('plugin:l:0.62')[0], anchor('plugin:l:0.62')[1]], () => [anchor('browser:r:0.45')[0], anchor('plugin:l:0.62')[1]]], 2, 'plug', 0);
+// theme script sets theme=dark|light on the frame (inside the browser)
+flow(['theme:t:0.5', 'frame:b:0.5'], null, 'plug', 0, ['adds theme=light', 10, 4], true);
 // 3 browser loads the dashboard directly from vme-insight
 flow(['frame:r:0.55', () => [596, anchor('frame:r:0.55')[1]], () => [596, anchor('front:l:0.5')[1]], 'front:l:0.5'], 3, 'core', 1);
 // 4 front end -> Grafana
 flow(['front:r:0.5', 'grafana:l:0.5'], 4, 'core', 0);
 // 5 Grafana -> data
 flow(['grafana:r:0.3', () => [anchor('data:l:0.6')[0], anchor('grafana:r:0.3')[1]]], 5, 'core', 0);
-// collector reads the VME API: around the outside, into the VME manager (not the plugin)
-flow(['collector:r:0.5', () => [1566, anchor('collector:r:0.5')[1]], () => [1566, 411], () => [960, 411], () => [960, anchor('mgrzone:b:0.5')[1] + 1]], null, 'gray', 0, null, true);
+// collector reads the Morpheus API: around the outside, into the Morpheus appliance (not the plugin)
+flow(['collector:r:0.5', () => [1566, anchor('collector:r:0.5')[1]], () => [1566, 416], () => [960, 416], () => [960, anchor('mgrzone:b:0.5')[1] + 1]], null, 'gray', 0, null, true);
 (function () {
-  const t = document.createElementNS(NS, 'text'); t.setAttribute('x', 1090); t.setAttribute('y', 405);
-  t.setAttribute('class', 'lbl'); t.textContent = 'collector reads the VME API (read-only account), separately from the plugin'; svg.appendChild(t);
+  const t = document.createElementNS(NS, 'text'); t.setAttribute('x', 1090); t.setAttribute('y', 411);
+  t.setAttribute('class', 'lbl'); t.textContent = 'collector reads the Morpheus API (read-only account), separately from the plugin'; svg.appendChild(t);
 })();
-// step legend under the browser
 document.body.setAttribute('data-ready', '1');
 </script>
 </body>

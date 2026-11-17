@@ -32,7 +32,7 @@ What the appliance needs from Morpheus and the network, and what it doesn't:
 | **Cloud-init user in Morpheus** | **Yes, to sign in** | Set this up before you provision. Go to **Administration → Settings → Provisioning → Cloud-Init Settings** and enter a username, plus a password, an SSH key pair, or both. Morpheus creates that user in the VM through cloud-init. The image has no password or default login of its own, so without this you can't sign in to the VM at all. (The dashboards still start if the settings arrive through user data, but you can't run `vme-insight-setup`, update or troubleshoot.) |
 | **Storage** | Any datastore | The VM sees an ordinary virtio disk, wherever the HVM cluster keeps it: a GFS2 datastore on external block storage (tested), local storage or anything else. The appliance needs **no NFS**. It doesn't mount shared storage, and all its data (database, Grafana) is on its own disk. The NFS client isn't installed. |
 | **Network address** | **DHCP, an IP pool or a static address** | The VM gets its address one of three ways, all set on the Morpheus network: a DHCP server on that network; an **IP pool** assigned to the network, from which Morpheus picks an address; or a static address you type in when provisioning (the network needs **Allow IP Override**). Cloud-init applies whatever Morpheus passes to it. With none of these, the VM comes up with no address and nothing can reach it. Tested with DHCP and with a typed static address; IP pools weren't tested, but Morpheus passes the address to cloud-init the same way. |
-| **DNS** | If the Morpheus URL is a name | With DHCP, the DNS servers come from DHCP. With a static address they come from the Morpheus network (or IP pool) settings, and if those have none, Morpheus uses **8.8.8.8**, which a closed network can't reach. Set DNS on the network first. With `url: https://<ip>` the appliance needs no DNS for its core job. |
+| **DNS** | If the Morpheus URL is a name | With DHCP, the DNS servers come from DHCP. With a static address they come from the Morpheus network (or IP pool) settings, and if those have none, Morpheus uses **8.8.8.8**, which a closed network can't reach. Set DNS on the network first, or set `dns_servers` on the appliance (see [DNS servers](#dns-servers)). With `url: https://<ip>` the appliance needs no DNS for its core job. |
 | **Time (NTP)** | Yes | Accurate time matters for the charts and for TLS. By default the VM sets its clock from Debian's public time servers on the internet. Without internet access, give it your own (see [Your own time servers](#your-own-time-servers)). |
 | **To Morpheus** | Yes | HTTPS (443) from the appliance to the Morpheus appliance, with a read-only account. |
 | **Morpheus Appliance URL** | Reachable from the HVM hosts | Not specific to vme-insight: to provision from a new image, each HVM host downloads it from Morpheus's Appliance URL (Administration → Settings → Appliance). See Troubleshooting if provisioning fails with "Image is not in qcow2 format". |
@@ -57,37 +57,63 @@ All of these can go through an HTTP(S) proxy (see [Proxy](#proxy)), except NTP.
 
 ### Your own time servers
 
-The VM keeps its clock right with `systemd-timesyncd`, Debian's built-in time client. Out of the box it uses Debian's public servers on the internet (`0.debian.pool.ntp.org` to `3.debian.pool.ntp.org`, UDP port 123). If the VM can't reach them, or your organization runs its own time servers, point it at yours. Do it at provisioning or later; it's the same three lines.
+The VM keeps its clock right with `systemd-timesyncd`, Debian's built-in time client. Out of the box it uses time servers from DHCP if your network hands them out, otherwise Debian's public servers on the internet (`0.debian.pool.ntp.org` to `3.debian.pool.ntp.org`, UDP port 123). If the VM can't reach them, or your organization runs its own time servers, set `time_servers` to yours: names or IP addresses, separated by spaces.
 
-**At provisioning:** add these lines to the end of the Cloud-Init User Data script from [step 3](#3-provision-a-vm-and-pass-the-settings). Replace `ntp1.example.com ntp2.example.com` with your servers' names or IP addresses, separated by spaces:
+* **At provisioning:** add it to the settings in the Cloud-Init User Data from [step 3](#3-provision-a-vm-and-pass-the-settings):
 
-```bash
-mkdir -p /etc/systemd/timesyncd.conf.d
-printf '[Time]\nNTP=ntp1.example.com ntp2.example.com\n' > /etc/systemd/timesyncd.conf.d/local.conf
-systemctl restart systemd-timesyncd
-```
+  ```yaml
+  time_servers: ntp1.example.com ntp2.example.com
+  ```
 
-**On a running VM:** sign in and run the same thing with `sudo`:
+* **On a running VM:** run `sudo vme-insight-setup` and answer the time servers question (step 6). Or edit `/etc/vme-insight/appliance.yaml` and run `sudo vme-insight-apply`.
 
-```bash
-sudo mkdir -p /etc/systemd/timesyncd.conf.d
-printf '[Time]\nNTP=ntp1.example.com ntp2.example.com\n' | sudo tee /etc/systemd/timesyncd.conf.d/local.conf
-sudo systemctl restart systemd-timesyncd
-```
+The appliance writes `/etc/systemd/timesyncd.conf.d/vme-insight.conf` and restarts the time client. Setting it back to empty returns to the default. (Before 0.7.0 this was a few shell commands writing `local.conf` in the same folder. That file still works, but `time_servers` takes priority over it.)
 
 **Check it:** `timedatectl timesync-status` shows which server the VM uses (the `Server:` line), and `timedatectl` should say `System clock synchronized: yes` within a minute.
 
+### DNS servers
+
+The VM gets its DNS servers the same way as its address (see [Requirements](#requirements)):
+
+* **With DHCP**, from the DHCP server.
+* **With an IP pool or a static address**, from the Morpheus network or IP pool settings. If those have none, Morpheus uses **8.8.8.8**.
+
+It's best to set DNS correctly where it comes from, because every VM provisioned later gets it too. To use other DNS servers on this VM, set `dns_servers` to their IP addresses, separated by spaces:
+
+* **At provisioning:** add it to the settings in the Cloud-Init User Data from [step 3](#3-provision-a-vm-and-pass-the-settings):
+
+  ```yaml
+  dns_servers: 10.0.0.53 10.0.0.54
+  dns_search: example.com        # optional: domains to try for short names
+  ```
+
+* **On a running VM:** run `sudo vme-insight-setup` and answer the DNS questions (step 6). It shows the servers in use now. Or edit `/etc/vme-insight/appliance.yaml` and run `sudo vme-insight-apply`.
+
+Your servers **replace** the ones from Morpheus or DHCP (they aren't added to them), and the containers restart to use them. Setting `dns_servers` back to empty (`-` in the wizard) returns to the servers from Morpheus or DHCP. DNS servers are given by IP address, because a name would need DNS to find them.
+
+The appliance leaves cloud-init's network file (`/etc/netplan/50-cloud-init.yaml`) as it is. It adds a small systemd-networkd file for each network, `/etc/systemd/network/10-netplan-<interface>.network.d/vme-insight-dns.conf`, which clears the old servers and sets yours. Don't edit `/etc/resolv.conf`: the system rewrites it.
+
+**Check it:** `resolvectl dns` lists the servers for each network interface, and `resolvectl query morpheus.example.com` (your Morpheus name) shows that a name resolves.
+
 ### Proxy
 
-If the appliance reaches the internet through an HTTP(S) proxy, run `sudo vme-insight-setup` and enter it when asked (question 5), or put it in the [user data](#3-provision-a-vm-and-pass-the-settings) at provisioning:
+If the appliance reaches the internet through an HTTP(S) proxy, set it in either of two ways:
 
-```yaml
-proxy:
-  url: http://proxy.example.com:3128
-  no_proxy: .example.com 10.0.0.0/8     # optional: more hosts, domains or networks to reach directly
-```
+* **At provisioning:** put it in the [user data](#3-provision-a-vm-and-pass-the-settings):
 
-`vme-insight-apply` then points everything that goes to the internet at the proxy:
+  ```yaml
+  proxy:
+    url: http://proxy.example.com:3128
+    no_proxy: .example.com 10.0.0.0/8     # optional: more hosts, domains or networks to reach directly
+  ```
+
+* **On a running VM:** run `sudo vme-insight-setup` and enter the proxy URL and any hosts to reach directly when asked (question 5). Press Enter at the other questions to keep their current values. Or edit the `proxy:` section of `/etc/vme-insight/appliance.yaml` as above and run `sudo vme-insight-apply`.
+
+To change the proxy later, do the same again. To take it out, run `sudo vme-insight-setup` and enter `-` for the proxy. When the proxy changes, the appliance restarts Docker, so the dashboards are unavailable for a minute.
+
+**Check it:** `sudo vme-insight-update --check` contacts GitHub through the proxy and says which release is the latest. `sudo cat /etc/vme-insight/proxy.env` shows the proxy and the addresses reached directly.
+
+`vme-insight-apply` points everything that goes to the internet at the proxy:
 
 | What | How |
 |---|---|
@@ -96,7 +122,7 @@ proxy:
 | Container image pulls and the collector build (Docker Hub, PyPI) | A Docker service drop-in (`/etc/systemd/system/docker.service.d/vme-insight-proxy.conf`) and the client settings above |
 | apt, for your Debian updates | `/etc/apt/apt.conf.d/80vme-insight-proxy` |
 
-The connection to Morpheus never uses the proxy: the appliance adds the Morpheus host to `no_proxy` itself, because certificate pinning (`tls_fingerprint`) needs a direct connection. The containers' traffic to each other is direct too. To take the proxy out again, run `sudo vme-insight-setup` and enter `-` for the proxy.
+The connection to Morpheus never uses the proxy: the appliance adds the Morpheus host to `no_proxy` itself, because certificate pinning (`tls_fingerprint`) needs a direct connection. The containers' traffic to each other is direct too.
 
 * A password in the URL (`http://user:password@proxy:3128`) works. It is stored in those files readable by root only, like the Morpheus token.
 * NTP doesn't go through an HTTP proxy. Behind one, use your own time servers (above).
@@ -119,7 +145,7 @@ Size the VM generously when you provision it. Growing the disk later is easy, bu
 
 * In normal running, the containers use about 0.5 GB (measured in the test lab: TimescaleDB 290 MB, Grafana 95 MB, Prometheus 70 MB, collector 30 MB, Caddy 15 MB), and Debian and Docker about 0.3 GB more.
 * The peaks are much higher: the first boot unpacks and loads about 4 GB of container images, `vme-insight-update` pulls new images and builds the collector, and dashboards over 90 days of data make the database work hard.
-* At first boot, TimescaleDB tunes itself for a quarter of the VM's memory (at least 1 GB).
+* TimescaleDB tunes itself for a quarter of the VM's memory (at least 1 GB). From 0.7.0 it tunes again at boot when the VM's memory changes. To give it a fixed amount instead, set `database: {memory: 4GB}` (or answer the database question in `sudo vme-insight-setup`).
 
 The database's memory use doesn't grow much with the number of VMs; the number of people viewing dashboards at the same time matters more. 8 GB is a sensible choice above about 300 VMs, but estates that large haven't been tested.
 
@@ -149,7 +175,7 @@ Longer retention needs more: double `retention.hourly` and the 0.08 and 0.2 figu
 
 ### Changing the size later
 
-* **Memory and vCPUs:** change the plan in Morpheus (reconfigure the instance) and restart the VM. The extra memory goes to Grafana and the file cache, but TimescaleDB keeps the tuning from its first boot.
+* **Memory and vCPUs:** change the plan in Morpheus (reconfigure the instance) and restart the VM. At boot, TimescaleDB is tuned again for a quarter of the new memory (0.7.0 and later; before that it kept the tuning from its first boot). With a fixed `database.memory`, it keeps that size.
 * **Disk:** enlarge the disk in Morpheus (reconfigure the instance), then restart the VM. At boot, cloud-init grows the root partition and file system to fill the disk, the same way it does on first boot. Tested on an HVM cluster. Take a VM snapshot first anyway, as for any disk change.
 * **Starting again bigger:** provision a new, larger VM from the image and move the data with [backup and restore](INSTALL.md#backup-and-restore).
 
@@ -270,9 +296,9 @@ Run the wizard again:
 sudo vme-insight-setup
 ```
 
-It shows the current value of each setting in [brackets], so press Enter for the ones you're keeping. It covers the Morpheus URL, account and certificate, the time zone, https and the proxy, and it keeps any other settings in the file. When you finish, it applies the changes and restarts what needs it.
+It shows the current value of each setting in [brackets], so press Enter for the ones you're keeping. It covers the Morpheus URL, account and certificate, the time zone, https, the proxy, the time and DNS servers, the daily update check and the database's memory, and it keeps any other settings in the file. When you finish, it applies the changes and restarts what needs it.
 
-For the few settings it doesn't ask about (your own https certificate, your own CA for Morpheus, the Grafana port, the update check), edit `/etc/vme-insight/appliance.yaml` (every setting is described in `/etc/vme-insight/appliance.yaml.example`), then run `sudo vme-insight-apply`.
+For the few settings it doesn't ask about (your own https certificate, your own CA for Morpheus, the Grafana port), edit `/etc/vme-insight/appliance.yaml` (every setting is described in `/etc/vme-insight/appliance.yaml.example`), then run `sudo vme-insight-apply`.
 
 The appliance writes `.env` and the `morpheus` section of `/opt/vme-insight/config/config.yaml` from the settings file at every boot and every apply, so don't edit those by hand. The rest of `config.yaml` (retention, intervals, lifecycle rules) is yours to edit as in a regular install ([CONFIGURATION](CONFIGURATION.md)). Then run `sudo docker compose restart collector` in `/opt/vme-insight`.
 
@@ -305,7 +331,7 @@ sudo sh /opt/vme-insight/appliance/install-system-files.sh && sudo vme-insight-a
 
 From 0.6.1 on, `vme-insight-update` does this itself. Your https setting doesn't change: an appliance that ran without https keeps it off until you turn it on with `sudo vme-insight-setup`.
 
-Once a day the appliance checks GitHub for a new release (read only; it installs nothing). When there is one, the login message says so. To turn the check off, add this to `/etc/vme-insight/appliance.yaml`:
+Once a day the appliance checks GitHub for a new release (read only; it installs nothing). When there is one, the login message says so. To turn the check off, answer No to the update question in `sudo vme-insight-setup`, or add this to `/etc/vme-insight/appliance.yaml` and run `sudo vme-insight-apply`:
 
 ```yaml
 updates:

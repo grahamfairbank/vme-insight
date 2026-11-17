@@ -67,7 +67,21 @@ services:
       # Treemap panel (Grafana Labs, signed) for the VM resource-weight panels, pinned. Downloaded from
       # grafana.com on first start; for offline hosts see docs/INSTALL.md "Offline installs".
       GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS-marcusolsson-treemap-panel 2.1.1}
+      # No calls to grafana.com while running (the treemap download above is first start only):
+      # no version, plugin-update or news checks, no plugin signing-key download (Grafana's built-in key
+      # is used), no external snapshot sharing.
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PUBLIC_KEY_RETRIEVAL_DISABLED: "true"
+      GF_SNAPSHOTS_EXTERNAL_ENABLED: "false"
+      # Grafana preinstalls (and keeps updating) a Loki app vme-insight doesn't use.
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      # Grafana 11 still fetches Angular plugin patterns from grafana.com once a day, with no setting to stop
+      # it, so point its grafana.com address at nothing. Plugins aren't installed through this address
+      # (GF_INSTALL_PLUGINS uses grafana cli), and vme-insight uses no Angular plugins.
+      GF_GRAFANA_COM_URL: http://127.0.0.1:9
+      GF_GRAFANA_COM_API_URL: http://127.0.0.1:9/api
       GF_SECURITY_ALLOW_EMBEDDING: ${GRAFANA_ALLOW_EMBEDDING:-false}
       # Anonymous read-only access, e.g. for the VME UI plugin. Restrict who can reach Grafana first.
       GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}
@@ -82,6 +96,9 @@ services:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      # HPE backgrounds: Grafana's page template plus one stylesheet line (see tools/grafana_index.py)
+      - ./grafana/theme/index.html:/usr/share/grafana/public/views/index.html:ro
+      - ./grafana/theme/hpe.css:/usr/share/grafana/public/vme-insight/hpe.css:ro
 
   # Optional: https in front of Grafana, limited to HTTPS_ALLOW networks. Needed to embed
   # Grafana in https pages such as VME. Start with:

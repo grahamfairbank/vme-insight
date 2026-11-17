@@ -42,6 +42,11 @@ retention:                 # days
   hourly: 730              # hourly rollups (avg/min/max)
   compress_after: 7
 
+clouds:
+  # Collect only the clouds that hold HVM clusters or hosts, so VMware and other clouds managed by the
+  # same Morpheus stay out of the dashboards. false collects every cloud the account can see.
+  hvm_only: true
+
 classification:
   # The collector treats computeServerType.vmHypervisor=true as a host and the
   # rest as VMs. Override for specific type codes here if needed.

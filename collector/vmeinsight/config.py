@@ -31,6 +31,10 @@ DEFAULTS = {
         "hourly": 730,
         "compress_after": 7,
     },
+    "clouds": {
+        # only clouds with HVM clusters or hosts; false = every cloud the account can see (VMware too)
+        "hvm_only": True,
+    },
     "classification": {
         # computeServerType codes to always treat as hypervisor hosts / as VMs
         "host_type_codes": [],

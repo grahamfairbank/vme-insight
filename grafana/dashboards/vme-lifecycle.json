@@ -99,7 +99,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "#0070f8",
                 "value": null
               }
             ]
@@ -159,11 +159,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 1
               }
             ]
@@ -223,11 +223,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "orange",
+                "color": "#d36d00",
                 "value": 1
               }
             ]
@@ -287,11 +287,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "orange",
+                "color": "#d36d00",
                 "value": 1
               }
             ]
@@ -351,11 +351,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "orange",
+                "color": "#d36d00",
                 "value": 1
               }
             ]
@@ -415,11 +415,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "orange",
+                "color": "#d36d00",
                 "value": 1
               }
             ]
@@ -479,11 +479,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "orange",
+                "color": "#d36d00",
                 "value": 1
               }
             ]
@@ -558,8 +558,8 @@
         "pieType": "donut",
         "displayLabels": [],
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
+          "displayMode": "list",
+          "placement": "bottom",
           "values": [
             "value",
             "percent"
@@ -581,7 +581,7 @@
         "x": 0,
         "y": 10,
         "w": 6,
-        "h": 8
+        "h": 10
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -617,8 +617,8 @@
         "pieType": "donut",
         "displayLabels": [],
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
+          "displayMode": "list",
+          "placement": "bottom",
           "values": [
             "value",
             "percent"
@@ -640,7 +640,7 @@
         "x": 6,
         "y": 10,
         "w": 6,
-        "h": 8
+        "h": 10
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -676,8 +676,8 @@
         "pieType": "donut",
         "displayLabels": [],
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
+          "displayMode": "list",
+          "placement": "bottom",
           "values": [
             "value",
             "percent"
@@ -699,7 +699,7 @@
         "x": 12,
         "y": 10,
         "w": 6,
-        "h": 8
+        "h": 10
       },
       "datasource": {
         "type": "grafana-postgresql-datasource",
@@ -817,7 +817,7 @@
       "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 20,
         "w": 6,
         "h": 4
       },
@@ -833,7 +833,7 @@
       "id": 15,
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 24,
         "w": 24,
         "h": 1
       },
@@ -884,39 +884,39 @@
                     "type": "value",
                     "options": {
                       "current": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "update available": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "eol < 180d": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "end of life": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 3
                       },
                       "outdated": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 4
                       },
                       "not installed": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 5
                       },
                       "unknown": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 6
                       },
                       "unknown os": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 7
                       },
                       "unknown release": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 8
                       }
                     }
@@ -945,39 +945,39 @@
                     "type": "value",
                     "options": {
                       "current": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "update available": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "eol < 180d": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "end of life": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 3
                       },
                       "outdated": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 4
                       },
                       "not installed": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 5
                       },
                       "unknown": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 6
                       },
                       "unknown os": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 7
                       },
                       "unknown release": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 8
                       }
                     }
@@ -1006,19 +1006,19 @@
                     "type": "value",
                     "options": {
                       "on": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "off": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 1
                       },
                       "unknown": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "suspended": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 3
                       }
                     }
@@ -1047,15 +1047,15 @@
                     "type": "value",
                     "options": {
                       "connected": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "disconnected": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "unknown": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 2
                       }
                     }
@@ -1076,7 +1076,7 @@
       "id": 16,
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 25,
         "w": 24,
         "h": 12
       },
@@ -1121,7 +1121,7 @@
       "id": 17,
       "gridPos": {
         "x": 0,
-        "y": 35,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -1166,7 +1166,7 @@
       "id": 18,
       "gridPos": {
         "x": 12,
-        "y": 35,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -1182,7 +1182,7 @@
       "id": 19,
       "gridPos": {
         "x": 0,
-        "y": 43,
+        "y": 45,
         "w": 24,
         "h": 1
       },
@@ -1224,7 +1224,7 @@
       "id": 20,
       "gridPos": {
         "x": 0,
-        "y": 44,
+        "y": 46,
         "w": 24,
         "h": 10
       },

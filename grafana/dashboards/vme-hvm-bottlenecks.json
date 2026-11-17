@@ -328,15 +328,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 75
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 90
               }
             ]
@@ -350,8 +350,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": false,
           "calcs": [
@@ -418,11 +424,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 5
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 10
               }
             ]
@@ -490,15 +496,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 5
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 10
               }
             ]
@@ -512,8 +518,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": false,
           "calcs": [

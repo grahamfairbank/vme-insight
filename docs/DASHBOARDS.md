@@ -26,6 +26,30 @@ VME evaluates its CPU and memory alarms on a 15-minute average, so short peaks o
 
 **Units.** VME reports network usage as `netRxUsage` / `netTxUsage`. These are shown as bytes per second. Treat them as relative values until you have compared them with exporter data on your own estate.
 
+## Colors and backgrounds
+
+**Colors.** The dashboards use colors from the HPE Design System. Dashboard colors don't change with Grafana's light or dark theme, so each one is a shade that reads on both backgrounds:
+
+| Meaning | Color |
+|---|---|
+| OK, healthy, on | green `#009a71` |
+| Warning (amber thresholds, "update available", "outdated") | orange `#d36d00` |
+| Critical (red thresholds, errors, alarms) | red `#ec3331` |
+| Counts and information | blue `#0070f8` |
+| Off or unknown | gray `#7d8a92` |
+
+They're set in `HPE_COLORS` at the top of [`tools/build_dashboards.py`](../tools/build_dashboards.py). Lines that compare several hosts or VMs keep Grafana's own series colors (green, yellow, blue and so on): Grafana has no setting for a different set.
+
+**Backgrounds.** In the dark theme, the page and the panels are `#222222`. In the light theme, they're white. Thin borders separate the panels. Grafana has no setting for this either, so vme-insight adds a small stylesheet, [`grafana/theme/hpe.css`](../grafana/theme/hpe.css), to Grafana's page template ([`grafana/theme/index.html`](../grafana/theme/index.html)). Both are mounted into the Grafana container by `docker-compose.yml`.
+
+* The page template is Grafana's own file from the exact Grafana image in `docker-compose.yml`, plus one line that loads the stylesheet. **When the Grafana image changes, make it again:** `python3 tools/grafana_index.py`. `python3 tools/grafana_index.py --check` says whether it still matches.
+* After editing `hpe.css`, restart Grafana (`docker compose restart grafana`). Docker keeps showing the old file if the editor saved a new one in its place.
+* The stylesheet also lightens the empty part of bar gauges in the dark theme (Grafana's `#22252b` track barely shows on `#222222`).
+* If a Grafana update changes the page structure the stylesheet relies on, the dashboards fall back to Grafana's own backgrounds. Nothing else is affected.
+
+**Sizes.** Bar gauges use fixed 14 px text with each name above its own slim bar, so a panel with only a few rows doesn't blow the text up and cut the names short. Pie chart legends go below the donut. Both are set in the `bargauge()` and `pie()` helpers in `tools/build_dashboards.py`.
+* Which theme a viewer gets is unchanged: their Grafana preference, or `&theme=light` or `&theme=dark` in the address (the vme-insight plugin's *Grafana theme* setting).
+
 ## VME Overview
 
 The home page. It plays the same role as the vSphere Overview dashboard.
@@ -68,7 +92,7 @@ Judge sustained values, not short spikes during backups, patching or boot storms
 
 VME's per-vCPU values average exactly to its VM value, so it is a per-vCPU average. At this (very low) load it read 5 to 8 times higher than the kernel figure, which means the thresholds above warn early rather than late on VME's figure. **When the two disagree, trust vCPU wait.** Comparisons under real contention are welcome as issues.
 
-**Cluster CPU** is the average CPU of the cluster's hosts. **Cluster memory** is total used over total installed. **Cluster storage** is the sum of the hosts' local storage. Shared datastores are shown separately because they don't belong to one host.
+**Cluster CPU** is the average CPU of the cluster's hosts. **Cluster memory** is total used over total installed. **Cluster shared storage** is the space used on the shared datastores (shared LUNs and NFS) in the cluster's cloud, each counted once; local directory datastores are left out. It uses the same amber 80% and red 90% as the Datastore Usage alarms. (Up to 0.6.1 this gauge added up the storage Morpheus reports per host, which is how much disk is allocated, not how full it is, so it read close to 100% on most HVM clusters.)
 
 ## VME Hosts
 
@@ -80,7 +104,7 @@ VME's per-vCPU values average exactly to its VM value, so it is a per-vCPU avera
 | Swap used | Host swap. Any steady use on a hypervisor is a warning sign. |
 | Network receive/transmit | Per host |
 | Agent age (in the Hosts table) | Time since the host's Morpheus agent reported: amber after 2 minutes, red after 5 (VME's *Host Unreachable*). |
-| Host local storage (reported by VME) | Size, used, free and used % of each host's local disks. VME reports one total per host. |
+| Host disks allocated (reported by Morpheus) | Size of every disk attached to each host (local disks and shared LUNs) and how much of it is allocated to volumes or datastores. This is allocation, not how full they are: a host whose disks are all given to datastores shows close to 100%. |
 | Host filesystems (node_exporter) | One row per filesystem on each host. VME datastores are shown by name, for example `silo (datastore)` instead of `/mnt/0cf9aa96-…`, using the datastore paths VME reports. Columns: size, used, available, used %, inodes used %, days to full, read-only flag. Needs the [exporters](EXPORTERS.md). Root and `/var` matter most, because a full root filesystem can stop VMs from starting. NFS and GFS2 datastores mounted on the host also appear. |
 | Filesystem used %, free space | Per mount over time, amber at 80% and red at 90% |
 | Running VMs | Over time |

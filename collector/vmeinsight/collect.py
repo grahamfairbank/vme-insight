@@ -179,6 +179,9 @@ class Collector:
         self.vm_codes = {c.lower() for c in cls.get("vm_type_codes") or []}
         self.os_rules = cfg["lifecycle"].get("os_rules") or []
         self.cluster_of_host = {}
+        self.hvm_only = bool((cfg.get("clouds") or {}).get("hvm_only", True))
+        self.hvm_clouds = None   # ids of the clouds with HVM clusters or hosts; None = no filter
+        self._warned_no_hvm = False
 
     # ------------------------------------------------------------ helpers
     def classify(self, srv):
@@ -193,6 +196,45 @@ class Collector:
             return "host"
         return "vm"
 
+    # ------------------------------------------------------------ which clouds to collect
+    @staticmethod
+    def is_hvm_cluster(c):
+        """HVM clusters' type is named HVM (MVM in older releases); the code may be missing."""
+        t = c.get("type") or {}
+        return any(str(t.get(k) or "").lower().startswith(("hvm", "mvm")) for k in ("code", "name"))
+
+    @staticmethod
+    def is_hvm_host(s):
+        cst = s.get("computeServerType") or {}
+        return (cst.get("code") or "").lower().startswith("mvm") and (
+            cst.get("vmHypervisor") or (cst.get("code") or "").lower().endswith("host"))
+
+    def update_scope(self, clusters, servers=None):
+        """With clouds.hvm_only (the default), collect only the clouds that hold an HVM cluster or host, so
+        VMware and other clouds in the same Morpheus stay out. If none is found, collect everything."""
+        if not self.hvm_only:
+            self.hvm_clouds = None
+            return
+        ids = {ref_id(c.get("zone") or c.get("cloud")) for c in clusters if self.is_hvm_cluster(c)}
+        if servers is None:   # inventory sees only clusters: keep clouds the last server sweep found
+            ids |= self.hvm_clouds or set()
+        else:
+            ids |= {ref_id(s.get("zone") or s.get("cloud")) for s in servers if self.is_hvm_host(s)}
+        ids.discard(None)
+        if ids:
+            self.hvm_clouds = ids
+        elif self.hvm_clouds is None and not self._warned_no_hvm:
+            log.warning("no HVM clusters or hosts found, so collecting every cloud "
+                        "(set clouds.hvm_only: false in config.yaml to always do that)")
+            self._warned_no_hvm = True
+
+    def in_scope(self, obj=None, cloud_id=None):
+        """True when obj (or cloud_id) belongs to a collected cloud. Objects without a cloud are kept."""
+        if self.hvm_clouds is None:
+            return True
+        cid = cloud_id if obj is None else ref_id(obj.get("zone") or obj.get("cloud"))
+        return cid is None or cid in self.hvm_clouds
+
     def _try_list(self, path, key, params=None):
         try:
             return self.api.list(path, key, params)[0]
@@ -206,6 +248,10 @@ class Collector:
     def metrics(self):
         t = now()
         clusters, _ = self.api.list("/api/clusters", "clusters")
+        servers, extras = self.api.list("/api/servers", "servers")
+        self.update_scope(clusters, servers)
+        clusters = [c for c in clusters if self.in_scope(c)]
+        servers = [s for s in servers if self.in_scope(s)]
         cluster_of_host = {}
         crows = []
         for c in clusters:
@@ -225,12 +271,13 @@ class Collector:
                 continue
             members = self._try_list("/api/servers", "servers", {"clusterId": c["id"]}) or []
             for m in members:
+                if not self.in_scope(m):
+                    continue
                 cluster_of_host.setdefault(m["id"], c["id"])
                 crows_by_id = next(r for r in crows if r["id"] == c["id"])
                 crows_by_id["host_ids"] = sorted(set(crows_by_id["host_ids"]) | {m["id"]})
         self.db.upsert("clusters", crows)
 
-        servers, extras = self.api.list("/api/servers", "servers")
         side = extras.get("stats") or {}
         for s in servers:  # the side map carries reserved memory/storage; server.stats wins on overlap
             extra = side.get(str(s["id"])) or {}
@@ -407,6 +454,8 @@ class Collector:
             for (zid,) in self.db.execute("SELECT id FROM clouds WHERE present") or []:
                 for d in self._try_list(f"/api/zones/{zid}/data-stores", "datastores") or []:
                     found.setdefault(d["id"], dict(d, _cloud_id=zid))
+        found = {i: d for i, d in found.items()
+                 if self.in_scope(cloud_id=ref_id(d.get("zone")) or d.get("_cloud_id"))}
         rows, points = [], []
         for d in found.values():
             cap = num(d.get("storageSize") or d.get("maxStorage") or d.get("capacity"))
@@ -430,7 +479,7 @@ class Collector:
             if d.get("online") is not None:
                 points.append(("datastore", d["id"], "online", 1.0 if d.get("online") else 0.0))
         self.db.upsert("datastores", rows)
-        if found:
+        if found or self.hvm_clouds is not None:
             self.db.mark_absent("datastores", found.keys())
         self.db.write_metrics(t, points)
         return len(rows)
@@ -508,7 +557,11 @@ class Collector:
                 "last_seen = now(), raw = EXCLUDED.raw",
                 (ping.get("applianceUrl") or self.api.base, ping.get("buildVersion"), J(ping)))
 
+        clusters = self._try_list("/api/clusters", "clusters")
+        if clusters is not None:
+            self.update_scope(clusters)
         zones, _ = self.api.list("/api/zones", "zones")
+        zones = [z for z in zones if self.in_scope(cloud_id=z["id"])]
         self.db.upsert("clouds", [dict(
             id=z["id"], name=z.get("name"), type_code=(z.get("zoneType") or {}).get("code"),
             type_name=(z.get("zoneType") or {}).get("name"), status=z.get("status"),
@@ -519,6 +572,7 @@ class Collector:
 
         insts = self._try_list("/api/instances", "instances")
         if insts is not None:
+            insts = [i for i in insts if self.in_scope(i)]
             rows = []
             for i in insts:
                 tags = i.get("tags") or []
@@ -540,6 +594,7 @@ class Collector:
 
         nets = self._try_list("/api/networks", "networks")
         if nets is not None:
+            nets = [x for x in nets if self.in_scope(x)]
             self.db.upsert("networks", [dict(
                 id=x["id"], name=x.get("name"), type=(x.get("type") or {}).get("name"),
                 cloud_id=ref_id(x.get("zone") or x.get("cloud")), cidr=x.get("cidr"),

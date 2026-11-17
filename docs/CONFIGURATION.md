@@ -94,6 +94,14 @@ VME itself samples host and VM statistics about once a minute, so polling faster
 
 Changes apply when the collector restarts.
 
+### clouds
+
+| Key | Default | Meaning |
+|---|---|---|
+| `hvm_only` | `true` | Collect only the clouds that hold HVM clusters or hosts. A cloud counts as HVM when it has a cluster of type HVM (MVM in older releases) or an `mvmHost` server. VMware and other clouds managed by the same HPE Morpheus appliance then stay out of every dashboard. `false` collects every cloud the account can see. If no HVM cluster or host is found, the collector collects everything and logs a warning. |
+
+Alarms, the activity log and the Morpheus appliance's health cover the whole appliance either way. To hide a cloud from vme-insight completely, you can also leave it out of the read-only account's role.
+
 ### classification
 
 The collector decides whether a server is a hypervisor host or a VM from its `computeServerType`. HVM hosts are `mvmHost`. If your estate has a type it gets wrong, list the codes here:

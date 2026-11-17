@@ -1,0 +1,33 @@
+/*
+ * vme-insight: HPE backgrounds for Grafana.
+ * Dark theme: #222222. Light theme: #FFFFFF. Page and panels share the color; panel borders separate them.
+ * Loaded by grafana/theme/index.html (Grafana's own page template plus one <link> line).
+ * Grafana marks the theme on <body> (theme-dark or theme-light) and labels each panel's
+ * container "...-panel-container"; the strip behind the dashboard's filter bar is the element holding
+ * "dashboard controls". If a Grafana update renames those, the page simply falls
+ * back to Grafana's own colors; nothing else changes.
+ */
+body.theme-dark,
+body.theme-dark [class*="-panel-container"],
+body.theme-dark :has(> [data-testid="data-testid dashboard controls"]) {
+  background-color: #222222 !important;
+}
+
+body.theme-dark [class*="-panel-container"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.theme-light,
+body.theme-light [class*="-panel-container"],
+body.theme-light :has(> [data-testid="data-testid dashboard controls"]) {
+  background-color: #ffffff !important;
+}
+
+body.theme-light [class*="-panel-container"] {
+  border-color: #d4d8db !important;
+}
+
+/* Bar gauges: Grafana's empty-bar track (#22252b) all but vanishes on #222222, so lighten it. */
+body.theme-dark [class*="-panel-container"] div[style*="background: rgb(34, 37, 43)"] {
+  background: #3a3d42 !important;
+}

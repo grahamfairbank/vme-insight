@@ -5,6 +5,7 @@
 | To change | Edit | Then run |
 |---|---|---|
 | A dashboard or panel | `tools/build_dashboards.py` (not the JSON) | `python3 tools/build_dashboards.py`, then `python3 tools/check_dashboards.py`: it must report **0 errors** |
+| The Grafana image version | `docker-compose.yml`, then `python3 tools/grafana_index.py` to remake `grafana/theme/index.html` from the new image | `python3 tools/grafana_index.py --check`, and check that the dashboards still show the HPE backgrounds |
 | The collector | `collector/vmeinsight/` | `docker compose build collector && docker compose up -d collector`, then watch `docker compose logs -f collector` |
 | The database schema | `collector/vmeinsight/schema.sql` (idempotent; applied at every collector start) | Rebuild and restart the collector |
 | The https front end | `https/Caddyfile` | `docker compose --profile https up -d https` |

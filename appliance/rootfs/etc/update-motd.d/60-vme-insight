@@ -1,6 +1,8 @@
 #!/bin/sh
+# Version: what vme-insight-update last installed, else what the image was built with.
+v=$(cat /var/lib/vme-insight/version 2>/dev/null || cat /etc/vme-insight/appliance-version 2>/dev/null)
 echo
-echo "vme-insight appliance: $(cat /run/vme-insight-status 2>/dev/null || echo 'first boot in progress (journalctl -fu vme-insight-firstboot)')"
+echo "vme-insight appliance${v:+ $v}: $(cat /run/vme-insight-status 2>/dev/null || echo 'first boot in progress (journalctl -fu vme-insight-firstboot)')"
 echo "  Setup or change settings: sudo vme-insight-setup     Status: sudo vme-insight-setup --status"
 echo "  Docs: /opt/vme-insight/docs/APPLIANCE.md"
 [ -s /var/lib/vme-insight/update-available ] && echo "  $(cat /var/lib/vme-insight/update-available)"

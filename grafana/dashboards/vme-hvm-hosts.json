@@ -988,15 +988,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1035,15 +1035,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1072,11 +1072,11 @@
                     "options": {
                       "1": {
                         "text": "READ-ONLY",
-                        "color": "red"
+                        "color": "#ec3331"
                       },
                       "0": {
                         "text": "rw",
-                        "color": "green"
+                        "color": "#009a71"
                       }
                     }
                   }
@@ -1184,11 +1184,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 80
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 90
               }
             ]
@@ -1574,19 +1574,19 @@
                     "options": {
                       "1": {
                         "text": "running",
-                        "color": "green"
+                        "color": "#009a71"
                       },
                       "3": {
                         "text": "paused",
-                        "color": "orange"
+                        "color": "#d36d00"
                       },
                       "5": {
                         "text": "shut off",
-                        "color": "gray"
+                        "color": "#7d8a92"
                       },
                       "6": {
                         "text": "crashed",
-                        "color": "red"
+                        "color": "#ec3331"
                       }
                     }
                   }

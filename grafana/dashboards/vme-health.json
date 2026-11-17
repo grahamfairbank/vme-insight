@@ -100,19 +100,19 @@
                     "type": "value",
                     "options": {
                       "error": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 0
                       },
                       "critical": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 1
                       },
                       "warning": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "info": {
-                        "color": "blue",
+                        "color": "#0070f8",
                         "index": 3
                       }
                     }
@@ -246,15 +246,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 75
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 85
               }
             ]
@@ -314,15 +314,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 10000000000.0
               },
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": 25000000000.0
               }
             ]
@@ -382,15 +382,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 30
               },
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": 90
               }
             ]
@@ -450,15 +450,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 90
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -518,15 +518,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 90
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -586,15 +586,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 512000000.0
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 2000000000.0
               }
             ]
@@ -724,15 +724,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 75
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 85
                     }
                   ]
@@ -813,23 +813,23 @@
                     "type": "value",
                     "options": {
                       "meets": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "below": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "below Small": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "matches Small": {
-                        "color": "blue",
+                        "color": "#0070f8",
                         "index": 3
                       },
                       "Medium or Large": {
-                        "color": "blue",
+                        "color": "#0070f8",
                         "index": 4
                       },
                       "n/a": {
@@ -862,23 +862,23 @@
                     "type": "value",
                     "options": {
                       "meets": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "below": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "below Small": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "matches Small": {
-                        "color": "blue",
+                        "color": "#0070f8",
                         "index": 3
                       },
                       "Medium or Large": {
-                        "color": "blue",
+                        "color": "#0070f8",
                         "index": 4
                       },
                       "n/a": {
@@ -956,11 +956,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 75
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 85
               }
             ]
@@ -1057,15 +1057,15 @@
                     "type": "value",
                     "options": {
                       "ok": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "warning": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "error": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 2
                       }
                     }
@@ -1872,15 +1872,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1919,15 +1919,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
+                      "color": "#009a71",
                       "value": null
                     },
                     {
-                      "color": "#EAB839",
+                      "color": "#d36d00",
                       "value": 80
                     },
                     {
-                      "color": "red",
+                      "color": "#ec3331",
                       "value": 90
                     }
                   ]
@@ -1956,11 +1956,11 @@
                     "options": {
                       "1": {
                         "text": "READ-ONLY",
-                        "color": "red"
+                        "color": "#ec3331"
                       },
                       "0": {
                         "text": "rw",
-                        "color": "green"
+                        "color": "#009a71"
                       }
                     }
                   }
@@ -2068,11 +2068,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 80
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 90
               }
             ]
@@ -2318,11 +2318,11 @@
                     "type": "value",
                     "options": {
                       "true": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "false": {
-                        "color": "red",
+                        "color": "#ec3331",
                         "index": 1
                       }
                     }

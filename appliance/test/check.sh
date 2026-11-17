@@ -17,6 +17,7 @@ set -u
 ok() { echo "PASS  $*"; }; bad() { echo "FAIL  $*"; FAILED=1; }; FAILED=0
 cd /opt/vme-insight
 s=$(cat /run/vme-insight-status 2>/dev/null); case "$s" in running*) ok "status: $s";; *) bad "status: $s";; esac
+m=$(sudo run-parts /etc/update-motd.d 2>/dev/null | grep "^vme-insight appliance"); case "$m" in "vme-insight appliance "[0-9]*:*) ok "login banner shows the version: ${m%%:*}";; *) bad "login banner has no version: $m";; esac
 for svc in timescaledb collector prometheus grafana; do
   sudo docker compose ps --status running --services </dev/null | grep -qx "$svc" && ok "$svc running" || bad "$svc not running"
 done
@@ -37,6 +38,14 @@ rm -f /tmp/cj
 d=$(curl -s -u "admin:$P" "http://127.0.0.1:3000/api/search?type=dash-db" | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))')
 [ "$d" -ge 9 ] && ok "$d dashboards" || bad "$d dashboards"
 sudo docker compose logs grafana </dev/null 2>&1 | grep -q "Installing plugin" && bad "Grafana tried to download plugins" || ok "Grafana downloaded nothing"
+sudo docker compose exec -T grafana env </dev/null | grep -qx 'GF_GRAFANA_COM_API_URL=http://127.0.0.1:9/api' && ok "Grafana's grafana.com address points nowhere" || bad "Grafana can still call grafana.com"
+want=$(sudo python3 -c 'import yaml; s=yaml.safe_load(open("/etc/vme-insight/appliance.yaml")) or {}; print(s.get("dns_servers") or "", "|", s.get("dns_search") or "")' </dev/null)
+if [ "${want%% |*}" ]; then
+  have=$(resolvectl dns 2>/dev/null | sed -n 's/^Link [0-9]* ([^)]*): *//p' | grep -v '^$' | sort -u | tr '\n' ' ')
+  dom=$(resolvectl domain 2>/dev/null | sed -n 's/^Link [0-9]* ([^)]*): *//p' | grep -v '^$' | sort -u | tr '\n' ' ')
+  [ "$have" = "${want%% |*} " ] && [ "$dom" = "${want##*| } " -o -z "${want##*| }" ] && ok "DNS servers from dns_servers: $have(search $dom)" || bad "DNS: want '$want', have servers '$have' search '$dom'"
+  getent hosts deb.debian.org >/dev/null && ok "names resolve" || bad "names don't resolve"
+fi
 [ "$(stat -c '%a' .env config/config.yaml /etc/vme-insight/appliance.yaml | sort -u)" = "600" ] && ok "settings and secrets are mode 600" || bad "secret file modes"
 w=$(sudo find /etc /usr /opt/vme-insight -xdev ! -type l \( ! -user root -o -perm -o+w \) ! -path "/usr/share/zoneinfo/*" ! -path "/opt/vme-insight/probe*" | head -3)  # probe/: the collector's own output
 [ -z "$w" ] && ok "system files root-owned, none world-writable" || bad "ownership: $w"

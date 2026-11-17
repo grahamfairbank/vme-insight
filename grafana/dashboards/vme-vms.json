@@ -167,11 +167,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 85
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -253,11 +253,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 90
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 95
               }
             ]
@@ -602,11 +602,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 5
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 10
               }
             ]
@@ -753,11 +753,11 @@
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 5
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 10
               }
             ]
@@ -889,7 +889,7 @@
                     "type": "value",
                     "options": {
                       "true": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 0
                       },
                       "false": {
@@ -1005,19 +1005,19 @@
                     "type": "value",
                     "options": {
                       "on": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "off": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 1
                       },
                       "unknown": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 2
                       },
                       "suspended": {
-                        "color": "#EAB839",
+                        "color": "#d36d00",
                         "index": 3
                       }
                     }
@@ -1046,15 +1046,15 @@
                     "type": "value",
                     "options": {
                       "connected": {
-                        "color": "green",
+                        "color": "#009a71",
                         "index": 0
                       },
                       "disconnected": {
-                        "color": "orange",
+                        "color": "#d36d00",
                         "index": 1
                       },
                       "unknown": {
-                        "color": "gray",
+                        "color": "#7d8a92",
                         "index": 2
                       }
                     }

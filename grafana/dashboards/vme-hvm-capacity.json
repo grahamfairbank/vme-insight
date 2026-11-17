@@ -422,15 +422,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 4
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 8
               }
             ]
@@ -443,8 +443,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": false,
           "calcs": [
@@ -495,15 +501,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 80
               },
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": 100
               }
             ]
@@ -517,8 +523,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": false,
           "calcs": [
@@ -569,15 +581,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "#ec3331",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "#d36d00",
                 "value": 14
               },
               {
-                "color": "green",
+                "color": "#009a71",
                 "value": 30
               }
             ]
@@ -591,8 +603,14 @@
         "displayMode": "gradient",
         "showUnfilled": true,
         "valueMode": "color",
-        "namePlacement": "left",
-        "sizing": "auto",
+        "namePlacement": "top",
+        "sizing": "manual",
+        "minVizHeight": 36,
+        "maxVizHeight": 40,
+        "text": {
+          "titleSize": 14,
+          "valueSize": 14
+        },
         "reduceOptions": {
           "values": false,
           "calcs": [

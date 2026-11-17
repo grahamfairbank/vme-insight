@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Interactive setup for the vme-insight appliance.
 
-  sudo vme-insight-setup                  ask for the Morpheus connection and start vme-insight
+  sudo vme-insight-setup                  ask for the Morpheus connection and the other settings, then start vme-insight
   sudo vme-insight-setup --show-password  print the Grafana admin password
   sudo vme-insight-setup --status         show whether vme-insight is configured and running
 
@@ -9,6 +9,7 @@ Writes /etc/vme-insight/appliance.yaml (the same file cloud-init can write) and 
 """
 import getpass
 import hashlib
+import ipaddress
 import os
 import re
 import socket
@@ -21,6 +22,14 @@ import yaml
 
 SETTINGS = "/etc/vme-insight/appliance.yaml"
 ENV = "/opt/vme-insight/.env"
+
+
+def is_ip(text):
+    try:
+        ipaddress.ip_address(text)
+        return True
+    except ValueError:
+        return False
 
 
 def ask(prompt, default=""):
@@ -175,6 +184,41 @@ def main(argv):
         settings["proxy"] = {"url": proxy,
                              "no_proxy": ask("   Other hosts or networks to reach directly, space-separated"
                                              " (Morpheus is always direct)", op.get("no_proxy", ""))}
+    print("\n6. Time, DNS, updates and the database")
+    settings["time_servers"] = ask("   Time servers (NTP), space-separated (Enter for the default: servers from DHCP,"
+                                   " or Debian's public pool; '-' to go back to the default)",
+                                   str(old.get("time_servers") or ""))
+    if settings["time_servers"] == "-":
+        settings["time_servers"] = ""
+    now = " ".join(dict.fromkeys(w for w in subprocess.run(["resolvectl", "dns"], capture_output=True,
+                                                            text=True).stdout.split() if is_ip(w)))
+    while True:
+        dns = ask("   DNS servers, IP addresses space-separated (Enter for the default: from Morpheus or DHCP"
+                  + (f", now {now}" if now and not old.get("dns_servers") else "") + "; '-' to go back to the default)",
+                  str(old.get("dns_servers") or ""))
+        dns = "" if dns == "-" else dns
+        if all(is_ip(x) for x in dns.replace(",", " ").split()):
+            break
+        print("   Enter IP addresses, such as 10.0.0.53 10.0.0.54.")
+    settings["dns_servers"] = dns
+    if dns:
+        search = ask("   DNS search domains for short names, space-separated (optional; '-' for none)",
+                     str(old.get("dns_search") or ""))
+        settings["dns_search"] = "" if search == "-" else search
+    else:
+        settings["dns_search"] = ""
+    ou = old.get("updates") or {}
+    settings["updates"] = {**ou, "check": yes("   Check GitHub once a day for a new vme-insight release (read-only;"
+                                              " shown when you sign in)?", default=ou.get("check", True) is not False)}
+    od = old.get("database") or {}
+    while True:
+        mem = ask("   Database memory: auto (a quarter of this VM's memory, adjusted at boot when you add memory)"
+                  " or a size such as 4GB", str(od.get("memory") or "auto"))
+        if mem.lower() == "auto" or re.fullmatch(r"[1-9][0-9]*\s*[MmGg][Bb]", mem):
+            break
+        print("   Enter auto, or a size such as 4GB or 512MB.")
+    settings["database"] = {**od, "memory": mem.replace(" ", "").upper() if mem.lower() != "auto" else "auto"}
+
     # Keep every setting the wizard doesn't ask about (ca_pem, your own https certificate, the Grafana
     # port, updates, time zone extras...), so running it again changes only what it asked.
     for key in ("ca_pem", "insecure"):

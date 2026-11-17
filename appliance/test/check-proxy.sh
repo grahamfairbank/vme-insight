@@ -31,4 +31,10 @@ exit $FAILED
 EOF
 echo "--- destinations the proxy saw:"
 docker logs "$NAME" 2>&1 | grep -E '^[0-9:]{8} (CONNECT|GET|POST|error)' | awk '{print $2, $3}' | sed 's/:443$//' | sort | uniq -c
+# Grafana must not contact grafana.com while running (update checks, news, Angular patterns, plugin keys).
+if docker logs "$NAME" 2>&1 | grep -E '^[0-9:]{8} (CONNECT|GET|POST)' | grep -q 'grafana\.com'; then
+  echo "FAIL  something contacted grafana.com through the proxy"; FAILED=1
+else
+  echo "PASS  nothing contacted grafana.com"
+fi
 exit "${FAILED:-0}"

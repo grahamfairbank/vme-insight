@@ -10,6 +10,30 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parent.parent / "grafana" / "dashboards"
 DS = {"type": "grafana-postgresql-datasource", "uid": "vme-tsdb"}
 
+# HPE colors from the HPE Design System (hpe-design-tokens 2.4.0). Dashboard colors are fixed: they don't
+# change with Grafana's light/dark theme. So each is a shade that reads on both the dark (#222222) and light (#FFFFFF)
+# backgrounds that grafana/theme/hpe.css sets (at least 3:1 against both). Grafana's named colors in the
+# builders below are swapped for these as each dashboard is written.
+HPE_COLORS = {
+    "green": "#009a71",    # ok (green-650)
+    "red": "#ec3331",      # critical (red-600)
+    "orange": "#d36d00",   # warning (orange-600)
+    "#EAB839": "#d36d00",  # amber: warning
+    "blue": "#0070f8",     # counts and info (blue-500, the first HPE chart color)
+    "gray": "#7d8a92",     # unknown or off (grey-600)
+}
+
+
+def hpe_colors(node):
+    """Swap Grafana's named colors for the HPE ones, everywhere a dashboard sets a color."""
+    if isinstance(node, dict):
+        return {k: (HPE_COLORS.get(v, v) if k in ("color", "fixedColor") and isinstance(v, str) else hpe_colors(v))
+                for k, v in node.items()}
+    if isinstance(node, list):
+        return [hpe_colors(v) for v in node]
+    return node
+
+
 # "All" selections are sent as -1, so filters read: (-1 IN ($var) OR col IN ($var))
 def f(var, col):
     return f"(-1 IN (${var}) OR {col} IN (${var}))"
@@ -165,6 +189,9 @@ CPU_DESC = "Amber at 85%, red at 95% (sustained), as VME's Host/VM CPU Usage ala
 MEM_DESC = "Amber at 90%, red at 95% (sustained), as VME's Host/VM Memory Usage alarms." + ALARM_NOTE
 DS_DESC = ("Amber at 80%, red at 90% used, as VME's Datastore Usage alarms. HPE's monitoring guide treats "
            f"under 15% free as a risk of provisioning failures ([HVM monitoring]({HPE_MONITORING}))." + ALARM_NOTE)
+SHARED_DS_DESC = ("Space used on the shared datastores (shared LUNs and NFS) in the cluster's cloud, each datastore "
+                  "counted once. Local directory datastores are left out. Per-datastore detail is under Datastores. "
+                  "If one cloud holds several clusters, each shows that cloud's shared datastores. " + DS_DESC)
 CAP_DESC = ("Cluster memory in use. HPE's capacity planning says to add hosts when memory is above 70% "
             "cluster-wide (N+1 failover at risk) or any single host is above 85% "
             f"([capacity planning]({HPE_CAPACITY})). See the N+1 failover headroom panel.")
@@ -179,7 +206,8 @@ def bargauge(title, sql, unit="percent", maxv=100, steps=PCT_STEPS, desc=""):
         "type": "bargauge", "title": title, "description": desc, "targets": [target(sql, "table")],
         "fieldConfig": {"defaults": d, "overrides": []},
         "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": True,
-                    "valueMode": "color", "namePlacement": "left", "sizing": "auto",
+                    "valueMode": "color", "namePlacement": "top", "sizing": "manual",
+                    "minVizHeight": 36, "maxVizHeight": 40, "text": {"titleSize": 14, "valueSize": 14},
                     "reduceOptions": {"values": True, "calcs": ["lastNotNull"], "fields": ""}},
     }
 
@@ -199,7 +227,7 @@ def pie(title, sql, desc=""):
         "type": "piechart", "title": title, "description": desc, "targets": [target(sql, "table")],
         "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}}, "overrides": []},
         "options": {"pieType": "donut", "displayLabels": [],
-                    "legend": {"displayMode": "table", "placement": "right", "values": ["value", "percent"]},
+                    "legend": {"displayMode": "list", "placement": "bottom", "values": ["value", "percent"]},
                     "reduceOptions": {"values": True, "calcs": ["lastNotNull"], "fields": ""},
                     "tooltip": {"mode": "single"}},
     }
@@ -503,8 +531,11 @@ def overview():
     clf = f"AND {f('cluster', 'c.id')}"
     b.add(gauge("Cluster CPU", latest_metric("cluster", "cpu_pct", "c.name", cl, clf), CPU_DESC, CPU_STEPS), 8, 6)
     b.add(gauge("Cluster memory", latest_metric("cluster", "mem_pct", "c.name", cl, clf), CAP_DESC, CAP_STEPS), 8, 6)
-    b.add(gauge("Cluster storage", latest_metric("cluster", "storage_pct", "c.name", cl, clf),
-                desc="Host-reported storage (sum over hosts). See Datastores for shared storage."), 8, 6)
+    b.add(gauge("Cluster shared storage", f"""
+        SELECT c.name AS name, 100.0 * sum(d.capacity_bytes - d.free_bytes) / NULLIF(sum(d.capacity_bytes), 0) AS value
+        FROM clusters c JOIN datastores d ON d.cloud_id = c.cloud_id
+        WHERE d.present AND d.capacity_bytes > 0 AND d.type NOT ILIKE '%local%' {clf}
+        GROUP BY 1 ORDER BY 1""", SHARED_DS_DESC, DS_STEPS), 8, 6)
     b.add(timeseries("Cluster CPU usage", series("cluster", "cpu_pct", "c.name", cl, clf), "percent", minv=0,
                      desc=CPU_DESC, bands=bands_of(CPU_STEPS)), 12, 8)
     b.add(timeseries("Cluster memory usage (add hosts above 70%)", series("cluster", "mem_pct", "c.name", cl, clf), "percent",
@@ -615,11 +646,11 @@ def overview():
         SELECT $__timeGroupAlias(time, $__interval), CASE metric WHEN 'vms_on' THEN 'running' ELSE 'stopped' END AS metric,
                max(value) AS value
         FROM metrics WHERE $__timeFilter(time) AND entity_type = 'summary' AND metric IN ('vms_on', 'vms_off')
-        GROUP BY 1, 2 ORDER BY 1""", "none", stack=True, fill=40, legend="list", legend_calcs=("lastNotNull",)), 12, 8)
+        GROUP BY 1, 2 ORDER BY 1""", "none", stack=True, fill=40, legend="list", legend_calcs=("lastNotNull",)), 12, 10)
     b.add(pie("VM power state", f"""SELECT COALESCE(power_state, 'unknown') AS state, count(*) FROM servers s
-        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 8)
+        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 10)
     b.add(pie("VM OS families", f"""SELECT COALESCE(os_product, 'unknown') AS os, count(*) FROM servers s
-        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 8)
+        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 10)
     return b
 
 
@@ -662,15 +693,15 @@ def hosts():
     b.add(timeseries("Network receive", series("host", "net_rx", where=HOST_F), "Bps"), 12, 8)
     b.add(timeseries("Network transmit", series("host", "net_tx", where=HOST_F), "Bps"), 12, 8)
     b.row("Local filesystems")
-    b.add(table("Host local storage (reported by VME)", f"""
+    b.add(table("Host disks allocated (reported by Morpheus)", f"""
         SELECT s.name AS "Host", (s.raw->'stats'->>'maxStorage')::bigint AS "Size",
                (s.raw->'stats'->>'usedStorage')::bigint AS "Used",
                (s.raw->'stats'->>'maxStorage')::bigint - (s.raw->'stats'->>'usedStorage')::bigint AS "Free",
                100.0 * (s.raw->'stats'->>'usedStorage')::numeric / NULLIF((s.raw->'stats'->>'maxStorage')::numeric, 0) AS "Used %"
         FROM servers s WHERE s.kind = 'host' AND s.present {HOST_F} ORDER BY 5 DESC NULLS LAST""",
         [unit_override("Size", "bytes"), unit_override("Used", "bytes"), unit_override("Free", "bytes"), gauge_cell("Used %", FS_STEPS)],
-        desc="VME reports one total per host for its local disks. Per-mount detail (below) needs node_exporter on the host."), 10, 7)
-    b.add(timeseries("Host local storage used % (reported by VME)", series("host", "storage_pct", where=HOST_F), "percent",
+        desc="Morpheus reports one total per host: the size of every disk attached to it (local disks and shared LUNs), and how much of that is allocated to volumes or datastores. It is not how full they are: see Datastores on VME Overview, or the per-mount detail below (needs node_exporter on the host)."), 10, 7)
+    b.add(timeseries("Host disks allocated % (reported by Morpheus)", series("host", "storage_pct", where=HOST_F), "percent",
                      minv=0, maxv=100, bands=FS_BANDS), 14, 7)
     fs_panels(b, 'vme_host_id=~"${host:pipe}"')
     b.row("Failover capacity (N+1)")
@@ -753,9 +784,9 @@ def lifecycle_board():
     b.add(stat("VM guest agent down", f"SELECT count(*) {sc} AND kind = 'vm' AND guest_agent_status IS DISTINCT FROM 'connected' AND power_state = 'on'",
                thresholds=amber, desc="Running VMs whose QEMU guest agent is not connected. OS details and clean shutdown need it."), 4, 4)
     b.row("Distribution")
-    b.add(pie("OS status", f"SELECT os_status, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 8)
-    b.add(pie("OS release", f"SELECT COALESCE(os_product || ' ' || os_cycle, os_name, 'unknown') AS os, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 8)
-    b.add(pie("Agent version", f"SELECT COALESCE(agent_version, 'none') AS agent, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 8)
+    b.add(pie("OS status", f"SELECT os_status, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
+    b.add(pie("OS release", f"SELECT COALESCE(os_product || ' ' || os_cycle, os_name, 'unknown') AS os, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
+    b.add(pie("Agent version", f"SELECT COALESCE(agent_version, 'none') AS agent, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
     b.add(stat("Target agent version", "SELECT version FROM agent_target", text=True, color="text",
                desc="lifecycle.expected_agent_version in config.yaml, or the newest version seen in the fleet."), 6, 4)
     b.add(stat("VME manager version", "SELECT build_version AS version FROM appliance", text=True, color="text"), 6, 4)
@@ -1306,7 +1337,7 @@ def main():
                      (hvm_hosts, "vme-hvm-hosts"), (hvm_bottlenecks, "vme-hvm-bottlenecks"),
                      (hvm_capacity, "vme-hvm-capacity"), (export_board, "vme-export"),
                      (widget_board, "vme-widget")):
-        (OUT / f"{name}.json").write_text(json.dumps(fn().json(), indent=2) + "\n")
+        (OUT / f"{name}.json").write_text(json.dumps(hpe_colors(fn().json()), indent=2) + "\n")
         print(f"wrote {name}.json")
 
 
