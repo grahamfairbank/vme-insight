@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.7.0)
+## 0.7.0 (2026-11-17)
 
 * **HPE colors.** The dashboards use colors from the HPE Design System: green `#009a71` for ok, orange `#d36d00` for warnings, red `#ec3331` for critical, blue `#0070f8` for counts and gray `#7d8a92` for off or unknown. Each one reads on both the dark and the light background. Lines that compare several hosts or VMs keep Grafana's own series colors, because Grafana can't be given a different set.
 * **HPE backgrounds.** Grafana's dark theme now uses a `#222222` page and panels, and the light theme uses white (`#FFFFFF`). Thin borders separate the panels. This also applies to the dashboards shown in the Morpheus UI. See [DASHBOARDS: Colors and backgrounds](docs/DASHBOARDS.md#colors-and-backgrounds).
