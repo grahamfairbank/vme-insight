@@ -6,6 +6,8 @@ from pathlib import Path
 import psycopg
 from psycopg import sql
 
+from . import __version__
+
 log = logging.getLogger(__name__)
 SCHEMA = Path(__file__).with_name("schema.sql")
 
@@ -140,8 +142,8 @@ class DB:
     def log_run(self, task, ok, duration_ms, items=None, error=None):
         try:
             self.execute(
-                "INSERT INTO collector_runs (task, ok, duration_ms, items, error) VALUES (%s,%s,%s,%s,%s)",
-                (task, ok, duration_ms, items, (error or "")[:2000] or None),
+                "INSERT INTO collector_runs (task, ok, duration_ms, items, error, version) VALUES (%s,%s,%s,%s,%s,%s)",
+                (task, ok, duration_ms, items, (error or "")[:2000] or None, __version__),
             )
             self.execute("DELETE FROM collector_runs WHERE time < now() - INTERVAL '30 days'")
         except Exception:  # never let bookkeeping kill a task

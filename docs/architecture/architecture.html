@@ -58,7 +58,7 @@
 <body>
 <div class="hbar"></div>
 <h1>vme-insight architecture</h1>
-<div class="sub">Performance history, capacity, inventory and lifecycle for HPE Morpheus VM Essentials 9.1+ &nbsp;·&nbsp; components, ports and data flow &nbsp;·&nbsp; version 0.7.0</div>
+<div class="sub">Performance history, capacity, inventory and lifecycle for HPE Morpheus VM Essentials 9.1+ &nbsp;·&nbsp; components, ports and data flow &nbsp;·&nbsp; version 0.7.1</div>
 
 <!-- ============================== zones -->
 <div class="zone" style="left:16px; top:76px; width:290px; height:516px;"><div class="zt">Morpheus estate (your infrastructure)</div></div>
@@ -104,7 +104,7 @@
     <li><b>15 min</b> clouds, instances, networks, version</li>
     <li><b>daily</b> OS lifecycle (endoflife.date)</li>
     <li>TLS pinned by fingerprint; secrets scrubbed before storing</li>
-    <li>Writes Prometheus target files from inventory; serves <span class="mono">vme-info :9105</span></li>
+    <li>Writes Prometheus target files from inventory; serves <span class="mono">vme-info :9105</span>; reads guest memory (libvirt) back for right-sizing</li>
   </ul>
 </div>
 
@@ -207,7 +207,7 @@
     <tr><td class="n"><span class="dot">1</span></td><td><b>collector → Morpheus API</b>: HTTPS 443, OAuth password grant (or token), read-only role, certificate pinned. 60 s to daily.</td></tr>
     <tr><td class="n"><span class="dot">2</span></td><td><b>collector → TimescaleDB</b>: SQL; metrics by bulk COPY, inventory by upsert; change log written by trigger.</td></tr>
     <tr><td class="n"><span class="dot x">3</span></td><td><b>collector → endoflife.date</b>: HTTPS, daily, OS release cycles and EOL dates.</td></tr>
-    <tr><td class="n"><span class="dot">4</span></td><td><b>collector → Prometheus</b>: target files from Morpheus inventory; Morpheus names (datastore, VM) on :9105.</td></tr>
+    <tr><td class="n"><span class="dot">4</span></td><td><b>collector ↔ Prometheus</b>: target files from Morpheus inventory; Morpheus names (datastore, VM) on :9105; every minute the collector reads each VM's guest memory use (libvirt balloon stats) back with PromQL and stores it.</td></tr>
     <tr><td class="n"><span class="dot o">5</span></td><td><b>Prometheus → exporters</b>: HTTP 9100 / 9177 on HVM hosts and the manager, every 30 s. Optional.</td></tr>
     <tr><td class="n"><span class="dot">6</span></td><td><b>Grafana → data</b>: SQL as <span class="mono">grafana_ro</span> to TimescaleDB; PromQL to Prometheus.</td></tr>
     <tr><td class="n"><span class="dot o">7</span></td><td><b>Browser / Morpheus tabs → https front end → Grafana</b>: TLS 443 (appliance) or 3443 (Docker), network allowlist. Optional.</td></tr>
@@ -294,7 +294,7 @@ flow(['collector:t:0.3', () => [anchor('collector:t:0.3')[0], 63], () => [802, 6
   t.setAttribute('text-anchor', 'end'); t.setAttribute('class', 'lbl'); t.textContent = 'HTTPS · daily'; svg.appendChild(t);
 })();
 // 4 collector -> Prometheus (targets)
-flow(['collector:b:0.5', 'prom:t:0.5'], 4, 'core', 0, ['targets · vme-info', 6, 3, 'start']);
+flow(['collector:b:0.5', 'prom:t:0.5'], 4, 'core', 0, ['targets · vme-info · guest memory', 6, 3, 'start']);
 // 5 Prometheus -> exporters on HVM hosts, and -> manager node_exporter
 flow(['prom:l:0.55', () => [X('exporters','r')[0] + 0, anchor('prom:l:0.55')[1]], 'exporters:r:0.2'], 5, 'opt', 0);
 flow(['prom:l:0.25', () => [318, anchor('prom:l:0.25')[1]], () => [318, anchor('manager:r:0.85')[1]], 'manager:r:0.85'], 5, 'opt', 1);

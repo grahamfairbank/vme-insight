@@ -148,6 +148,7 @@ The **Unrecognized OS strings** panel on the Lifecycle dashboard lists what need
 | `libvirt_port` | `9177` | libvirt exporter port |
 | `source` | `vme` | Value of the `source` label on every exporter series, to tell several estates apart in one Prometheus |
 | `manager_address` | `""` | Where to scrape node_exporter on the VME manager. Blank = the host in `morpheus.url`. |
+| `prometheus_url` | `http://prometheus:9090` | Where the collector reads guest memory use (libvirt balloon statistics) back from, for [memory right-sizing](DASHBOARDS.md#memory-right-sizing). Inside the stack; never through a proxy. |
 
 ### log_level
 

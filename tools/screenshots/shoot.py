@@ -44,6 +44,7 @@ CROPS = [
     ("fleet-tiles", "vme-overview", ["VM disk size (provisioned)", "Running VMs assessed"]),
     ("resource-weight", "vme-overview", ["VME CPU weight", "VME disk weight"]),
     ("idle-vms", "vme-vms", ["Running VMs by peak CPU (idle = never above 5% in 24 hours)"]),
+    ("memory-sizing", "vme-vms", ["Memory that could be freed", "Memory right-sizing (peak used vs allocated, over the memory look-back)"]),
 ]
 
 # (file name, dashboard uid, panel title): the panel with its guidance tooltip open

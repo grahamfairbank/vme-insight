@@ -20,12 +20,19 @@ Prometheus in the stack scrapes them every 30 seconds. The three **(exporters)**
 
 The installer runs **on each HVM host** and fetches what it needs from the vme-insight server, so you don't need to copy files around or give vme-insight SSH access to your hypervisors.
 
-**1. On the vme-insight host**, download the libvirt exporter package (checksum-verified against its GitHub release) and start the installer service:
+**1. On the vme-insight host**, download the exporter packages (checksum-verified against their GitHub releases) and start the installer service.
+
+On the **appliance**, sign in to the VM and run, from any folder:
 
 ```bash
-./tools/fetch-exporter-packages.sh
-docker compose --profile installer up -d installer
+cd /opt/vme-insight
+sudo ./tools/fetch-exporter-packages.sh
+sudo docker compose --profile installer up -d installer
 ```
+
+For a **Docker Compose install**, run the same in the folder you cloned into (such as `~/vme-insight`), with `sudo` only if your user isn't in the `docker` group.
+
+`fetch-exporter-packages.sh` downloads from GitHub, so the vme-insight host needs internet access for this step, directly or through a proxy. On the appliance it uses the proxy set in `appliance.yaml` (see [APPLIANCE: Proxy](APPLIANCE.md#proxy)); a proxy already in your environment, such as one in `/etc/environment`, is used as it is. Without internet access, download the two files named in the script on another machine and copy them into `installer/dist/`.
 
 The installer service is a small static web server on port `INSTALLER_PORT` (default 8097). It serves `install-exporters.sh` with its own address filled in, plus the package from `installer/dist/`.
 
@@ -35,7 +42,12 @@ The installer service is a small static web server on port `INSTALLER_PORT` (def
 curl -fsSL http://<vme-insight-host>:8097/install-exporters.sh | sudo bash
 ```
 
-The command is the same on every host. The script:
+The command is the same on every host. The HVM host needs to reach the vme-insight host on TCP 8097 only; it needs no internet access when step 1 succeeded.
+
+* **`Failed to connect … port 8097 … Couldn't connect to server`** although the vme-insight host answers ping: the installer service isn't running. Run step 1 again on the vme-insight host and check that `sudo docker compose ps installer` (in `/opt/vme-insight`) shows it running.
+* **A proxy on the HVM host:** if the host has `http_proxy` set (for example in `/etc/environment`, which `sudo` passes on), add the vme-insight host's address to its `no_proxy`, or the downloads from port 8097 go to the proxy. For one run: `curl -fsSL http://<vme-insight-host>:8097/install-exporters.sh | sudo no_proxy=<vme-insight-host> bash`.
+
+The script:
 
 1. Works out the host's **management IP** (the address it uses to reach the vme-insight server) and binds both exporters to it only. To choose another address, add `-s -- --listen <ip>` after `bash`.
 2. Installs **node_exporter** from the official Prometheus release to `/usr/local/bin/node_exporter`, as the systemd service `vme-node-exporter`. HVM hosts get their packages from HPE's repositories, which don't include node_exporter, so the script doesn't use apt at all and never runs `apt-get update` on your hosts.
@@ -121,6 +133,18 @@ Done. vme-insight will start scraping this host within a minute.
 ```
 
 This fills the **Manager VM detail** row on the Manager & Collector dashboard: CPU, memory, pressure stall, every filesystem and disk latency. Without it, the **Manager resources** row still shows disk, memory and swap from the VME API. The manager is an HPE appliance, so check your support terms before adding software to it.
+
+## Guest memory
+
+With the libvirt exporter, the [memory right-sizing](DASHBOARDS.md#memory-right-sizing) panels on VME Virtual Machines also use each guest's own memory figure from the virtio balloon statistics: memory the guest sees minus what it could still use (its page cache doesn't count), and how fast it swaps out. The collector reads these back from Prometheus every minute (`exporters.prometheus_url`) and stores them with the VM's other metrics.
+
+libvirt refreshes balloon statistics only while the VM's balloon has a statistics period. Readings older than 5 minutes are ignored, so a VM is never sized from a stale figure. To see whether a VM's figures are fresh, on its HVM host:
+
+```bash
+sudo virsh dommemstat <vm-name>
+```
+
+`last_update` is a Unix time; if it's old, the period isn't set. `sudo virsh dommemstat <vm-name> --period 60 --live` turns it on until the VM restarts. Whether to set it, and how to keep it, is a change to how the VM runs on your HVM hosts: check your HPE support terms first. Without fresh libvirt figures, right-sizing uses the figure Morpheus reports (which needs the QEMU guest agent in the VM).
 
 ## Discovery
 

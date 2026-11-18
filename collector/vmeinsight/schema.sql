@@ -199,6 +199,9 @@ CREATE TABLE IF NOT EXISTS collector_runs (
 -- @@
 CREATE INDEX IF NOT EXISTS collector_runs_time ON collector_runs (time DESC);
 -- @@
+-- the collector's own version with each run, so the dashboards can show which vme-insight is running
+ALTER TABLE collector_runs ADD COLUMN IF NOT EXISTS version text;
+-- @@
 -- "9.4.1-2" -> {9,4,1,2}; arrays compare element-wise, so this orders versions.
 CREATE OR REPLACE FUNCTION version_key(v text) RETURNS bigint[] LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE WHEN v IS NULL OR v !~ '\d' THEN NULL

@@ -38,6 +38,7 @@ What the appliance needs from Morpheus and the network, and what it doesn't:
 | **Morpheus Appliance URL** | Reachable from the HVM hosts | Not specific to vme-insight: to provision from a new image, each HVM host downloads it from Morpheus's Appliance URL (Administration → Settings → Appliance). See Troubleshooting if provisioning fails with "Image is not in qcow2 format". |
 | **From users** | Yes | TCP 3000 (Grafana) or the https port (443 or 3443, see [The https port](#the-https-port)) from the browsers of the people who view the dashboards, including inside the Morpheus UI. Optionally SSH (22) for administration. |
 | **To HVM hosts** | Only with the exporters | TCP 9100 and 9177 to each HVM host, if you install the optional [exporters](EXPORTERS.md). |
+| **From HVM hosts** | Only while installing the exporters | TCP 8097 from each HVM host to the appliance, for the [exporter installer](EXPORTERS.md#install). Stop the installer service when you're done. |
 | **Internet** | No | Only for a few optional extras. See [Internet access](#internet-access). |
 | **Morpheus agent** | No | Choose either way when importing. vme-insight reads everything through the Morpheus API. |
 
@@ -111,6 +112,16 @@ If the appliance reaches the internet through an HTTP(S) proxy, set it in either
 
 To change the proxy later, do the same again. To take it out, run `sudo vme-insight-setup` and enter `-` for the proxy. When the proxy changes, the appliance restarts Docker, so the dashboards are unavailable for a minute.
 
+**`/etc/environment` and other ways.** You may already set a proxy in `/etc/environment` or with `export`. Those reach only some programs on the appliance, so use the `proxy:` setting above for anything vme-insight does:
+
+| Where the proxy is set | Reaches | Doesn't reach |
+|---|---|---|
+| `export https_proxy=…` in your shell | Commands you run in that shell (not through `sudo`, which drops it) | Everything else; gone when you sign out |
+| `/etc/environment` | Programs started from a sign-in, including through `sudo` (`curl`, `fetch-exporter-packages.sh`) | **The Docker service** (image pulls, `vme-insight-update`), the containers (the collector) and the daily update check |
+| **`proxy:` in `appliance.yaml`** (this section) | Docker, the containers, apt, `vme-insight-update`, the update check and `fetch-exporter-packages.sh` | Nothing vme-insight needs |
+
+If you keep a proxy in `/etc/environment` as well, give it the same `no_proxy` list (see `sudo cat /etc/vme-insight/proxy.env`), so the connection to Morpheus stays direct.
+
 **Check it:** `sudo vme-insight-update --check` contacts GitHub through the proxy and says which release is the latest. `sudo cat /etc/vme-insight/proxy.env` shows the proxy and the addresses reached directly.
 
 `vme-insight-apply` points everything that goes to the internet at the proxy:
@@ -121,6 +132,7 @@ To change the proxy later, do the same again. To take it out, run `sudo vme-insi
 | `vme-insight-update` (GitHub, grafana.com) and the daily update check | `/etc/vme-insight/proxy.env` |
 | Container image pulls and the collector build (Docker Hub, PyPI) | A Docker service drop-in (`/etc/systemd/system/docker.service.d/vme-insight-proxy.conf`) and the client settings above |
 | apt, for your Debian updates | `/etc/apt/apt.conf.d/80vme-insight-proxy` |
+| `tools/fetch-exporter-packages.sh` (GitHub, for the [exporters](EXPORTERS.md)) | `/etc/vme-insight/proxy.env`, when no proxy is set in the environment already |
 
 The connection to Morpheus never uses the proxy: the appliance adds the Morpheus host to `no_proxy` itself, because certificate pinning (`tls_fingerprint`) needs a direct connection. The containers' traffic to each other is direct too.
 

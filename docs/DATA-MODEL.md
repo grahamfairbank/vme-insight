@@ -39,6 +39,8 @@ This "narrow" layout means new metrics need no schema change. It's a hypertable 
 | `cpu_ready_max_vcpu_pct` | % | VMs: the worst single vCPU (from VME's per-vCPU values) |
 | `mem_used_bytes`, `mem_free_bytes`, `mem_total_bytes`, `mem_pct` | bytes, % | |
 | `mem_reserved_bytes` | bytes | Memory reserved for the VM, or by VMs on a host |
+| `mem_guest_used_bytes` | bytes | VMs, with the libvirt exporter: memory the guest uses without its page cache (balloon `available` − `usable`), fresh readings only. Read back from Prometheus by the collector. |
+| `mem_guest_swap_out_bps` | bytes/s | VMs, with the libvirt exporter: rate the guest swaps out (5-minute rate) |
 | `storage_used_bytes`, `storage_total_bytes`, `storage_reserved_bytes`, `storage_pct` | bytes, % | Host: local storage. VM: its disks. |
 | `net_rx`, `net_tx` | bytes/s as reported | |
 | `disk_iops`, `disk_read_iops`, `disk_write_iops` | IOPS | |
@@ -76,7 +78,7 @@ Each table has `present` (still returned by VME), `first_seen`, `last_seen` and 
 | `appliance` | (one row) | `url`, `build_version`, `health` (JSON), `health_at` |
 | `inventory_changes` | Field change | `time`, `entity_type`, `entity_id`, `name`, `field`, `old_value`, `new_value` |
 | `os_lifecycle` | OS release cycle | `product`, `cycle`, `release_date`, `support_date`, `eol_date`, `latest`, `lts` |
-| `collector_runs` | Collector task run | `time`, `task`, `ok`, `duration_ms`, `items`, `error` (30 days) |
+| `collector_runs` | Collector task run | `time`, `task`, `ok`, `duration_ms`, `items`, `error`, `version` (vme-insight version that ran it; 30 days) |
 
 Views: `entity_names` (a name for every `entity_type`/`entity_id` in `metrics`), `server_currency` (one row per present server with OS and agent status, see [LIFECYCLE](LIFECYCLE.md)) and `agent_target`. The function `version_key(text)` turns a version string into a comparable number array.
 

@@ -87,7 +87,9 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}
       GF_AUTH_ANONYMOUS_ORG_NAME: ${GRAFANA_ANONYMOUS_ORG:-Main Org.}
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_AUTH_ANONYMOUS_HIDE_VERSION: "true"
+      # Not hidden: the treemap panel reads Grafana's version when a tile is clicked, and a hidden (blank)
+      # version breaks it for anonymous viewers ("Invalid Version").
+      GF_AUTH_ANONYMOUS_HIDE_VERSION: "false"
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-}
       GF_SECURITY_COOKIE_SECURE: ${GRAFANA_COOKIE_SECURE:-false}
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/vme-overview.json

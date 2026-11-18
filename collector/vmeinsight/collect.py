@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
-from . import osdetect
+from . import guestmem, osdetect
 from .morpheus import ApiError
 
 log = logging.getLogger(__name__)
@@ -355,6 +355,8 @@ class Collector:
         for m, v in summary.items():
             points.append(("summary", 0, m, v))
         points.append(("summary", 0, "clusters_total", len(clusters)))
+        # guest memory use from the libvirt exporter, for VMs in scope (see guestmem.py)
+        points.extend(p for p in guestmem.points(self.cfg) if kind_of.get(p[1]) == "vm")
         return self.db.write_metrics(t, points)
 
     def _write_targets(self, hosts, cluster_names):

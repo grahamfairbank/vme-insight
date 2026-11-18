@@ -28,17 +28,23 @@ VME evaluates its CPU and memory alarms on a 15-minute average, so short peaks o
 
 ## Colors and backgrounds
 
-**Colors.** The dashboards use colors from the HPE Design System. Dashboard colors don't change with Grafana's light or dark theme, so each one is a shade that reads on both backgrounds:
+**Colors.** Color is kept for what needs attention, so a healthy dashboard is mostly plain text and gray, and amber or red stands out at once. Dashboard colors don't change with Grafana's light or dark theme, so each one has at least 3:1 contrast on both backgrounds. The rules:
 
-| Meaning | Color |
-|---|---|
-| OK, healthy, on | green `#009a71` |
-| Warning (amber thresholds, "update available", "outdated") | orange `#d36d00` |
-| Critical (red thresholds, errors, alarms) | red `#ec3331` |
-| Counts and information | blue `#0070f8` |
-| Off or unknown | gray `#7d8a92` |
+* **Normal values have no color.** Stat tiles and table cells show healthy values as plain text; gauges and bar gauges draw them as a neutral gray bar. Amber and red appear only when a value crosses its threshold.
+* **Status colors are muted**, so they don't outweigh HPE's own tame colors:
 
-They're set in `HPE_COLORS` at the top of [`tools/build_dashboards.py`](../tools/build_dashboards.py). Lines that compare several hosts or VMs keep Grafana's own series colors (green, yellow, blue and so on): Grafana has no setting for a different set.
+  | Meaning | Color |
+  |---|---|
+  | Good (a good outcome, such as a VM that *can shrink*, or the healthy slice of a status pie) | green `#3f9e78` |
+  | Warning (amber thresholds, "update available", "outdated", "tight") | amber `#c0822a` |
+  | Critical (red thresholds, errors, alarms) | red `#d4544e` |
+  | Off or unknown | gray `#7d8a92` |
+
+  In tables, a status is colored text, not a colored cell, so a long list doesn't turn into a wall of color.
+* **Series colors carry no meaning**, so lines are never green, amber, red or another warm color that reads as a warning. There are eight muted blues, teals and violets. **A host or VM keeps its color in every panel**: the color comes from the last character of its name, so `hvm01` is the same blue in CPU, memory and network, and numbered siblings (`hvm01`, `hvm02`) get different colors. Two names can still share a color when a panel has more than eight lines. Pie charts of categories (OS families, releases, agent versions) use shades of one blue; pie charts of a status (power state, OS status) use the status colors.
+* **Gradients run green to red.** The resource-weight treemaps color each VM from green (a small share of the cluster) through yellow and amber to red (12% or more), so the VMs that dominate a resource stand out.
+
+The colors and rules are at the top of [`tools/build_dashboards.py`](../tools/build_dashboards.py) (`OK`, `WARN`, `CRIT`, `SERIES`, `GRADIENT`), and applied to every panel as the dashboards are written.
 
 **Backgrounds.** In the dark theme, the page and the panels are `#222222`. In the light theme, they're white. Thin borders separate the panels. Grafana has no setting for this either, so vme-insight adds a small stylesheet, [`grafana/theme/hpe.css`](../grafana/theme/hpe.css), to Grafana's page template ([`grafana/theme/index.html`](../grafana/theme/index.html)). Both are mounted into the Grafana container by `docker-compose.yml`.
 
@@ -52,6 +58,8 @@ They're set in `HPE_COLORS` at the top of [`tools/build_dashboards.py`](../tools
 
 ## VME Overview
 
+The first row's title shows which vme-insight is running, for example **Estate · vme-insight 0.7.1** (also on the Manager & Collector dashboard, *vme-insight version*). The collector records its version with each run.
+
 The home page. It plays the same role as the vSphere Overview dashboard.
 
 ![VME Overview, top](images/hero.png)
@@ -64,7 +72,7 @@ The home page. It plays the same role as the vSphere Overview dashboard.
 | CPU contention | Worst VM CPU ready, worst single vCPU ready, VMs at 5 to 10% ready, VMs over 10% ready. Tiles turn amber and red at the thresholds below. |
 | Datastores | Used % per datastore, free space over time, and a table with type, status, size and used % |
 | VME manager | Manager CPU, JVM memory, system memory, storage, service status (database, Elasticsearch, RabbitMQ), clouds with last sync time, recent activity |
-| VM resource weight | Three treemaps: each VM is a rectangle sized and colored by its share of the cluster's **CPU** (usage × vCPUs over all host cores), **allocated memory** (VME reserves a VM's whole allocation, so that's what it takes from the cluster) and **storage** (disk in use over the capacity of the datastores the VM's disks are on; includes stopped VMs). Labels show the share. Very small VMs can be too thin to see; hover for values. Needs the Treemap panel plugin, which Grafana installs on first start. |
+| VM resource weight | Three treemaps: each VM is a rectangle sized and colored by its share of the cluster's **CPU** (usage × vCPUs over all host cores), **allocated memory** (VME reserves a VM's whole allocation, so that's what it takes from the cluster) and **storage** (disk in use over the capacity of the datastores the VM's disks are on; includes stopped VMs). Colored green (a small share) to red (12% or more). Labels show the share. Very small VMs can be too thin to see; hover for values. Needs the Treemap panel plugin, which Grafana installs on first start. |
 | Top VMs | Top N (picker) by CPU, memory and CPU ready. CPU and network of the busiest VMs over time. |
 | Fleet | **VM disk size**: median and average provisioned disk per VM (a median well below the average means a few very large VMs). **Idle VMs**: running VMs whose CPU never went above 5% in 24 hours, out of the running VMs assessed. Running vs stopped VMs over time, power state, OS families. |
 
@@ -113,9 +121,40 @@ VME's per-vCPU values average exactly to its VM value, so it is a per-vCPU avera
 
 ## VME Virtual Machines
 
-CPU, memory and disk usage (%), network, disk IOPS, CPU ready (average and worst single vCPU, with guidance bands) and power history per VM, a list of **idle VM candidates** (running VMs ordered by peak CPU over 24 hours, idle when never above 5%), and a VM table: power, status, host, cluster, IP, vCPU, memory, disk, OS, QEMU guest agent, Morpheus agent, cloud, plan, image, owner and creation date.
+CPU, memory and disk usage (%), network, disk IOPS, CPU ready (average and worst single vCPU, with guidance bands) and power history per VM, a list of **idle VM candidates** (running VMs ordered by peak CPU over 24 hours, idle when never above 5%), **memory right-sizing** (below), and a VM table: power, status, host, cluster, IP, vCPU, memory, disk, OS, QEMU guest agent, Morpheus agent, cloud, plan, image, owner and creation date.
 
 ![Idle VM candidates](images/idle-vms.png)
+
+### Memory right-sizing
+
+The **Memory right-sizing** row compares the memory each running VM was given with the most its guest used over the **Memory look-back** (the picker at the top: 7, 14 or 30 days; 30 by default, so month-end jobs count). Use it to find VMs whose memory can be reduced.
+
+![Memory right-sizing](images/memory-sizing.png)
+
+| Column | What it is |
+|---|---|
+| Allocated | The VM's memory in Morpheus |
+| Peak used | The highest reading in the look-back |
+| P95 used | 95% of the hourly peaks were at or below this, so one spike doesn't decide |
+| Peak % of allocated | Gray bar; amber from 90%, red from 95% |
+| Suggested | Peak + 25%, rounded up to whole GiB, at least 1 GiB |
+| Reclaimable | Allocated minus Suggested, for VMs marked *can shrink* |
+| Status | *can shrink*: frees at least 1 GiB and 25% of the VM's memory. *right-sized*. *tight*: peaked at 90% or more. *swapping: keep*: the guest swapped out, so it needs what it has or more. *short history*: data covers less than 80% of the look-back. *no guest data*: see below. |
+| Source | Where *used* came from: *Morpheus*, *libvirt*, or both (the higher counts) |
+| Guest swap-out | The highest rate at which the guest swapped out (libvirt) |
+
+The tiles above the table add up the reclaimable memory and count the VMs that can shrink or have no guest data.
+
+**Where "used" comes from.** Two sources, and the higher one counts:
+
+* **Morpheus**: the VM memory figure Morpheus reports. It comes from inside the guest, so it needs the **QEMU guest agent** in the VM (or the Morpheus agent).
+* **libvirt**, with the optional [exporters](EXPORTERS.md): the guest's own figure from the virtio balloon statistics (memory the guest sees minus what it could still use, so its page cache isn't counted), and its swap activity. The collector reads it back from Prometheus every minute and stores it as `mem_guest_used_bytes` and `mem_guest_swap_out_bps`. libvirt refreshes these statistics only when the VM's balloon has a statistics period set; readings older than 5 minutes are ignored, so a VM is never sized from a stale figure. See [EXPORTERS: Guest memory](EXPORTERS.md#guest-memory).
+
+The host's view of a VM (its resident memory, RSS) isn't used: pages a VM has touched stay resident on the host, so RSS only grows and overstates what the guest needs. Morpheus's *reserved* memory (`mem_reserved_bytes`) isn't used either: it's what the host sets aside for the VM, close to the allocation, not what the guest uses.
+
+A VM marked *no guest data* has neither source. Install the QEMU guest agent in it (Windows VMs also need the virtio balloon driver for the libvirt figure). Check with the VM's owner before shrinking, and leave room for growth: the suggestion only covers what happened in the look-back. To change the headroom or the minimum saving, edit `MEM_HEADROOM` and `MEM_MIN_SAVING` in `tools/build_dashboards.py` and rebuild.
+
+### Idle VM candidates
 
 Why 5%: VME reports about 2% CPU even for a VM the kernel measures at under 1% (seen on a 9.1 lab), so a lower threshold would never match. To redefine idle, change `IDLE_PCT` and `IDLE_WINDOW` in `tools/build_dashboards.py` and rebuild.
 

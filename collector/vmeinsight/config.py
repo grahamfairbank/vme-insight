@@ -56,6 +56,7 @@ DEFAULTS = {
         "libvirt_port": 9177,   # prometheus-libvirt-exporter
         "source": "vme",        # value of the "source" label, to tell several VME estates apart
         "manager_address": "",  # where to scrape node_exporter on the manager; blank = host in morpheus.url
+        "prometheus_url": "http://prometheus:9090",  # read guest memory use (libvirt balloon stats) back from here
     },
     "log_level": "INFO",
 }

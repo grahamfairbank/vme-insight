@@ -4,34 +4,102 @@
 Edit this file rather than the JSON, then run:  python3 tools/build_dashboards.py
 (Dashboards edited in the Grafana UI can be exported and saved over the JSON too.)
 """
+import copy
 import json
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "grafana" / "dashboards"
 DS = {"type": "grafana-postgresql-datasource", "uid": "vme-tsdb"}
 
-# HPE colors from the HPE Design System (hpe-design-tokens 2.4.0). Dashboard colors are fixed: they don't
-# change with Grafana's light/dark theme. So each is a shade that reads on both the dark (#222222) and light (#FFFFFF)
-# backgrounds that grafana/theme/hpe.css sets (at least 3:1 against both). Grafana's named colors in the
-# builders below are swapped for these as each dashboard is written.
-HPE_COLORS = {
-    "green": "#009a71",    # ok (green-650)
-    "red": "#ec3331",      # critical (red-600)
-    "orange": "#d36d00",   # warning (orange-600)
-    "#EAB839": "#d36d00",  # amber: warning
-    "blue": "#0070f8",     # counts and info (blue-500, the first HPE chart color)
-    "gray": "#7d8a92",     # unknown or off (grey-600)
-}
+# Colors. Rules (owner's design, 0.7.1):
+# * Color only where something needs attention. Normal values are plain text (stats, table cells) or a neutral bar
+#   (gauges); amber and red appear only at their thresholds.
+# * Status colors are muted so they don't outweigh HPE's own tame colors: green = good, amber = warning, red = bad,
+#   gray = unknown or off. "good" in a builder marks the few places where green is meant (a good outcome).
+# * Series colors carry no meaning, so they are never green, amber, red or another warm hue. A series gets its color from the last
+#   character of its name, so the same VM or host has the same color in every panel (and numbered siblings differ).
+# * Gradients (treemaps) always run green (small, good) through yellow and amber to red (large, bad).
+# Every color has at least 3:1 contrast on both Grafana backgrounds that grafana/theme/hpe.css sets: #222222 (dark)
+# and #FFFFFF (light).
+OK, WARN, CRIT, UNKNOWN = "#3f9e78", "#c0822a", "#d4544e", "#7d8a92"
+NEUTRAL_BAR = "#7d8a92"
+SERIES = ["#5b8fc7", "#3fa0a8", "#8d7cc2", "#7f90a0", "#b07aa1", "#4a78b0", "#6a74c9", "#2f8790"]  # no warm hues: they read as warnings
+GRADIENT = [OK, "#7ea85a", "#c9b13e", WARN, CRIT]
+STATUS = {"good": OK, "red": CRIT, "orange": WARN, "#EAB839": WARN, "gray": UNKNOWN}
+_CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
-def hpe_colors(node):
-    """Swap Grafana's named colors for the HPE ones, everywhere a dashboard sets a color."""
+def series_overrides():
+    """One color per group of last characters, so a name gets the same color everywhere."""
+    return [{"matcher": {"id": "byRegexp", "options": "/[" + _CHARS[k::len(SERIES)] + "]$/i"},
+             "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": c}}]}
+            for k, c in enumerate(SERIES)]
+
+
+def _neutral_steps(steps, neutral):
+    """Threshold steps: the healthy (green, or blue for plain counts) steps become neutral."""
+    for st in steps or []:
+        if st.get("color") in ("green", "blue"):
+            st["color"] = neutral
+
+
+def _mappings(maps):
+    """Value mappings in tables and stats: healthy values are plain text."""
+    for m in maps or []:
+        for opt in (m.get("options") or {}).values():
+            if isinstance(opt, dict) and opt.get("color") in ("green", "blue", "transparent"):
+                opt["color"] = "text"
+
+
+def _panel_colors(p):
+    t = p.get("type")
+    fc = p["fieldConfig"] = copy.deepcopy(p.get("fieldConfig") or {})  # builders share step lists between panels
+    d = fc.get("defaults") or {}
+    neutral = {"stat": "text", "gauge": NEUTRAL_BAR, "bargauge": NEUTRAL_BAR, "timeseries": "transparent"}.get(t, "text")
+    _neutral_steps((d.get("thresholds") or {}).get("steps"), neutral)
+    _mappings(d.get("mappings"))
+    for o in fc.get("overrides") or []:
+        props = o.get("properties") or []
+        gauge_cell = any(pr["id"] == "custom.cellOptions" and pr["value"].get("type") == "gauge" for pr in props)
+        for pr in props:
+            if pr["id"] == "thresholds":
+                _neutral_steps(pr["value"].get("steps"), NEUTRAL_BAR if gauge_cell else "text")
+            elif pr["id"] == "mappings":
+                _mappings(pr["value"])
+            elif pr["id"] == "custom.cellOptions" and pr["value"].get("type") == "color-background":
+                pr["value"] = {"type": "color-text"}  # colored words, not colored blocks
+    if t == "timeseries" and (d.get("color") or {}).get("mode") == "palette-classic":
+        d["color"] = {"mode": "fixed", "fixedColor": SERIES[0]}
+        fc["overrides"] = series_overrides() + list(fc.get("overrides") or [])
+    if t == "piechart" and (d.get("color") or {}).get("mode") == "palette-classic":
+        # slices are rows of one field, so name rules can't tell them apart: status pies name their slices,
+        # the others use shades of one series color
+        d["color"] = {"mode": "fixed", "fixedColor": UNKNOWN} if fc.get("overrides") else \
+            {"mode": "shades", "fixedColor": SERIES[0]}
+    if t == "marcusolsson-treemap-panel":
+        d["color"] = {"mode": "thresholds"}
+        d["thresholds"] = {"mode": "absolute", "steps": [{"color": c, "value": v} for c, v in
+                                                         zip(GRADIENT, (None, 1, 3, 6, 12))]}
+
+
+def _named(node):
+    """Swap the remaining named status colors for the muted ones."""
     if isinstance(node, dict):
-        return {k: (HPE_COLORS.get(v, v) if k in ("color", "fixedColor") and isinstance(v, str) else hpe_colors(v))
-                for k, v in node.items()}
+        return {k: (STATUS.get(v, OK if v == "green" else v) if k in ("color", "fixedColor") and isinstance(v, str)
+                    else _named(v)) for k, v in node.items()}
     if isinstance(node, list):
-        return [hpe_colors(v) for v in node]
+        return [_named(v) for v in node]
     return node
+
+
+def hpe_colors(dash):
+    """Apply the color rules above to every panel of a dashboard."""
+    def walk(panels):
+        for p in panels:
+            _panel_colors(p)
+            walk(p.get("panels") or [])
+    walk(dash.get("panels") or [])
+    return _named(dash)
 
 
 # "All" selections are sent as -1, so filters read: (-1 IN ($var) OR col IN ($var))
@@ -222,10 +290,13 @@ def gauge(title, sql, desc="", steps=PCT_STEPS):
     }
 
 
-def pie(title, sql, desc=""):
+def pie(title, sql, desc="", status=None):
+    """status: {slice name: color} for slices that mean good/bad; other pies get the series colors."""
+    over = [{"matcher": {"id": "byName", "options": k}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": c}}]}
+            for k, c in (status or {}).items()]
     return {
         "type": "piechart", "title": title, "description": desc, "targets": [target(sql, "table")],
-        "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}}, "overrides": []},
+        "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}}, "overrides": over},
         "options": {"pieType": "donut", "displayLabels": [],
                     "legend": {"displayMode": "list", "placement": "bottom", "values": ["value", "percent"]},
                     "reduceOptions": {"values": True, "calcs": ["lastNotNull"], "fields": ""},
@@ -415,6 +486,71 @@ def idle_vms_sql(where, select):
         {select}"""
 
 
+# Memory right-sizing: allocated memory against the most the guest used over $mem_window.
+# Used = Morpheus's VM memory figure (mem_used_bytes) and, with the exporters, the guest's own figure from
+# libvirt's balloon statistics (mem_guest_used_bytes, see collector/vmeinsight/guestmem.py); the higher wins.
+# Older than 2 hours comes from metrics_hourly (its max is exact), the last 2 hours from raw samples.
+# Suggested = peak + MEM_HEADROOM, rounded up to whole GiB, at least 1 GiB. A VM is a shrink candidate
+# only when that frees at least 1 GiB and MEM_MIN_SAVING of its memory.
+MEM_HEADROOM = 0.25
+MEM_MIN_SAVING = 0.25
+MEM_WINDOW_VAR = {"type": "custom", "name": "mem_window", "label": "Memory look-back", "query": "7 days,14 days,30 days",
+                  "current": {"text": "30 days", "value": "30 days"}, "multi": False, "includeAll": False,
+                  "options": [{"text": v, "value": v, "selected": v == "30 days"} for v in ("7 days", "14 days", "30 days")]}
+GIB = 1073741824
+
+
+def mem_sizing_sql(where, select):
+    return f"""
+        WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on'
+                      AND s.max_memory > 0 {where}),
+        samples AS (
+          SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id
+          WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps')
+            AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours'
+          UNION ALL
+          SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id
+          WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps')
+            AND m.time >= now() - INTERVAL '2 hours'),
+        u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95,
+                     min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api,
+                     bool_or(metric = 'mem_guest_used_bytes') AS from_guest
+              FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1),
+        sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1),
+        r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap,
+                     CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus'
+                          WHEN u.from_guest THEN 'libvirt' END AS source,
+                     CASE WHEN u.peak IS NULL THEN NULL
+                          ELSE greatest({GIB}, ceil(u.peak * {1 + MEM_HEADROOM} / {GIB}) * {GIB}) END AS suggested
+              FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id),
+        st AS (SELECT r.*,
+                     CASE WHEN r.peak IS NULL THEN 'no guest data'
+                          WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep'
+                          WHEN r.peak >= 0.9 * r.alloc THEN 'tight'
+                          WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history'
+                          WHEN r.alloc - r.suggested >= greatest({GIB}, {MEM_MIN_SAVING} * r.alloc) THEN 'can shrink'
+                          ELSE 'right-sized' END AS status
+              FROM r),
+        c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st)
+        {select}"""
+
+
+MEM_SIZING_DESC = (
+    "Running VMs: the memory each was given against the most its guest used over the look-back (the "
+    "**Memory look-back** picker at the top; 30 days by default, so month-end jobs count).\n\n"
+    "* **Peak used**: the highest reading. **P95**: 95% of hourly peaks were at or below this.\n"
+    "* **Source**: *Morpheus* is the VM memory figure Morpheus reports. *libvirt* is the guest's own figure from the "
+    "balloon statistics (the libvirt exporter on the HVM host): memory in use without the guest's page cache. "
+    "With both, the higher one counts.\n"
+    f"* **Suggested**: peak + {int(MEM_HEADROOM * 100)}%, rounded up to whole GiB, at least 1 GiB.\n"
+    f"* **Status**: *can shrink* frees at least 1 GiB and {int(MEM_MIN_SAVING * 100)}% of the VM's memory; "
+    "*tight* peaked at 90% or more of its memory; *swapping: keep* swapped out inside the guest (libvirt), so it "
+    "needs what it has or more; *short history* has data for less than 80% of the look-back; *no guest data*: "
+    "neither source reports the guest's use (see docs/DASHBOARDS.md).\n\n"
+    "Host-side figures (RSS) are not used: pages a VM has touched stay resident, so they overstate use. "
+    "Check with the VM's owner before shrinking, and leave room for growth.")
+
+
 # Resource weight: each VM's current usage as a share of the cluster's capacity (latest VME sample).
 WEIGHT_HOSTS = "s.kind = 'host' AND s.present AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster))"
 WEIGHT_VMS = "v.kind = 'vm' AND v.present AND (-1 IN ($cluster) OR v.cluster_id IN ($cluster))"
@@ -439,10 +575,15 @@ WEIGHT_DISK_SQL = f"""
     FROM servers v, cap WHERE {WEIGHT_VMS} AND (v.raw->'stats'->>'usedStorage')::float > 0
     ORDER BY 2 DESC"""
 WEIGHT_DESC = ("Each rectangle is a VM, sized and colored by its share of the cluster's {what}. "
-               "Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. {detail} "
+               "Green is a small share, through yellow and amber to red for 12% or more, so the few VMs that dominate a "
+               "resource stand out. Uses VME's latest sample. {detail} "
                "Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.")
 
 
+VERSION_SQL = "SELECT version FROM collector_runs WHERE version IS NOT NULL ORDER BY time DESC LIMIT 1"
+# hidden: shown in the Overview's first row title
+VERSION_VAR = dict(qvar("version", "vme-insight version", VERSION_SQL, multi=False, include_all=False, hide=2),
+                   refresh=1)
 CLUSTER_VAR = qvar("cluster", "Cluster", "SELECT name AS __text, id AS __value FROM clusters WHERE present ORDER BY name")
 HOST_VAR = qvar("host", "Host", f"""SELECT name AS __text, id AS __value FROM servers
     WHERE kind = 'host' AND present AND {f('cluster', 'cluster_id')} ORDER BY name""")
@@ -520,8 +661,8 @@ def widget_board():
 
 # ------------------------------------------------------------------ overview
 def overview():
-    b = Board("vme-overview", "VME Overview", ["overview"], variables=[CLUSTER_VAR, HOST_VAR, TOPN_VAR])
-    b.row("Estate")
+    b = Board("vme-overview", "VME Overview", ["overview"], variables=[CLUSTER_VAR, HOST_VAR, TOPN_VAR, VERSION_VAR])
+    b.row("Estate · vme-insight $version")
     t = estate_tiles()
     for name in ("clusters", "hosts", "vms", "vms_running", "vms_stopped", "datastores", "alarms", "manager"):
         b.add(t[name], 3, 4)
@@ -648,7 +789,8 @@ def overview():
         FROM metrics WHERE $__timeFilter(time) AND entity_type = 'summary' AND metric IN ('vms_on', 'vms_off')
         GROUP BY 1, 2 ORDER BY 1""", "none", stack=True, fill=40, legend="list", legend_calcs=("lastNotNull",)), 12, 10)
     b.add(pie("VM power state", f"""SELECT COALESCE(power_state, 'unknown') AS state, count(*) FROM servers s
-        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 10)
+        WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC""",
+        status={"on": "good", "off": "gray", "unknown": "#EAB839", "suspended": "#EAB839"}), 6, 10)
     b.add(pie("VM OS families", f"""SELECT COALESCE(os_product, 'unknown') AS os, count(*) FROM servers s
         WHERE present AND kind = 'vm' {VM_F} GROUP BY 1 ORDER BY 2 DESC"""), 6, 10)
     return b
@@ -726,7 +868,7 @@ def hosts():
 
 # ------------------------------------------------------------------ VMs
 def vms():
-    b = Board("vme-vms", "VME Virtual Machines", ["vms"], variables=[CLUSTER_VAR, HOST_VAR, VM_VAR])
+    b = Board("vme-vms", "VME Virtual Machines", ["vms"], variables=[CLUSTER_VAR, HOST_VAR, VM_VAR, MEM_WINDOW_VAR])
     b.row("Performance")
     b.add(timeseries("CPU usage", series("vm", "cpu_pct", where=VM_ONLY_F), "percent", minv=0,
                      desc=CPU_DESC, bands=bands_of(CPU_STEPS)), 12, 9)
@@ -750,6 +892,31 @@ def vms():
         FROM w JOIN servers s ON s.id = w.entity_id LEFT JOIN servers h ON h.id = s.host_id ORDER BY w.peak"""),
         [unit_override("Memory", "bytes"), unit_override("Peak CPU", "percent"), unit_override("Average CPU", "percent"),
          colored("Idle", {"true": "#EAB839", "false": "transparent"})], desc=IDLE_DESC), 24, 6)
+
+    b.row("Memory right-sizing")
+    b.add(stat("Memory that could be freed", mem_sizing_sql(VM_ONLY_F, "SELECT sum(reclaim) FROM c"), "bytes",
+               color="green", desc="Total of the Reclaimable column below. " + MEM_SIZING_DESC.split("\n\n")[0]), 6, 5)
+    b.add(stat("VMs that could shrink", mem_sizing_sql(VM_ONLY_F, "SELECT count(*) FILTER (WHERE status = 'can shrink') FROM c"),
+               color="green", desc="Running VMs marked *can shrink* below."), 6, 5)
+    b.add(stat("VMs with no guest data", mem_sizing_sql(VM_ONLY_F, "SELECT count(*) FILTER (WHERE status = 'no guest data') FROM c"),
+               thresholds=[{"color": "green", "value": None}, {"color": "#EAB839", "value": 1}],
+               desc="Running VMs that neither Morpheus nor the libvirt exporter reports guest memory use for, so they "
+                    "can't be sized here. See docs/DASHBOARDS.md: Memory right-sizing."), 6, 5)
+    b.add(stat("Allocated to running VMs", mem_sizing_sql(VM_ONLY_F, "SELECT sum(alloc) FROM c"), "bytes",
+               desc="Memory given to the running VMs in this view."), 6, 5)
+    b.add(table("Memory right-sizing (peak used vs allocated, over the memory look-back)", mem_sizing_sql(VM_ONLY_F,
+        """SELECT c.name AS "VM", h.name AS "Host", c.alloc AS "Allocated", c.peak AS "Peak used",
+               c.p95 AS "P95 used", 100.0 * c.peak / c.alloc AS "Peak % of allocated", c.suggested AS "Suggested",
+               c.reclaim AS "Reclaimable", c.status AS "Status", c.source AS "Source", c.swap AS "Guest swap-out"
+        FROM c LEFT JOIN servers h ON h.id = c.host_id
+        ORDER BY c.reclaim DESC, c.peak IS NULL, c.peak / c.alloc"""),
+        [unit_override(x, "bytes") for x in ("Allocated", "Peak used", "P95 used", "Suggested", "Reclaimable")]
+        + [unit_override("Guest swap-out", "Bps"),
+           gauge_cell("Peak % of allocated", [{"color": "green", "value": None}, {"color": "#EAB839", "value": 90},
+                                              {"color": "red", "value": 95}]),
+           colored("Status", {"can shrink": "good", "right-sized": "transparent", "tight": "#EAB839",
+                              "swapping: keep": "orange", "short history": "gray", "no guest data": "gray"})],
+        desc=MEM_SIZING_DESC), 24, 10)
 
     b.row("Details")
     b.add(table("Virtual machines", f"""
@@ -784,7 +951,8 @@ def lifecycle_board():
     b.add(stat("VM guest agent down", f"SELECT count(*) {sc} AND kind = 'vm' AND guest_agent_status IS DISTINCT FROM 'connected' AND power_state = 'on'",
                thresholds=amber, desc="Running VMs whose QEMU guest agent is not connected. OS details and clean shutdown need it."), 4, 4)
     b.row("Distribution")
-    b.add(pie("OS status", f"SELECT os_status, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
+    b.add(pie("OS status", f"SELECT os_status, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC",
+                  status={**STATUS_COLORS, "current": "good"}), 6, 10)
     b.add(pie("OS release", f"SELECT COALESCE(os_product || ' ' || os_cycle, os_name, 'unknown') AS os, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
     b.add(pie("Agent version", f"SELECT COALESCE(agent_version, 'none') AS agent, count(*) {sc} GROUP BY 1 ORDER BY 2 DESC"), 6, 10)
     b.add(stat("Target agent version", "SELECT version FROM agent_target", text=True, color="text",
@@ -925,6 +1093,9 @@ def health():
         SELECT 'metrics (raw)' AS "Table", pg_size_pretty(hypertable_size('metrics')) AS "Size",
                (SELECT count(*) FROM timescaledb_information.chunks WHERE hypertable_name = 'metrics') AS "Chunks"
         UNION ALL SELECT 'database total', pg_size_pretty(pg_database_size(current_database())), NULL"""), 12, 5)
+    b.add(stat("vme-insight version", VERSION_SQL, text=True,
+               desc="The version of vme-insight the collector is running. Release notes: "
+                    "https://github.com/grahamfairbank/vme-insight/releases"), 12, 5)
     return b
 
 

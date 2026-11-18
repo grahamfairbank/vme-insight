@@ -94,6 +94,35 @@
         },
         "sort": 1,
         "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "mem_window",
+        "label": "Memory look-back",
+        "query": "7 days,14 days,30 days",
+        "current": {
+          "text": "30 days",
+          "value": "30 days"
+        },
+        "multi": false,
+        "includeAll": false,
+        "options": [
+          {
+            "text": "7 days",
+            "value": "7 days",
+            "selected": false
+          },
+          {
+            "text": "14 days",
+            "value": "14 days",
+            "selected": false
+          },
+          {
+            "text": "30 days",
+            "value": "30 days",
+            "selected": true
+          }
+        ]
       }
     ]
   },
@@ -121,7 +150,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "timeseries",
@@ -144,7 +174,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -167,18 +198,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -230,7 +382,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -253,11 +406,11 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -265,7 +418,128 @@
           "min": 0,
           "max": 100
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -317,7 +591,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -332,7 +607,128 @@
           "min": 0,
           "max": 100
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -384,7 +780,8 @@
         "defaults": {
           "unit": "Bps",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -397,7 +794,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -449,7 +967,8 @@
         "defaults": {
           "unit": "Bps",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -462,7 +981,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -514,7 +1154,8 @@
         "defaults": {
           "unit": "iops",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -527,7 +1168,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -579,7 +1341,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -602,18 +1365,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 5
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 10
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -665,7 +1549,8 @@
         "defaults": {
           "unit": "none",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -680,7 +1565,128 @@
           "min": 0,
           "max": 1
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -730,7 +1736,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -753,18 +1760,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 5
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 10
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -806,7 +1934,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "table",
@@ -878,8 +2007,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -889,11 +2017,11 @@
                     "type": "value",
                     "options": {
                       "true": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 0
                       },
                       "false": {
-                        "color": "transparent",
+                        "color": "text",
                         "index": 1
                       }
                     }
@@ -925,7 +2053,7 @@
     },
     {
       "type": "row",
-      "title": "Details",
+      "title": "Memory right-sizing",
       "collapsed": false,
       "id": 13,
       "gridPos": {
@@ -934,7 +2062,479 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
+    },
+    {
+      "type": "stat",
+      "title": "Memory that could be freed",
+      "description": "Total of the Reclaimable column below. Running VMs: the memory each was given against the most its guest used over the look-back (the **Memory look-back** picker at the top; 30 days by default, so month-end jobs count).",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on' AND s.max_memory > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm))), samples AS ( SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours' UNION ALL SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND m.time >= now() - INTERVAL '2 hours'), u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95, min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api, bool_or(metric = 'mem_guest_used_bytes') AS from_guest FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1), sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1), r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap, CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus' WHEN u.from_guest THEN 'libvirt' END AS source, CASE WHEN u.peak IS NULL THEN NULL ELSE greatest(1073741824, ceil(u.peak * 1.25 / 1073741824) * 1073741824) END AS suggested FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id), st AS (SELECT r.*, CASE WHEN r.peak IS NULL THEN 'no guest data' WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep' WHEN r.peak >= 0.9 * r.alloc THEN 'tight' WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history' WHEN r.alloc - r.suggested >= greatest(1073741824, 0.25 * r.alloc) THEN 'can shrink' ELSE 'right-sized' END AS status FROM r), c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st) SELECT sum(reclaim) FROM c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "VMs that could shrink",
+      "description": "Running VMs marked *can shrink* below.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on' AND s.max_memory > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm))), samples AS ( SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours' UNION ALL SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND m.time >= now() - INTERVAL '2 hours'), u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95, min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api, bool_or(metric = 'mem_guest_used_bytes') AS from_guest FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1), sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1), r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap, CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus' WHEN u.from_guest THEN 'libvirt' END AS source, CASE WHEN u.peak IS NULL THEN NULL ELSE greatest(1073741824, ceil(u.peak * 1.25 / 1073741824) * 1073741824) END AS suggested FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id), st AS (SELECT r.*, CASE WHEN r.peak IS NULL THEN 'no guest data' WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep' WHEN r.peak >= 0.9 * r.alloc THEN 'tight' WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history' WHEN r.alloc - r.suggested >= greatest(1073741824, 0.25 * r.alloc) THEN 'can shrink' ELSE 'right-sized' END AS status FROM r), c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st) SELECT count(*) FILTER (WHERE status = 'can shrink') FROM c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 6,
+        "y": 42,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "VMs with no guest data",
+      "description": "Running VMs that neither Morpheus nor the libvirt exporter reports guest memory use for, so they can't be sized here. See docs/DASHBOARDS.md: Memory right-sizing.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on' AND s.max_memory > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm))), samples AS ( SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours' UNION ALL SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND m.time >= now() - INTERVAL '2 hours'), u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95, min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api, bool_or(metric = 'mem_guest_used_bytes') AS from_guest FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1), sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1), r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap, CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus' WHEN u.from_guest THEN 'libvirt' END AS source, CASE WHEN u.peak IS NULL THEN NULL ELSE greatest(1073741824, ceil(u.peak * 1.25 / 1073741824) * 1073741824) END AS suggested FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id), st AS (SELECT r.*, CASE WHEN r.peak IS NULL THEN 'no guest data' WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep' WHEN r.peak >= 0.9 * r.alloc THEN 'tight' WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history' WHEN r.alloc - r.suggested >= greatest(1073741824, 0.25 * r.alloc) THEN 'can shrink' ELSE 'right-sized' END AS status FROM r), c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st) SELECT count(*) FILTER (WHERE status = 'no guest data') FROM c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "#c0822a",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 12,
+        "y": 42,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Allocated to running VMs",
+      "description": "Memory given to the running VMs in this view.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on' AND s.max_memory > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm))), samples AS ( SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours' UNION ALL SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND m.time >= now() - INTERVAL '2 hours'), u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95, min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api, bool_or(metric = 'mem_guest_used_bytes') AS from_guest FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1), sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1), r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap, CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus' WHEN u.from_guest THEN 'libvirt' END AS source, CASE WHEN u.peak IS NULL THEN NULL ELSE greatest(1073741824, ceil(u.peak * 1.25 / 1073741824) * 1073741824) END AS suggested FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id), st AS (SELECT r.*, CASE WHEN r.peak IS NULL THEN 'no guest data' WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep' WHEN r.peak >= 0.9 * r.alloc THEN 'tight' WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history' WHEN r.alloc - r.suggested >= greatest(1073741824, 0.25 * r.alloc) THEN 'can shrink' ELSE 'right-sized' END AS status FROM r), c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st) SELECT sum(alloc) FROM c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 18,
+        "y": 42,
+        "w": 6,
+        "h": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Memory right-sizing (peak used vs allocated, over the memory look-back)",
+      "description": "Running VMs: the memory each was given against the most its guest used over the look-back (the **Memory look-back** picker at the top; 30 days by default, so month-end jobs count).\n\n* **Peak used**: the highest reading. **P95**: 95% of hourly peaks were at or below this.\n* **Source**: *Morpheus* is the VM memory figure Morpheus reports. *libvirt* is the guest's own figure from the balloon statistics (the libvirt exporter on the HVM host): memory in use without the guest's page cache. With both, the higher one counts.\n* **Suggested**: peak + 25%, rounded up to whole GiB, at least 1 GiB.\n* **Status**: *can shrink* frees at least 1 GiB and 25% of the VM's memory; *tight* peaked at 90% or more of its memory; *swapping: keep* swapped out inside the guest (libvirt), so it needs what it has or more; *short history* has data for less than 80% of the look-back; *no guest data*: neither source reports the guest's use (see docs/DASHBOARDS.md).\n\nHost-side figures (RSS) are not used: pages a VM has touched stay resident, so they overstate use. Check with the VM's owner before shrinking, and leave room for growth.",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "vme-tsdb"
+          },
+          "refId": "A",
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH vm AS (SELECT s.* FROM servers s WHERE s.kind = 'vm' AND s.present AND s.power_state = 'on' AND s.max_memory > 0 AND (-1 IN ($cluster) OR s.cluster_id IN ($cluster)) AND (-1 IN ($host) OR s.host_id IN ($host)) AND (-1 IN ($vm) OR s.id IN ($vm))), samples AS ( SELECT h.entity_id, h.metric, h.bucket AS time, h.max AS value FROM metrics_hourly h JOIN vm ON vm.id = h.entity_id WHERE h.entity_type = 'vm' AND h.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND h.bucket > now() - INTERVAL '$mem_window' AND h.bucket < now() - INTERVAL '2 hours' UNION ALL SELECT m.entity_id, m.metric, m.time, m.value FROM metrics m JOIN vm ON vm.id = m.entity_id WHERE m.entity_type = 'vm' AND m.metric IN ('mem_used_bytes', 'mem_guest_used_bytes', 'mem_guest_swap_out_bps') AND m.time >= now() - INTERVAL '2 hours'), u AS (SELECT entity_id, max(value) AS peak, percentile_cont(0.95) WITHIN GROUP (ORDER BY value) AS p95, min(time) AS since, bool_or(metric = 'mem_used_bytes') AS from_api, bool_or(metric = 'mem_guest_used_bytes') AS from_guest FROM samples WHERE metric <> 'mem_guest_swap_out_bps' AND value > 0 GROUP BY 1), sw AS (SELECT entity_id, max(value) AS swap FROM samples WHERE metric = 'mem_guest_swap_out_bps' GROUP BY 1), r AS (SELECT vm.id, vm.name, vm.host_id, vm.max_memory AS alloc, u.peak, u.p95, u.since, sw.swap, CASE WHEN u.from_api AND u.from_guest THEN 'Morpheus + libvirt' WHEN u.from_api THEN 'Morpheus' WHEN u.from_guest THEN 'libvirt' END AS source, CASE WHEN u.peak IS NULL THEN NULL ELSE greatest(1073741824, ceil(u.peak * 1.25 / 1073741824) * 1073741824) END AS suggested FROM vm LEFT JOIN u ON u.entity_id = vm.id LEFT JOIN sw ON sw.entity_id = vm.id), st AS (SELECT r.*, CASE WHEN r.peak IS NULL THEN 'no guest data' WHEN coalesce(r.swap, 0) > 0 THEN 'swapping: keep' WHEN r.peak >= 0.9 * r.alloc THEN 'tight' WHEN r.since > now() - INTERVAL '$mem_window' * 0.8 THEN 'short history' WHEN r.alloc - r.suggested >= greatest(1073741824, 0.25 * r.alloc) THEN 'can shrink' ELSE 'right-sized' END AS status FROM r), c AS (SELECT st.*, CASE WHEN st.status = 'can shrink' THEN st.alloc - st.suggested ELSE 0 END AS reclaim FROM st) SELECT c.name AS \"VM\", h.name AS \"Host\", c.alloc AS \"Allocated\", c.peak AS \"Peak used\", c.p95 AS \"P95 used\", 100.0 * c.peak / c.alloc AS \"Peak % of allocated\", c.suggested AS \"Suggested\", c.reclaim AS \"Reclaimable\", c.status AS \"Status\", c.source AS \"Source\", c.swap AS \"Guest swap-out\" FROM c LEFT JOIN servers h ON h.id = c.host_id ORDER BY c.reclaim DESC, c.peak IS NULL, c.peak / c.alloc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true,
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocated"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "P95 used"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Suggested"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reclaimable"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Guest swap-out"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "Bps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak % of allocated"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#7d8a92",
+                      "value": null
+                    },
+                    {
+                      "color": "#c0822a",
+                      "value": 90
+                    },
+                    {
+                      "color": "#d4544e",
+                      "value": 95
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "can shrink": {
+                        "color": "#3f9e78",
+                        "index": 0
+                      },
+                      "right-sized": {
+                        "color": "text",
+                        "index": 1
+                      },
+                      "tight": {
+                        "color": "#c0822a",
+                        "index": 2
+                      },
+                      "swapping: keep": {
+                        "color": "#c0822a",
+                        "index": 3
+                      },
+                      "short history": {
+                        "color": "#7d8a92",
+                        "index": 4
+                      },
+                      "no guest data": {
+                        "color": "#7d8a92",
+                        "index": 5
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "vme-tsdb"
+      }
+    },
+    {
+      "type": "row",
+      "title": "Details",
+      "collapsed": false,
+      "id": 19,
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "table",
@@ -994,8 +2594,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -1005,7 +2604,7 @@
                     "type": "value",
                     "options": {
                       "on": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "off": {
@@ -1013,11 +2612,11 @@
                         "index": 1
                       },
                       "unknown": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 2
                       },
                       "suspended": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 3
                       }
                     }
@@ -1035,8 +2634,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -1046,11 +2644,11 @@
                     "type": "value",
                     "options": {
                       "connected": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "disconnected": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 1
                       },
                       "unknown": {
@@ -1072,10 +2670,10 @@
           "show": false
         }
       },
-      "id": 14,
+      "id": 20,
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 58,
         "w": 24,
         "h": 10
       },

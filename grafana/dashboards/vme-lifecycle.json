@@ -70,7 +70,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "stat",
@@ -99,7 +100,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -159,11 +160,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 1
               }
             ]
@@ -223,11 +224,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -287,11 +288,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -351,11 +352,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -415,11 +416,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -479,11 +480,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -527,7 +528,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "piechart",
@@ -549,10 +551,147 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#7d8a92"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "current"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3f9e78"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "update available"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c0822a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "eol < 180d"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c0822a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "end of life"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d4544e"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outdated"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c0822a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "not installed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d4544e"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7d8a92"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown os"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7d8a92"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown release"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7d8a92"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "pieType": "donut",
@@ -608,7 +747,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "shades",
+            "fixedColor": "#5b8fc7"
           }
         },
         "overrides": []
@@ -667,7 +807,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "shades",
+            "fixedColor": "#5b8fc7"
           }
         },
         "overrides": []
@@ -837,7 +978,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "table",
@@ -873,8 +1015,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -884,27 +1025,27 @@
                     "type": "value",
                     "options": {
                       "current": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "update available": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 1
                       },
                       "eol < 180d": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 2
                       },
                       "end of life": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 3
                       },
                       "outdated": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 4
                       },
                       "not installed": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 5
                       },
                       "unknown": {
@@ -934,8 +1075,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -945,27 +1085,27 @@
                     "type": "value",
                     "options": {
                       "current": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "update available": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 1
                       },
                       "eol < 180d": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 2
                       },
                       "end of life": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 3
                       },
                       "outdated": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 4
                       },
                       "not installed": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 5
                       },
                       "unknown": {
@@ -995,8 +1135,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -1006,7 +1145,7 @@
                     "type": "value",
                     "options": {
                       "on": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "off": {
@@ -1014,11 +1153,11 @@
                         "index": 1
                       },
                       "unknown": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 2
                       },
                       "suspended": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 3
                       }
                     }
@@ -1036,8 +1175,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -1047,11 +1185,11 @@
                     "type": "value",
                     "options": {
                       "connected": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "disconnected": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 1
                       },
                       "unknown": {
@@ -1186,7 +1324,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "table",

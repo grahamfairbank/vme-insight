@@ -4,7 +4,18 @@
 #   ./tools/fetch-exporter-packages.sh [node_exporter version] [libvirt exporter version] [arch]
 set -euo pipefail
 NV="${1:-1.12.1}"; LV="${2:-2.6.1}"; A="${3:-amd64}"
-DIR="$(cd "$(dirname "$0")/.." && pwd)/installer/dist"; mkdir -p "$DIR"
+DIR="$(cd "$(dirname "$0")/.." && pwd)/installer/dist"
+if [ -f /etc/vme-insight/appliance.yaml ] && [ "$(id -u)" != 0 ]; then
+  echo "On the vme-insight appliance, run it with sudo: sudo $0 $*" >&2; exit 1
+fi
+mkdir -p "$DIR"
+# On the appliance, use the proxy set in appliance.yaml (vme-insight-apply writes proxy.env).
+# A proxy already in the environment (for example from /etc/environment) is kept.
+PROXY_ENV=/etc/vme-insight/proxy.env
+if [ -z "${https_proxy:-}${HTTPS_PROXY:-}" ] && [ -r "$PROXY_ENV" ]; then
+  set -a; . "$PROXY_ENV"; set +a
+  echo "using the proxy from $PROXY_ENV"
+fi
 
 get() {  # get <base url> <file> <checksum file>
   curl -fsSL -o "$DIR/$3" "$1/$3"

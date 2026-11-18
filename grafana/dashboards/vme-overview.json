@@ -100,6 +100,24 @@
             "selected": false
           }
         ]
+      },
+      {
+        "type": "query",
+        "name": "version",
+        "label": "vme-insight version",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "vme-tsdb"
+        },
+        "query": "SELECT version FROM collector_runs WHERE version IS NOT NULL ORDER BY time DESC LIMIT 1",
+        "definition": "SELECT version FROM collector_runs WHERE version IS NOT NULL ORDER BY time DESC LIMIT 1",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "allValue": "-1",
+        "current": {},
+        "sort": 1,
+        "hide": 2
       }
     ]
   },
@@ -118,7 +136,7 @@
   "panels": [
     {
       "type": "row",
-      "title": "Estate",
+      "title": "Estate \u00b7 vme-insight $version",
       "collapsed": false,
       "id": 1,
       "gridPos": {
@@ -127,7 +145,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "stat",
@@ -156,7 +175,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -216,7 +235,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -276,7 +295,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -336,7 +355,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               }
             ]
@@ -456,7 +475,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -516,11 +535,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 1
               }
             ]
@@ -624,7 +643,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "gauge",
@@ -655,15 +675,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -723,15 +743,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 70
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 85
               }
             ]
@@ -791,15 +811,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 80
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 90
               }
             ]
@@ -851,7 +871,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -874,18 +895,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -937,7 +1079,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -960,18 +1103,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 70
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 85
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1030,15 +1294,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 100
               }
             ]
@@ -1091,7 +1355,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "timeseries",
@@ -1114,7 +1379,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -1137,18 +1403,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1200,7 +1587,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -1223,18 +1611,139 @@
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1293,7 +1802,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "#7d8a92",
                 "value": null
               }
             ]
@@ -1355,7 +1864,8 @@
         "defaults": {
           "unit": "Bps",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -1368,7 +1878,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1420,7 +2051,8 @@
         "defaults": {
           "unit": "Bps",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -1433,7 +2065,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1475,7 +2228,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "bargauge",
@@ -1505,15 +2259,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 80
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 90
               }
             ]
@@ -1576,7 +2330,8 @@
         "defaults": {
           "unit": "bytes",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -1590,7 +2345,128 @@
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -1691,8 +2567,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -1702,23 +2577,23 @@
                     "type": "value",
                     "options": {
                       "provisioned": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "online": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 1
                       },
                       "warning": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 2
                       },
                       "failed": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 3
                       },
                       "offline": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 4
                       }
                     }
@@ -1751,15 +2626,15 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "#009a71",
+                      "color": "#7d8a92",
                       "value": null
                     },
                     {
-                      "color": "#d36d00",
+                      "color": "#c0822a",
                       "value": 80
                     },
                     {
-                      "color": "#ec3331",
+                      "color": "#d4544e",
                       "value": 90
                     }
                   ]
@@ -1806,7 +2681,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "stat",
@@ -1835,15 +2711,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -1903,15 +2779,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -1971,15 +2847,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -2039,15 +2915,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 75
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 85
               }
             ]
@@ -2120,8 +2996,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -2131,15 +3006,15 @@
                     "type": "value",
                     "options": {
                       "ok": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "warning": {
-                        "color": "#d36d00",
+                        "color": "#c0822a",
                         "index": 1
                       },
                       "error": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 2
                       }
                     }
@@ -2203,8 +3078,7 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "color-background",
-                  "mode": "basic"
+                  "type": "color-text"
                 }
               },
               {
@@ -2214,15 +3088,15 @@
                     "type": "value",
                     "options": {
                       "ok": {
-                        "color": "#009a71",
+                        "color": "text",
                         "index": 0
                       },
                       "syncing": {
-                        "color": "#0070f8",
+                        "color": "text",
                         "index": 1
                       },
                       "error": {
-                        "color": "#ec3331",
+                        "color": "#d4544e",
                         "index": 2
                       }
                     }
@@ -2308,7 +3182,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "stat",
@@ -2337,15 +3212,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 5
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 10
               }
             ]
@@ -2405,15 +3280,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 5
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 10
               }
             ]
@@ -2473,11 +3348,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -2537,11 +3412,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 1
               }
             ]
@@ -2585,12 +3460,13 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME CPU weight",
-      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's CPU. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's CPU usage \u00d7 its vCPUs, divided by the cores of all hosts. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's CPU. Green is a small share, through yellow and amber to red for 12% or more, so the few VMs that dominate a resource stand out. Uses VME's latest sample. Share = the VM's CPU usage \u00d7 its vCPUs, divided by the cores of all hosts. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2609,7 +3485,32 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "continuous-blues"
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3f9e78",
+                "value": null
+              },
+              {
+                "color": "#7ea85a",
+                "value": 1
+              },
+              {
+                "color": "#c9b13e",
+                "value": 3
+              },
+              {
+                "color": "#c0822a",
+                "value": 6
+              },
+              {
+                "color": "#d4544e",
+                "value": 12
+              }
+            ]
           }
         },
         "overrides": []
@@ -2636,7 +3537,7 @@
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME memory weight (allocated)",
-      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's memory. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a VM's full allocation (no memory overcommit by default), so allocation is what it takes from the cluster; VME's in-guest usage figure is unreliable without a guest agent. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's memory. Green is a small share, through yellow and amber to red for 12% or more, so the few VMs that dominate a resource stand out. Uses VME's latest sample. Share = the memory allocated to the VM divided by the memory of all hosts. VME reserves a VM's full allocation (no memory overcommit by default), so allocation is what it takes from the cluster; VME's in-guest usage figure is unreliable without a guest agent. Running VMs only. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2655,7 +3556,32 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "continuous-YlRd"
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3f9e78",
+                "value": null
+              },
+              {
+                "color": "#7ea85a",
+                "value": 1
+              },
+              {
+                "color": "#c9b13e",
+                "value": 3
+              },
+              {
+                "color": "#c0822a",
+                "value": 6
+              },
+              {
+                "color": "#d4544e",
+                "value": 12
+              }
+            ]
           }
         },
         "overrides": []
@@ -2682,7 +3608,7 @@
     {
       "type": "marcusolsson-treemap-panel",
       "title": "VME disk weight",
-      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's storage. Spot the few VMs that dominate a resource at a glance. Uses VME's latest sample. Share = the VM's disk space in use divided by the capacity of the datastores its disks are on. Includes stopped VMs, which still occupy storage. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
+      "description": "Each rectangle is a VM, sized and colored by its share of the cluster's storage. Green is a small share, through yellow and amber to red for 12% or more, so the few VMs that dominate a resource stand out. Uses VME's latest sample. Share = the VM's disk space in use divided by the capacity of the datastores its disks are on. Includes stopped VMs, which still occupy storage. Very small VMs can be too thin to see; hover for values, or use the VME Data Export dashboard.",
       "targets": [
         {
           "datasource": {
@@ -2701,7 +3627,32 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "continuous-purples"
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3f9e78",
+                "value": null
+              },
+              {
+                "color": "#7ea85a",
+                "value": 1
+              },
+              {
+                "color": "#c9b13e",
+                "value": 3
+              },
+              {
+                "color": "#c0822a",
+                "value": 6
+              },
+              {
+                "color": "#d4544e",
+                "value": 12
+              }
+            ]
           }
         },
         "overrides": []
@@ -2736,7 +3687,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "bargauge",
@@ -2766,15 +3718,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 85
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -2844,15 +3796,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 90
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 95
               }
             ]
@@ -2922,15 +3874,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "#7d8a92",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 5
               },
               {
-                "color": "#ec3331",
+                "color": "#d4544e",
                 "value": 10
               }
             ]
@@ -2993,7 +3945,8 @@
         "defaults": {
           "unit": "percent",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -3007,7 +3960,128 @@
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -3059,7 +4133,8 @@
         "defaults": {
           "unit": "Bps",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -3072,7 +4147,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -3114,7 +4310,8 @@
         "w": 24,
         "h": 1
       },
-      "panels": []
+      "panels": [],
+      "fieldConfig": {}
     },
     {
       "type": "stat",
@@ -3143,7 +4340,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#0070f8",
+                "color": "text",
                 "value": null
               }
             ]
@@ -3204,11 +4401,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "#009a71",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "#d36d00",
+                "color": "#c0822a",
                 "value": 1
               }
             ]
@@ -3328,7 +4525,8 @@
         "defaults": {
           "unit": "none",
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#5b8fc7"
           },
           "custom": {
             "drawStyle": "line",
@@ -3341,7 +4539,128 @@
             }
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[08gow]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5b8fc7"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[19hpx]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3fa0a8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[2aiqy]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8d7cc2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[3bjrz]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7f90a0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[4cks]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#b07aa1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[5dlt]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#4a78b0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[6emu]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6a74c9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/[7fnv]$/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2f8790"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -3390,10 +4709,72 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed",
+            "fixedColor": "#7d8a92"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "on"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3f9e78"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "off"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#7d8a92"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c0822a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "suspended"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c0822a"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "pieType": "donut",
@@ -3449,7 +4830,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "shades",
+            "fixedColor": "#5b8fc7"
           }
         },
         "overrides": []
