@@ -22,6 +22,8 @@ This page is the whole setup, end to end. The plugin's own repository has the re
 
 | vme-insight-plugin | Needs vme-insight | VME |
 |---|---|---|
+| 0.1.7 | 0.2.0 or later; tested with 0.7.1 | 9.0 or later (tested on 9.0.1 and 9.1.0.1) |
+| 0.1.6 | 0.2.0 or later; tested with 0.7.0 | 9.1 or later (on 9.0.x the tabs are blocked: use 0.1.7) |
 | 0.1.5 | 0.2.0 or later | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.4 | 0.2.0 or later | 9.1 or later (Plugin API 1.5.0) |
 | 0.1.3 | 0.2.0 or later; tested with 0.4.4 | 9.1 or later (Plugin API 1.5.0) |
